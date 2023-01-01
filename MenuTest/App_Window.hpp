@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef AppWindow_H
 #define AppWindow_H
 
@@ -22,6 +24,8 @@ protected:
 
     std::string title{""};
 
+    std::string lastError;
+
     SDL_Surface* icon = NULL;
 
 public:
@@ -37,6 +41,8 @@ public:
     SDL_Window* GetWindow();
 
     bool SetIconFromFile(std::string aPath);
+
+    std::string GetLastError();
 
 };
 

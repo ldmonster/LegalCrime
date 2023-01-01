@@ -1,5 +1,7 @@
 #include <SDL.h>
 
+#include "StringsHelper.hpp"
+
 #include "App_Renderer.hpp"
 #include "App_Window.hpp"
 
@@ -24,7 +26,11 @@ bool App_Renderer::init()
 	renderer = SDL_CreateRenderer(appWindow->GetWindow(), -1, SDL_RENDERER_ACCELERATED);
 	if (renderer == NULL)
 	{
-		printf("Renderer could not be created! SDL Error: %s\n", SDL_GetError());
+        lastError += StringsHelper::Sprintf(
+            "Renderer could not be created! SDL Error: %s",
+            SDL_GetError()
+        );
+
 		return false;
 	}
 
@@ -43,4 +49,9 @@ App_Renderer* App_Renderer::GetInstance(App_Window* appWindow) {
 SDL_Renderer* App_Renderer::GetRenderer()
 {
     return renderer;
+}
+
+std::string App_Renderer::GetLastError()
+{
+    return lastError;
 }

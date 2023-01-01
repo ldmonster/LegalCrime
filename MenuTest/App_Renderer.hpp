@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef AppRenderer_H
 #define AppRenderer_H
 
@@ -21,6 +23,8 @@ protected:
 
     SDL_Renderer* renderer;
 
+    std::string lastError;
+
 public:
 
     App_Renderer(App_Renderer& other) = delete;
@@ -32,6 +36,8 @@ public:
     bool init();
 
     SDL_Renderer* GetRenderer();
+
+    std::string GetLastError();
 
     bool draw();
 

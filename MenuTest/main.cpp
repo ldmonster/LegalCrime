@@ -1,21 +1,25 @@
 #include "Game.hpp"
-#include "StringsHelper.cpp"
+#include "Logger.hpp"
 
 int main(int argc, char* args[]) 
 {
-	//Game* game = Game::GetInstance();
+	GameLogger* logger = new GameLogger();
+	logger->SetVerbosity(LogPriority::DebugP);
+	Game* game = Game::GetInstance(logger);
 
-	//if ( !game->init() )
-	//{
-	//	printf("Game can not init\n");
-	//	return -1;
-	//}
+	if ( !game->init() )
+	{
+		logger->LogError("Game can not init");
+		
+		return -1;
+	}
 
-	//if ( !game->start() )
-	//{
-	//	printf("Game can not start\n");
-	//	return -1;
-	//}
+	if ( !game->start() )
+	{
+		logger->LogError("Game can not start");
+
+		return -1;
+	}
 
 	return 0;
 }

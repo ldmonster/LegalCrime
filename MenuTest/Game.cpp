@@ -1,11 +1,15 @@
 #include "Game.hpp"
+#include "Logger.hpp"
+#include "StringsHelper.hpp"
+
 #include "App_Window.hpp"
 #include "App_Renderer.hpp"
 
 Game* Game::_instance = nullptr;
 
-Game::Game()
+Game::Game(Logger* aLogger)
 	: appRenderer { nullptr }
+	, logger {aLogger}
 {
 }
 
@@ -14,35 +18,63 @@ Game::~Game()
 	appRenderer = nullptr;
 }
 
-Game* Game::GetInstance()
+Game* Game::GetInstance(Logger* aLogger)
 {
 	if (_instance == nullptr)
 	{
-		_instance = new Game();
+		_instance = new Game(aLogger);
 	}
 
 	return _instance;
 }
-
 
 bool Game::init() 
 {
 	App_Window* appWindow = App_Window::GetInstance(800, 600, "LOL");
 	if ( !appWindow->init() ) 
 	{
-		printf("Game: init window is failed\n");
+		logger->LogError( 
+			StringsHelper::Sprintf(
+				"Game: init window is failed: %s",
+				appWindow->GetLastError().c_str()
+			)
+		);
+
+		return false;
 	}
+
+	logger->LogDebug("App_Window init sucessfully");
 
 	if ( !appWindow->SetIconFromFile("Pics/capone.ico") )
 	{
-		printf("Game: Window icon is not setted\n");
+		logger->LogError(
+			StringsHelper::Sprintf(
+				"Game: Window icon is not setted: %s",
+				appWindow->GetLastError().c_str()
+			)
+		);
+
+		return false;
 	}
+
+	logger->LogDebug("App_Window icon setted");
 
 	appRenderer = App_Renderer::GetInstance(appWindow);
 	if ( !appRenderer->init() )
 	{
-		printf("Game: init renderer is failed\n");
+		logger->LogError(
+			StringsHelper::Sprintf(
+				"Game: init renderer is failed: %s",
+				appWindow->GetLastError().c_str()
+			)
+		);
+
+		return false;
 	}
+
+	logger->LogDebug("App_Renderer init sucessfully");
+
+	logger->LogDebug("Game init sucessfully");
 
 	return true;
 }
@@ -50,6 +82,8 @@ bool Game::init()
 bool Game::start() 
 {
 	SDL_Renderer* renderer = appRenderer->GetRenderer();
+
+	logger->LogDebug("Game started");
 
 	bool quit = false;
 

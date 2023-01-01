@@ -1,9 +1,9 @@
+#pragma once
+
 #ifndef Game_H
 #define Game_H
 
-#include <string>
-#include <SDL.h>
-
+#include "Logger.hpp"
 #include "App_Window.hpp"
 #include "App_Renderer.hpp"
 
@@ -12,13 +12,15 @@ class Game
 
 protected:
 
-    Game();
+    Game(Logger* alogger);
 
     ~Game();
 
     static Game* _instance;
 
     App_Renderer* appRenderer;
+    
+    Logger* logger;
 
 public:
 
@@ -26,7 +28,7 @@ public:
 
     void operator=(const Game&) = delete;
 
-    static Game* GetInstance();
+    static Game* GetInstance(Logger* alogger);
 
     bool init();
 

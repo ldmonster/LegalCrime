@@ -24,12 +24,14 @@
     <ClCompile Include="menu.cpp" />
     <ClCompile Include="App_Window.cpp" />
     <ClCompile Include="App_Renderer.cpp" />
-    <ClCompile Include="StringsHelper.cpp" />
+    <ClCompile Include="Logger.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App_Window.hpp" />
     <ClInclude Include="App_Renderer.hpp" />
     <ClInclude Include="Game.hpp" />
+    <ClInclude Include="Logger.hpp" />
+    <ClInclude Include="StringsHelper.hpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
