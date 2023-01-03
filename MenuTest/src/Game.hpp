@@ -18,6 +18,9 @@ protected:
 
     static Game* _instance;
 
+    Uint16 windowWidth = 800;
+    Uint16 windowHeight = 600;
+
     App_Renderer* appRenderer;
     
     Logger* logger;

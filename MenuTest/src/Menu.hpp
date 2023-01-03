@@ -48,8 +48,10 @@ protected:
 	SDL_Renderer* renderer;
 
 	Sprite* background;
-	Sprite* gSpriteClips[OverallButtons];
-	bool pageIsActive[OverallButtons];
+	Sprite* buttonMouseOverSprites[OverallButtons];
+	Sprite* buttonPressedSprites[OverallButtons];
+	bool buttonIsActive[OverallButtons];
+	bool buttonIsPressed[OverallButtons];
 
 public:
 
@@ -81,7 +83,8 @@ MainPage::MainPage(SDL_Renderer* renderer)
 	, background { nullptr }
 {
 	for ( int i = 0; i < OverallButtons; i++ ) {
-		gSpriteClips[i] = nullptr;
+		buttonMouseOverSprites[i] = nullptr;
+		buttonPressedSprites[i] = nullptr;
 	}
 }
 
@@ -92,7 +95,8 @@ MainPage::~MainPage()
 	background = NULL;
 
 	for (int i = 0; i < OverallButtons; i++) {
-		gSpriteClips[i] = NULL;
+		buttonMouseOverSprites[i] = NULL;
+		buttonPressedSprites[i] = NULL;
 	}
 }
 
@@ -106,6 +110,7 @@ bool MainPage::init()
 
 	Texture* spTexture = new Texture();
 	spTexture->loadFromFile(renderer, "./Pics/main_menu_buttons.png");
+
 	int xButton = 0;
 	int yButton = 0;
 	int widthButton = 566;
@@ -114,7 +119,15 @@ bool MainPage::init()
 	for (int i = 0; i < OverallButtons; i++)
 	{
 		SDL_Rect clip = SDL_Rect{ xButton, yButton, widthButton, heightButton };
-		gSpriteClips[i] = new Sprite(spTexture, clip);
+		buttonMouseOverSprites[i] = new Sprite(spTexture, clip);
+
+		yButton += heightButton;
+	}
+
+	for (int i = 0; i < OverallButtons; i++)
+	{
+		SDL_Rect clip = SDL_Rect{ xButton, yButton, widthButton, heightButton };
+		buttonPressedSprites[i] = new Sprite(spTexture, clip);
 
 		yButton += heightButton;
 	}
@@ -131,14 +144,36 @@ bool MainPage::render()
 	int heightButton = 42;
 	int offsetButton = 26;
 
-	for (int i = 0; i < OverallButtons; i++)
+	for (int i = 0; i < OverallButtons-1; i++)
 	{
-		if (pageIsActive[i] == true) {
+		if (buttonIsActive[i] == true) 
+		{
 			SDL_Rect* renderQuad = new SDL_Rect{ 257, yButton, 283, heightButton };
-			gSpriteClips[i]->render(renderer, 0, 0, renderQuad);
+			if (buttonIsPressed[i] == true)
+			{
+				buttonPressedSprites[i]->render(renderer, 0, 0, renderQuad);
+			}
+			else
+			{
+				buttonMouseOverSprites[i]->render(renderer, 0, 0, renderQuad);
+			}
 		}
 
 		yButton += heightButton + offsetButton;
+	}
+
+	if (buttonIsActive[ExitButton] == true) 
+	{
+		yButton -= 2;
+		SDL_Rect* renderQuad = new SDL_Rect{ 257, yButton, 283, heightButton };
+		if (buttonIsPressed[ExitButton] == true)
+		{
+			buttonPressedSprites[ExitButton]->render(renderer, 0, 0, renderQuad);
+		}
+		else
+		{
+			buttonMouseOverSprites[ExitButton]->render(renderer, 0, 0, renderQuad);
+		}
 	}
 
 	return true;
@@ -156,17 +191,23 @@ void MainPage::handleEvent(SDL_Event* e)
 	{
 		for (int i = 0; i < OverallButtons; i++)
 		{
-			pageIsActive[i] = false;
+			buttonIsActive[i] = false;
+			// delete after complete
+			buttonIsPressed[i] = false;
 		}
 
 		int x, y;
-		SDL_GetMouseState(&x, &y);
+		Uint32 mouseState = SDL_GetMouseState(&x, &y);
 
 		for (int i = 0; i < OverallButtons; i++)
 		{
 			if (x > xButton && x < xButton + widthButton && y > yButton && y < yButton + heightButton)
 			{
-				pageIsActive[i] = true;
+				if (mouseState == 1)
+				{
+					buttonIsPressed[i] = true;
+				}
+				buttonIsActive[i] = true;
 
 				return;
 			}

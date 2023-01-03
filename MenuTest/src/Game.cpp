@@ -31,7 +31,7 @@ Game* Game::GetInstance(Logger* aLogger)
 
 bool Game::init() 
 {
-	App_Window* appWindow = App_Window::GetInstance(800, 600, "LOL");
+	App_Window* appWindow = App_Window::GetInstance(windowWidth, windowHeight, "LOL");
 	if ( !appWindow->init() ) 
 	{
 		logger->LogError( 
