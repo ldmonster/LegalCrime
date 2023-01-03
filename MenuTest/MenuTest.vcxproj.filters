@@ -13,12 +13,21 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Header Files\src">
+      <UniqueIdentifier>{e0f0e075-0d88-40fc-b988-88953bc04490}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\src\logger">
+      <UniqueIdentifier>{169ff17b-5a05-44e0-9f2f-9518972d346a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\src">
+      <UniqueIdentifier>{d6ee661a-73e9-4ac3-9146-9eb127f29056}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\src\logger">
+      <UniqueIdentifier>{a701a128-a17d-43cf-bac2-b5b031a2f35d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
-      <Filter>Resource Files</Filter>
-    </ClCompile>
-    <ClCompile Include="menu.cpp">
       <Filter>Resource Files</Filter>
     </ClCompile>
     <ClCompile Include="App_Window.cpp">
@@ -27,11 +36,11 @@
     <ClCompile Include="App_Renderer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Game.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\Game.cpp">
+      <Filter>Source Files\src</Filter>
     </ClCompile>
-    <ClCompile Include="Logger.cpp">
-      <Filter>Source Files</Filter>
+    <ClCompile Include="src\logger\Logger.cpp">
+      <Filter>Source Files\src\logger</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -41,14 +50,20 @@
     <ClInclude Include="App_Renderer.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Game.hpp">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="src\Game.hpp">
+      <Filter>Header Files\src</Filter>
     </ClInclude>
-    <ClInclude Include="StringsHelper.hpp">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="src\logger\Logger.hpp">
+      <Filter>Header Files\src\logger</Filter>
     </ClInclude>
-    <ClInclude Include="Logger.hpp">
-      <Filter>Header Files</Filter>
+    <ClInclude Include="src\Texture.hpp">
+      <Filter>Header Files\src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Sprite.hpp">
+      <Filter>Header Files\src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Menu.hpp">
+      <Filter>Header Files\src</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

@@ -19,19 +19,20 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Game.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="menu.cpp" />
     <ClCompile Include="App_Window.cpp" />
     <ClCompile Include="App_Renderer.cpp" />
-    <ClCompile Include="Logger.cpp" />
+    <ClCompile Include="src\Game.cpp" />
+    <ClCompile Include="src\logger\Logger.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App_Window.hpp" />
     <ClInclude Include="App_Renderer.hpp" />
-    <ClInclude Include="Game.hpp" />
-    <ClInclude Include="Logger.hpp" />
-    <ClInclude Include="StringsHelper.hpp" />
+    <ClInclude Include="src\Game.hpp" />
+    <ClInclude Include="src\Sprite.hpp" />
+    <ClInclude Include="src\Texture.hpp" />
+    <ClInclude Include="src\logger\Logger.hpp" />
+    <ClInclude Include="src\Menu.hpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>

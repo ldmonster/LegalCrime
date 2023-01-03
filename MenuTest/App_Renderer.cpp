@@ -1,9 +1,9 @@
 #include <SDL.h>
 
-#include "StringsHelper.hpp"
+#include "./src/helpers/StringsHelper.hpp"
 
-#include "App_Renderer.hpp"
-#include "App_Window.hpp"
+#include "./App_Renderer.hpp"
+#include "./App_Window.hpp"
 
 App_Renderer* App_Renderer::_instance = nullptr;
 

@@ -1,8 +1,8 @@
 #include <SDL_image.h>
 
-#include "StringsHelper.hpp"
+#include "./src/helpers/StringsHelper.hpp"
 
-#include "App_Window.hpp"
+#include "./App_Window.hpp"
 
 App_Window* App_Window::_instance = nullptr;
 

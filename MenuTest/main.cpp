@@ -1,5 +1,5 @@
-#include "Game.hpp"
-#include "Logger.hpp"
+#include "./src/Game.hpp"
+#include "./src/logger/Logger.hpp"
 
 int main(int argc, char* args[]) 
 {

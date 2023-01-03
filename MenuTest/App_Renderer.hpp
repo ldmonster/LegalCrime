@@ -6,7 +6,7 @@
 #include <string>
 #include <SDL.h>
 
-#include "App_Window.hpp"
+#include "./App_Window.hpp"
 
 class App_Renderer
 {
