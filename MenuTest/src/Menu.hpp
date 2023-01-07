@@ -4,35 +4,46 @@
 #define Menu_H
 
 #include <SDL.h>
+#include <SDL_mixer.h>
 
 #include <vector>
 #include <string>
 
+#include "../src/helpers/StringsHelper.hpp"
+
+#include "../Sound.hpp"
 #include "../src/Texture.hpp"
 #include "../src/Sprite.hpp"
+#include "../src/Button.hpp"
 
-class MenuPage
+class MenuPage : public GameSection
 {
 
 protected:
 
-	SDL_Renderer* renderer;
-	Sprite* background;
-
 public:
 
-	MenuPage();
-	~MenuPage();
+	virtual ~MenuPage() {};
 
 	virtual bool init() = 0;
 	virtual bool render() = 0;
 	virtual void handleEvent(SDL_Event* e) = 0;
 
+	virtual bool isInitialized() = 0;
+	virtual bool isShutdown() = 0;
+
+	virtual std::string GetLastError() = 0;
 
 };
 
 class MainPage : public MenuPage
 {
+	enum MainPageTextures {
+		BackgroundTexture,
+		BackgroundAssestTexture,
+		OverallTextures
+	};
+
 	enum MainPageButtons {
 		SingleplayerButton,
 		MultiplayerButton,
@@ -47,11 +58,20 @@ protected:
 
 	SDL_Renderer* renderer;
 
+	MainMenu_Sound* sound;
+
+	Texture* textures[OverallTextures];
+
 	Sprite* background;
-	Sprite* buttonMouseOverSprites[OverallButtons];
-	Sprite* buttonPressedSprites[OverallButtons];
-	bool buttonIsActive[OverallButtons];
-	bool buttonIsPressed[OverallButtons];
+	SDL_Rect* backgroundRenderQuad;
+
+	Button* buttons[OverallButtons];
+	Uint8 buttonStateChanged;
+
+	bool initialized;
+	bool shutdown;
+
+	std::string lastError;
 
 public:
 
@@ -61,119 +81,149 @@ public:
 	bool init();
 	bool render();
 	void handleEvent(SDL_Event* e);
+	
+	bool isInitialized();
+	bool isShutdown();
+
+	std::string GetLastError();
 
 };
 
 #endif
 
-MenuPage::MenuPage()
-	: renderer{ renderer }
-	, background{ nullptr }
-{
-
-}
-
-MenuPage::~MenuPage()
-{
-
-}
-
 MainPage::MainPage(SDL_Renderer* renderer)
 	: renderer {renderer}
-	, background { nullptr }
+	, background{ nullptr }
+	, backgroundRenderQuad{ nullptr }
+	, initialized{ false }
+	, shutdown{ false }
+	, buttonStateChanged{ 5 }
+	, sound { nullptr }
 {
 	for ( int i = 0; i < OverallButtons; i++ ) {
-		buttonMouseOverSprites[i] = nullptr;
-		buttonPressedSprites[i] = nullptr;
+		buttons[i] = nullptr;
+	}
+
+	for (int i = 0; i < OverallTextures; i++) {
+		textures[i] = nullptr;
 	}
 }
 
 MainPage::~MainPage()
 {
+	printf("MAINPAGE DESTRUCT\n");
 	renderer = nullptr;
 
+	for (int i = 0; i < OverallButtons; i++) {
+		delete buttons[i];
+		buttons[i] = NULL;
+	}
+
+	for (int i = 0; i < OverallTextures; i++) {
+		delete textures[i];
+		textures[i] = NULL;
+	}
+
+	delete backgroundRenderQuad;
+	backgroundRenderQuad = NULL;
+	delete background;
 	background = NULL;
 
-	for (int i = 0; i < OverallButtons; i++) {
-		buttonMouseOverSprites[i] = NULL;
-		buttonPressedSprites[i] = NULL;
-	}
+	sound->free();
 }
 
 bool MainPage::init()
 {
-	Texture* bgTexture = new Texture();
-	bgTexture->loadFromFile(renderer, "./Pics/main_menu.png");
+	if (initialized)
+	{
+		lastError += "MainPage: already initialized";
 
-	SDL_Rect clip = SDL_Rect{0,0,bgTexture->getWidth(),bgTexture->getHeight()};
-	background = new Sprite(bgTexture, clip);
+		return false;
+	}
 
-	Texture* spTexture = new Texture();
-	spTexture->loadFromFile(renderer, "./Pics/main_menu_buttons.png");
+	textures[BackgroundTexture] = new Texture();
+	textures[BackgroundTexture]->loadFromFile(renderer, "./Pics/main_menu.png");
 
+	SDL_Rect* clip = new SDL_Rect{0,0,textures[BackgroundTexture]->getWidth(),textures[BackgroundTexture]->getHeight()};
+	background = new Sprite(textures[BackgroundTexture], clip);
+
+	backgroundRenderQuad = new SDL_Rect{ 0, 0, 800, 600 };
+
+	textures[BackgroundAssestTexture] = new Texture();
+	textures[BackgroundAssestTexture]->loadFromFile(renderer, "./Pics/main_menu_buttons.png");
+
+	// texture clip coords
 	int xButton = 0;
 	int yButton = 0;
 	int widthButton = 566;
 	int heightButton = 84;
+	int yHitOffset = 504; // 84 * 6
+
+	// sprite render coords
+	int xRenderButton = 257;
+	int yRenderButton = 152;
+	int widthRenderButton = 283;
+	int heightRenderButton = 42;
+	int offsetRenderButton = 26;
+
+	sound = MainMenu_Sound::GetInstance();
+	sound->init();
 
 	for (int i = 0; i < OverallButtons; i++)
 	{
-		SDL_Rect clip = SDL_Rect{ xButton, yButton, widthButton, heightButton };
-		buttonMouseOverSprites[i] = new Sprite(spTexture, clip);
+		SDL_Rect* clipOver = new SDL_Rect{ xButton, yButton, widthButton, heightButton };
+		Sprite* spriteOver = new Sprite(textures[BackgroundAssestTexture], clipOver);
+
+		SDL_Rect* clipHit = new SDL_Rect{ xButton, yButton + yHitOffset, widthButton, heightButton };
+		Sprite* spriteHit = new Sprite(textures[BackgroundAssestTexture], clipHit);
+
+		if (i == ExitButton)
+		{
+			yRenderButton -= 2;
+		}
+		SDL_Rect* renderQuad = new SDL_Rect{ xRenderButton, yRenderButton, widthRenderButton, heightRenderButton };
+
+		buttons[i] = new Button(spriteOver, spriteHit, renderQuad, sound->GetOverButtonSound(), sound->GetHitButtonSound());
 
 		yButton += heightButton;
+		yRenderButton += heightRenderButton + offsetRenderButton;
 	}
 
-	for (int i = 0; i < OverallButtons; i++)
-	{
-		SDL_Rect clip = SDL_Rect{ xButton, yButton, widthButton, heightButton };
-		buttonPressedSprites[i] = new Sprite(spTexture, clip);
-
-		yButton += heightButton;
-	}
+	initialized = true;
 
 	return true;
 }
 
 bool MainPage::render()
 {
-	SDL_Rect* renderQuad = new SDL_Rect{ 0, 0, 800, 600};
-	background->render(renderer, 0, 0, renderQuad);
+	background->render(renderer, backgroundRenderQuad);
 
-	int yButton = 152;
-	int heightButton = 42;
-	int offsetButton = 26;
-
-	for (int i = 0; i < OverallButtons-1; i++)
+	for (int i = 0; i < OverallButtons; i++)
 	{
-		if (buttonIsActive[i] == true) 
+		Button* currButton = buttons[i];
+
+		if (currButton->isHit())
 		{
-			SDL_Rect* renderQuad = new SDL_Rect{ 257, yButton, 283, heightButton };
-			if (buttonIsPressed[i] == true)
+			if (!currButton->isHitRendered())
 			{
-				buttonPressedSprites[i]->render(renderer, 0, 0, renderQuad);
+				currButton->playHitSound();
 			}
-			else
-			{
-				buttonMouseOverSprites[i]->render(renderer, 0, 0, renderQuad);
-			}
+			currButton->renderHit(renderer);
+
+			return true;
 		}
 
-		yButton += heightButton + offsetButton;
-	}
+		if (currButton->isOver())
+		{
+			if (!currButton->isOverRendered())
+			{
+				currButton->playOverSound();
+			}
+			currButton->renderOver(renderer);
+			
+			return true;
+		}
 
-	if (buttonIsActive[ExitButton] == true) 
-	{
-		yButton -= 2;
-		SDL_Rect* renderQuad = new SDL_Rect{ 257, yButton, 283, heightButton };
-		if (buttonIsPressed[ExitButton] == true)
-		{
-			buttonPressedSprites[ExitButton]->render(renderer, 0, 0, renderQuad);
-		}
-		else
-		{
-			buttonMouseOverSprites[ExitButton]->render(renderer, 0, 0, renderQuad);
-		}
 	}
 
 	return true;
@@ -189,30 +239,70 @@ void MainPage::handleEvent(SDL_Event* e)
 
 	if (e->type == SDL_MOUSEMOTION || e->type == SDL_MOUSEBUTTONDOWN || e->type == SDL_MOUSEBUTTONUP)
 	{
-		for (int i = 0; i < OverallButtons; i++)
-		{
-			buttonIsActive[i] = false;
-			// delete after complete
-			buttonIsPressed[i] = false;
-		}
 
 		int x, y;
 		Uint32 mouseState = SDL_GetMouseState(&x, &y);
 
-		for (int i = 0; i < OverallButtons; i++)
+		if (x > xButton && x < xButton + widthButton)
 		{
-			if (x > xButton && x < xButton + widthButton && y > yButton && y < yButton + heightButton)
+			for (int i = 0; i < OverallButtons; i++)
 			{
-				if (mouseState == 1)
+				if (y > yButton && y < yButton + heightButton)
 				{
-					buttonIsPressed[i] = true;
+					switch (mouseState)
+					{
+						case 0:
+						{
+							buttons[i]->over();
+
+							if (buttonStateChanged != i)
+							{
+								buttons[buttonStateChanged]->resetButtonStates();
+								buttonStateChanged = i;
+							}
+
+							return;
+						}
+						case 1:
+						{
+							buttons[i]->hit();
+
+							if (buttonStateChanged != i)
+							{
+								buttons[buttonStateChanged]->resetButtonStates();
+								buttonStateChanged = i;
+							}
+
+							if (i == ExitButton)
+							{
+								shutdown = true;
+							}
+
+							return;
+						}
+					}
+					return;
 				}
-				buttonIsActive[i] = true;
 
-				return;
+				yButton += heightButton + offsetButton;
 			}
-
-			yButton += heightButton + offsetButton;
 		}
+
+		buttons[buttonStateChanged]->resetButtonStates();
 	}
+}
+
+bool MainPage::isInitialized()
+{
+	return initialized;
+}
+
+bool MainPage::isShutdown()
+{
+	return shutdown;
+}
+
+std::string MainPage::GetLastError()
+{
+	return lastError;
 }

@@ -25,7 +25,7 @@ public:
 
 	bool loadFromFile(SDL_Renderer* renderer, std::string path);
 
-	void render(SDL_Renderer* renderer, Uint16 x, Uint16 y, Uint16 width, Uint16 height, SDL_Rect* clip);
+	void render(SDL_Renderer* renderer, SDL_Rect* clip, SDL_Rect* renderQuad);
 
 	int getWidth();
 	int getHeight();
@@ -44,8 +44,13 @@ Texture::Texture()
 
 Texture::~Texture()
 {
+	printf("TEXTURE DESTRUCT\n");
+
 	SDL_DestroyTexture(sdlTexture);
 	sdlTexture = NULL;
+
+	width = 0;
+	height = 0;
 }
 
 int Texture::getWidth()
@@ -93,3 +98,7 @@ bool Texture::loadFromFile(SDL_Renderer* renderer, std::string path)
 	return true;
 }
 
+void Texture::render(SDL_Renderer* renderer, SDL_Rect* clip, SDL_Rect* renderQuad)
+{
+	SDL_RenderCopy(renderer, sdlTexture, clip, renderQuad);
+}

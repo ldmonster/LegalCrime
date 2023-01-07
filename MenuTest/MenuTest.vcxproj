@@ -22,13 +22,19 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="App_Window.cpp" />
     <ClCompile Include="App_Renderer.cpp" />
+    <ClCompile Include="App_Music.cpp" />
+    <ClCompile Include="Sound.cpp" />
     <ClCompile Include="src\Game.cpp" />
     <ClCompile Include="src\logger\Logger.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="App_Window.hpp" />
     <ClInclude Include="App_Renderer.hpp" />
+    <ClInclude Include="App_Music.hpp" />
+    <ClInclude Include="Sound.hpp" />
+    <ClInclude Include="src\Button.hpp" />
     <ClInclude Include="src\Game.hpp" />
+    <ClInclude Include="src\helpers\StringsHelper.hpp" />
     <ClInclude Include="src\Sprite.hpp" />
     <ClInclude Include="src\Texture.hpp" />
     <ClInclude Include="src\logger\Logger.hpp" />
@@ -91,6 +97,10 @@
     <IncludePath>C:\vslib\SDL2_image-2.6.2\include;C:\vslib\SDL2_ttf-2.20.1\include;C:\vslib\SDL2-2.26.1\include;C:\vslib\SDL2_mixer-2.6.2\include;$(IncludePath)</IncludePath>
     <LibraryPath>C:\vslib\SDL2_mixer-2.6.2\lib\x64;C:\vslib\SDL2_ttf-2.20.1\lib\x64;C:\vslib\SDL2-2.26.1\lib\x64;C:\vslib\SDL2_image-2.6.2\lib\x64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <IncludePath>C:\vslib\SDL2-2.26.1\include;C:\vslib\SDL2_ttf-2.20.1\include;C:\vslib\SDL2_mixer-2.6.2\include;C:\vslib\SDL2_image-2.6.2\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\vslib\SDL2-2.26.1\lib\x64;C:\vslib\SDL2_ttf-2.20.1\lib\x64;C:\vslib\SDL2_image-2.6.2\lib\x64;C:\vslib\SDL2_mixer-2.6.2\lib\x64;$(LibraryPath)</LibraryPath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
@@ -146,6 +156,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>SDL2.lib;SDL2main.lib;SDL2_image.lib;SDL2_ttf.lib;SDL2_mixer.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

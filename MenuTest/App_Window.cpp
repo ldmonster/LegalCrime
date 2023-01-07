@@ -25,7 +25,6 @@ App_Window::~App_Window()
 
 bool App_Window::init() 
 {
-
     if (window != nullptr)
     {
         lastError += "App_Window init: window already initialized";
@@ -88,8 +87,19 @@ SDL_Window* App_Window::GetWindow()
 
 bool App_Window::SetIconFromFile(std::string aPath)
 {
-    SDL_RWops* rwop = SDL_RWFromFile(aPath.c_str(), "rb");
-    SDL_Surface* loadedSurface = IMG_LoadICO_RW(rwop);
+    SDL_RWops* file = SDL_RWFromFile(aPath.c_str(), "rb");
+    if (file == NULL)
+    {
+        lastError += StringsHelper::Sprintf(
+            "Unable to load file %s! SDL_image Error: %s",
+            aPath.c_str(),
+            SDL_GetError() 
+        );
+
+        return false;
+    }
+
+    SDL_Surface* loadedSurface = IMG_LoadICO_RW(file);
     if (loadedSurface == NULL)
     {
         lastError += StringsHelper::Sprintf(
@@ -102,6 +112,8 @@ bool App_Window::SetIconFromFile(std::string aPath)
     }
 
     SDL_SetWindowIcon(window, loadedSurface);
+
+    SDL_FreeRW(file);
 
     return true;
 }
