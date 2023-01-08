@@ -49,6 +49,8 @@ protected:
     Uint16 windowWidth = 800;
     Uint16 windowHeight = 600;
 
+    bool useVSync;
+
     App_Renderer* appRenderer;
     
     Logger* logger;
@@ -72,7 +74,5 @@ public:
     Uint8 eventLoop(GameSection* gameSection, SDL_Renderer* renderer, SDL_Event* e);
 
 };
-
-
 
 #endif

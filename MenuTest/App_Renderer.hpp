@@ -23,6 +23,8 @@ protected:
 
     SDL_Renderer* renderer;
 
+    bool useVSync;
+
     std::string lastError;
 
 public:
@@ -39,7 +41,8 @@ public:
 
     std::string GetLastError();
 
-    bool draw();
+    bool ToggleVSync();
+    bool IsUsingVSync();
 
 };
 

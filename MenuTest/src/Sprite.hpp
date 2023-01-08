@@ -58,5 +58,5 @@ SDL_Rect* Sprite::GetRect()
 
 void Sprite::render(SDL_Renderer* renderer, SDL_Rect* renderQuad)
 {
-	texture->render(renderer, clip, renderQuad);
+	texture->render(renderer, renderQuad, clip);
 }

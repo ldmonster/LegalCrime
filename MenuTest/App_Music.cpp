@@ -1,4 +1,9 @@
+#include <SDL.h>
 #include <SDL_mixer.h>
+
+#include <time.h>
+#include <stdio.h>
+#include <stdlib.h>
 
 #include "./src/helpers/StringsHelper.hpp"
 
@@ -77,6 +82,12 @@ bool App_Music::init()
     Mix_HookMusicFinished(playNextMusic);
 
     itMusicPath = musicPath.begin();
+
+    srand(SDL_GetTicks());
+    for (int i = 0; i < rand() % 13; i++)
+    {
+        itMusicPath++;
+    }
 
     std::string path = *itMusicPath;
 

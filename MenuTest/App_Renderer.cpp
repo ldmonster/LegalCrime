@@ -10,6 +10,7 @@ App_Renderer* App_Renderer::_instance = nullptr;
 App_Renderer::App_Renderer(App_Window* appWindow)
     : appWindow{ appWindow }
     , renderer{ nullptr }
+    , useVSync { false }
 {
 }
 
@@ -20,6 +21,8 @@ App_Renderer::~App_Renderer()
 
     appWindow = nullptr;
 }
+
+
 
 bool App_Renderer::init()
 {
@@ -37,7 +40,6 @@ bool App_Renderer::init()
     return true;
 }
 
-
 App_Renderer* App_Renderer::GetInstance(App_Window* appWindow) {
     if (_instance == nullptr) {
         _instance = new App_Renderer(appWindow);
@@ -50,6 +52,18 @@ SDL_Renderer* App_Renderer::GetRenderer()
 {
     return renderer;
 }
+
+bool App_Renderer::ToggleVSync()
+{
+    useVSync = !useVSync;
+    return SDL_RenderSetVSync(renderer, useVSync);
+}
+
+bool App_Renderer::IsUsingVSync()
+{
+    return useVSync;
+}
+
 
 std::string App_Renderer::GetLastError()
 {

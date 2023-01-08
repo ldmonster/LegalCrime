@@ -31,9 +31,11 @@
     <ClInclude Include="App_Window.hpp" />
     <ClInclude Include="App_Renderer.hpp" />
     <ClInclude Include="App_Music.hpp" />
+    <ClInclude Include="App_FpsController.hpp" />
     <ClInclude Include="Sound.hpp" />
     <ClInclude Include="src\Button.hpp" />
     <ClInclude Include="src\Game.hpp" />
+    <ClInclude Include="src\Gameplay.hpp" />
     <ClInclude Include="src\helpers\StringsHelper.hpp" />
     <ClInclude Include="src\Sprite.hpp" />
     <ClInclude Include="src\Texture.hpp" />

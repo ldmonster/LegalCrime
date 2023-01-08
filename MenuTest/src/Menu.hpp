@@ -200,26 +200,26 @@ bool MainPage::render()
 
 	for (int i = 0; i < OverallButtons; i++)
 	{
-		Button* currButton = buttons[i];
+		Button* button = buttons[i];
 
-		if (currButton->isHit())
+		if (button->isHit())
 		{
-			if (!currButton->isHitRendered())
+			if (!button->isHitRendered())
 			{
-				currButton->playHitSound();
+				button->playHitSound();
 			}
-			currButton->renderHit(renderer);
+			button->renderHit(renderer);
 
 			return true;
 		}
 
-		if (currButton->isOver())
+		if (button->isOver())
 		{
-			if (!currButton->isOverRendered())
+			if (!button->isOverRendered())
 			{
-				currButton->playOverSound();
+				button->playOverSound();
 			}
-			currButton->renderOver(renderer);
+			button->renderOver(renderer);
 			
 			return true;
 		}
@@ -287,7 +287,7 @@ void MainPage::handleEvent(SDL_Event* e)
 				yButton += heightButton + offsetButton;
 			}
 		}
-
+		
 		buttons[buttonStateChanged]->resetButtonStates();
 	}
 }

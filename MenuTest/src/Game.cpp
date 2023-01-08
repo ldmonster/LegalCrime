@@ -1,6 +1,8 @@
 #include <SDL_mixer.h>
+#include <SDL_ttf.h>
 
 #include "../src/Game.hpp"
+#include "../src/Gameplay.hpp"
 #include "../src/Menu.hpp"
 #include "../src/logger/Logger.hpp"
 #include "../src/helpers/StringsHelper.hpp"
@@ -8,13 +10,15 @@
 #include "../App_Window.hpp"
 #include "../App_Renderer.hpp"
 #include "../App_Music.hpp"
+#include "../App_FpsController.hpp"
 
 Game* Game::_instance = nullptr;
 
 Game::Game(Logger* aLogger)
 	: appRenderer { nullptr }
 	, logger {aLogger}
-	, currSection { MainMenuSection }
+	, useVSync { false }
+	, currSection { PlayingGameSection }
 	, quit { false }
 {
 }
@@ -77,36 +81,49 @@ bool Game::init()
 
 		return false;
 	}
+	//appRenderer->ToggleVSync();
 
 	logger->LogDebug("App_Renderer init sucessfully");
 
-	App_Music* music = App_Music::GetInstance();
-	if (!music->init())
+	//App_Music* music = App_Music::GetInstance();
+	//if (!music->init())
+	//{
+	//	logger->LogError(
+	//		StringsHelper::Sprintf(
+	//			"Game: init renderer is failed: %s",
+	//			music->GetLastError().c_str()
+	//		)
+	//	);
+
+	//	return false;
+	//}
+
+	//Mix_Chunk* welcomeChunk = Mix_LoadWAV("Sound/Welcome.wav");
+	//if (welcomeChunk == NULL)
+	//{
+	//	logger->LogError(
+	//		StringsHelper::Sprintf(
+	//			"Failed to load beat music! SDL_mixer Error: %s",
+	//			Mix_GetError()
+	//		)
+	//	);
+
+	//	return false;
+	//}
+
+	//Mix_PlayChannel(1, welcomeChunk, 0);
+
+	if (TTF_Init() == -1)
 	{
 		logger->LogError(
 			StringsHelper::Sprintf(
-				"Game: init renderer is failed: %s",
-				music->GetLastError().c_str()
+				"SDL_ttf could not initialize! SDL_ttf Error: %s",
+				TTF_GetError()
 			)
 		);
 
 		return false;
 	}
-
-	Mix_Chunk* welcomeChunk = Mix_LoadWAV("Sound/Welcome.wav");
-	if (welcomeChunk == NULL)
-	{
-		logger->LogError(
-			StringsHelper::Sprintf(
-				"Failed to load beat music! SDL_mixer Error: %s",
-				Mix_GetError()
-			)
-		);
-
-		return false;
-	}
-
-	Mix_PlayChannel(1, welcomeChunk, 0);
 
 	logger->LogDebug("Game init sucessfully");
 
@@ -143,6 +160,11 @@ bool Game::start()
 				gameSection = new MainPage(renderer);
 				break;
 			}
+			case PlayingGameSection:
+			{
+				gameSection = new Gameplay(renderer,10,10);
+				break;
+			}
 			case ShutdownSection:
 			{
 				return true;
@@ -153,6 +175,12 @@ bool Game::start()
 				break;
 			}
 		}
+
+		if (gameSection == nullptr)
+		{
+			continue;
+		}
+
 
 		if (!gameSection->isInitialized())
 		{
@@ -177,9 +205,21 @@ bool Game::start()
 
 Uint8 Game::eventLoop(GameSection* gameSection, SDL_Renderer* renderer, SDL_Event* e)
 {
+	printf("is using vsync %d\n", appRenderer->IsUsingVSync());
+
+	FpsController* fpsController;
+	fpsController = App_FpsController::GetInstance(appRenderer->IsUsingVSync());
+	if (!fpsController->init(renderer))
+	{
+		printf("Can not initialize Fps Controller");
+	}
+
+	fpsController->FpsCounterStart();
 
 	while (!quit)
 	{
+		fpsController->CapTicksCounterStart();
+
 		// testing destructors
 		//delete gameSection;
 		//gameSection = nullptr;
@@ -214,10 +254,13 @@ Uint8 Game::eventLoop(GameSection* gameSection, SDL_Renderer* renderer, SDL_Even
 		SDL_RenderClear(renderer);
 
 		gameSection->render();
+		fpsController->render(renderer);
 
 		SDL_RenderPresent(renderer);
 
-		SDL_Delay(100);
+		fpsController->FpsCountAdd();
+
+		fpsController->CappingFrame();
 	}
 
 	SDL_Delay(500);
