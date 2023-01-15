@@ -6,35 +6,69 @@
 
 App_Window* App_Window::_instance = nullptr;
 
-App_Window::App_Window(Uint32 aWidth, Uint32 aHeight, std::string aTitle)
-    : width{ aWidth }
-    , height{ aHeight }
-    , title{ aTitle }
-    , window{ nullptr }
+App_Window::App_Window()
 {
+    m_width = 0;
+    m_height = 0;
+    m_title = "";
+    m_window = nullptr;
+
 }
 
 App_Window::~App_Window() 
 {
-    SDL_FreeSurface(icon);
-    icon = NULL;
+    SDL_FreeSurface(m_icon);
+    m_icon = NULL;
 
-    SDL_DestroyWindow(window);
-    window = NULL;
+    SDL_DestroyWindow(m_window);
+    m_window = NULL;
 }
 
-bool App_Window::init() 
+void App_Window::SetResolution(ScreenResolutions sr)
 {
-    if (window != nullptr)
+    switch (sr)
     {
-        lastError += "App_Window init: window already initialized";
+    case SR_800x600:
+        m_width = 800;
+        m_height = 600;
+        break;
+    case SR_1024x768:
+        m_width = 1024;
+        m_height = 768;
+        break;
+    case SR_1280x720:
+        m_width = 1280;
+        m_height = 720;
+        break;
+    case SR_1360x768:
+        m_width = 1360;
+        m_height = 768;
+        break;
+    case SR_1920x1080:
+        m_width = 1920;
+        m_height = 1080;
+        break;
+    default:
+        break;
+    }
+}
+
+
+bool App_Window::init(ScreenResolutions sr, std::string aTitle)
+{
+    SetResolution(sr);
+    m_title = aTitle;
+
+    if (m_window != nullptr)
+    {
+        m_lastError += "App_Window init: window already initialized";
 
         return false;
     }
 
     if (SDL_Init(SDL_INIT_VIDEO) < 0)
     {
-        lastError += StringsHelper::Sprintf(
+        m_lastError += StringsHelper::Sprintf(
             "App_Window init: SDL could not initialize! SDL_Error: %s",
             SDL_GetError()
         );
@@ -44,22 +78,22 @@ bool App_Window::init()
 
     if (!SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1"))
     {
-        lastError += StringsHelper::Sprintf(
+        m_lastError += StringsHelper::Sprintf(
             "App_Window init: Linear texture filtering not enabled!"
         );
     }
 
-    window = SDL_CreateWindow(title.c_str(),
+    m_window = SDL_CreateWindow(m_title.c_str(),
         SDL_WINDOWPOS_UNDEFINED,
         SDL_WINDOWPOS_UNDEFINED,
-        width,
-        height,
+        m_width,
+        m_height,
         SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE
     );
 
-    if (window == nullptr)
+    if (m_window == nullptr)
     {
-        lastError += StringsHelper::Sprintf(
+        m_lastError += StringsHelper::Sprintf(
             "App_Window init: Window could not be created! SDL_Error: %s",
             SDL_GetError()
         );
@@ -70,11 +104,11 @@ bool App_Window::init()
 	return true;
 }
 
-App_Window* App_Window::GetInstance(Uint32 aWidth, Uint32 aHeight, std::string aTitle) 
+App_Window* App_Window::GetInstance() 
 {
     if (_instance == nullptr) 
     {
-        _instance = new App_Window(aWidth,aHeight,aTitle);
+        _instance = new App_Window();
     }
 
     return _instance;
@@ -82,7 +116,7 @@ App_Window* App_Window::GetInstance(Uint32 aWidth, Uint32 aHeight, std::string a
 
 SDL_Window* App_Window::GetWindow() 
 {
-    return window;
+    return m_window;
 }
 
 bool App_Window::SetIconFromFile(std::string aPath)
@@ -90,7 +124,7 @@ bool App_Window::SetIconFromFile(std::string aPath)
     SDL_RWops* file = SDL_RWFromFile(aPath.c_str(), "rb");
     if (file == NULL)
     {
-        lastError += StringsHelper::Sprintf(
+        m_lastError += StringsHelper::Sprintf(
             "Unable to load file %s! SDL_image Error: %s",
             aPath.c_str(),
             SDL_GetError() 
@@ -102,7 +136,7 @@ bool App_Window::SetIconFromFile(std::string aPath)
     SDL_Surface* loadedSurface = IMG_LoadICO_RW(file);
     if (loadedSurface == NULL)
     {
-        lastError += StringsHelper::Sprintf(
+        m_lastError += StringsHelper::Sprintf(
             "Unable to load image %s! SDL_image Error: %s",
             aPath.c_str(),
             IMG_GetError()
@@ -111,14 +145,24 @@ bool App_Window::SetIconFromFile(std::string aPath)
         return false;
     }
 
-    SDL_SetWindowIcon(window, loadedSurface);
+    SDL_SetWindowIcon(m_window, loadedSurface);
 
     SDL_FreeRW(file);
 
     return true;
 }
 
+Uint32 App_Window::GetWidth() 
+{
+    return m_width;
+}
+
+Uint32 App_Window::GetHeight() 
+{
+    return m_height;
+}
+
 std::string App_Window::GetLastError()
 {
-    return lastError;
+    return m_lastError;
 }

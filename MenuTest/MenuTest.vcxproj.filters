@@ -92,5 +92,11 @@
     <ClInclude Include="App_FpsController.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\Map.hpp">
+      <Filter>Header Files\src</Filter>
+    </ClInclude>
+    <ClInclude Include="src\helpers\OsHelper.hpp">
+      <Filter>Header Files\src\helpers</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

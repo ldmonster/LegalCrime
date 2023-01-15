@@ -30,7 +30,7 @@ public:
 	virtual void handleEvent(SDL_Event* e) = 0;
 
 	virtual bool isInitialized() = 0;
-	virtual bool isShutdown() = 0;
+	virtual GameSections GetGameSection() = 0;
 
 	virtual std::string GetLastError() = 0;
 
@@ -45,8 +45,8 @@ class MainPage : public MenuPage
 	};
 
 	enum MainPageButtons {
-		SingleplayerButton,
 		MultiplayerButton,
+		SingleplayerButton,
 		SettingsButton,
 		CreditsButton,
 		CultureButton,
@@ -69,7 +69,8 @@ protected:
 	Uint8 buttonStateChanged;
 
 	bool initialized;
-	bool shutdown;
+
+	GameSections gameSection;
 
 	std::string lastError;
 
@@ -83,7 +84,7 @@ public:
 	void handleEvent(SDL_Event* e);
 	
 	bool isInitialized();
-	bool isShutdown();
+	GameSections GetGameSection();
 
 	std::string GetLastError();
 
@@ -96,7 +97,7 @@ MainPage::MainPage(SDL_Renderer* renderer)
 	, background{ nullptr }
 	, backgroundRenderQuad{ nullptr }
 	, initialized{ false }
-	, shutdown{ false }
+	, gameSection{ MainMenuSection }
 	, buttonStateChanged{ 5 }
 	, sound { nullptr }
 {
@@ -273,9 +274,14 @@ void MainPage::handleEvent(SDL_Event* e)
 								buttonStateChanged = i;
 							}
 
+							if (i == SingleplayerButton)
+							{
+								gameSection = PlayingGameSection;
+							}
+
 							if (i == ExitButton)
 							{
-								shutdown = true;
+								gameSection = ShutdownSection;
 							}
 
 							return;
@@ -297,9 +303,9 @@ bool MainPage::isInitialized()
 	return initialized;
 }
 
-bool MainPage::isShutdown()
+GameSections MainPage::GetGameSection()
 {
-	return shutdown;
+	return gameSection;
 }
 
 std::string MainPage::GetLastError()

@@ -18,7 +18,7 @@ Game::Game(Logger* aLogger)
 	: appRenderer { nullptr }
 	, logger {aLogger}
 	, useVSync { false }
-	, currSection { PlayingGameSection }
+	, currSection { MainMenuSection }
 	, quit { false }
 {
 }
@@ -40,8 +40,8 @@ Game* Game::GetInstance(Logger* aLogger)
 
 bool Game::init() 
 {
-	App_Window* appWindow = App_Window::GetInstance(windowWidth, windowHeight, "LOL");
-	if ( !appWindow->init() ) 
+	App_Window* appWindow = App_Window::GetInstance();
+	if ( !appWindow->init(SR_800x600, "Legal Crime"))
 	{
 		logger->LogError( 
 			StringsHelper::Sprintf(
@@ -85,33 +85,33 @@ bool Game::init()
 
 	logger->LogDebug("App_Renderer init sucessfully");
 
-	//App_Music* music = App_Music::GetInstance();
-	//if (!music->init())
-	//{
-	//	logger->LogError(
-	//		StringsHelper::Sprintf(
-	//			"Game: init renderer is failed: %s",
-	//			music->GetLastError().c_str()
-	//		)
-	//	);
+	App_Music* music = App_Music::GetInstance();
+	if (!music->init())
+	{
+		logger->LogError(
+			StringsHelper::Sprintf(
+				"Game: init renderer is failed: %s",
+				music->GetLastError().c_str()
+			)
+		);
 
-	//	return false;
-	//}
+		return false;
+	}
 
-	//Mix_Chunk* welcomeChunk = Mix_LoadWAV("Sound/Welcome.wav");
-	//if (welcomeChunk == NULL)
-	//{
-	//	logger->LogError(
-	//		StringsHelper::Sprintf(
-	//			"Failed to load beat music! SDL_mixer Error: %s",
-	//			Mix_GetError()
-	//		)
-	//	);
+	Mix_Chunk* welcomeChunk = Mix_LoadWAV("Sound/Welcome.wav");
+	if (welcomeChunk == NULL)
+	{
+		logger->LogError(
+			StringsHelper::Sprintf(
+				"Failed to load beat music! SDL_mixer Error: %s",
+				Mix_GetError()
+			)
+		);
 
-	//	return false;
-	//}
+		return false;
+	}
 
-	//Mix_PlayChannel(1, welcomeChunk, 0);
+	Mix_PlayChannel(1, welcomeChunk, 0);
 
 	if (TTF_Init() == -1)
 	{
@@ -162,7 +162,10 @@ bool Game::start()
 			}
 			case PlayingGameSection:
 			{
-				gameSection = new Gameplay(renderer,10,10);
+				App_Music* music = App_Music::GetInstance();
+				music->RandMusic();
+
+				gameSection = new Gameplay(renderer);
 				break;
 			}
 			case ShutdownSection:
@@ -203,8 +206,10 @@ bool Game::start()
 	return true;
 }
 
-Uint8 Game::eventLoop(GameSection* gameSection, SDL_Renderer* renderer, SDL_Event* e)
+GameSections Game::eventLoop(GameSection* gameSection, SDL_Renderer* renderer, SDL_Event* e)
 {
+	GameSections newGameSection;
+
 	printf("is using vsync %d\n", appRenderer->IsUsingVSync());
 
 	FpsController* fpsController;
@@ -244,7 +249,7 @@ Uint8 Game::eventLoop(GameSection* gameSection, SDL_Renderer* renderer, SDL_Even
 		{
 			gameSection->handleEvent(e);
 
-			if (e->type == SDL_QUIT || gameSection->isShutdown())
+			if (e->type == SDL_QUIT)
 			{
 				quit = true;
 			}
@@ -261,9 +266,15 @@ Uint8 Game::eventLoop(GameSection* gameSection, SDL_Renderer* renderer, SDL_Even
 		fpsController->FpsCountAdd();
 
 		fpsController->CappingFrame();
+
+		newGameSection = gameSection->GetGameSection();
+		if (newGameSection != currSection)
+		{
+			break;
+		}
 	}
 
 	SDL_Delay(500);
 
-	return ShutdownSection;
+	return newGameSection;
 }

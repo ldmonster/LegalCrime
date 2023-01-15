@@ -6,6 +6,7 @@
 #include <stdlib.h>
 
 #include "./src/helpers/StringsHelper.hpp"
+#include "./src/helpers/OsHelper.hpp"
 
 #include "./App_Music.hpp"
 
@@ -55,41 +56,11 @@ bool App_Music::init()
         return false;
     }
 
-    for (int i = 1; i < 14; i++)
-    {
-        std::string path = StringsHelper::Sprintf(
-            "Music/%d.mp3",
-            i
-        );
-
-        SDL_RWops* file = SDL_RWFromFile(path.c_str(), "rb");
-        if (file == NULL)
-        {
-            lastError += StringsHelper::Sprintf(
-                "Unable to load file %s! SDL Error: %s",
-                path.c_str(),
-                SDL_GetError()
-            );
-
-            return false;
-        }
-
-        SDL_FreeRW(file);
-
-        musicPath.push_back(path);
-    }
-
+    musicPath = directory_files("./Music/", true);
+    
     Mix_HookMusicFinished(playNextMusic);
 
     itMusicPath = musicPath.begin();
-
-    srand(SDL_GetTicks());
-    for (int i = 0; i < rand() % 13; i++)
-    {
-        itMusicPath++;
-    }
-
-    std::string path = *itMusicPath;
 
     StartMusic();
 
@@ -103,6 +74,21 @@ std::string App_Music::GetLastError()
     return lastError;
 }
 
+
+void App_Music::RandMusic()
+{
+    SDL_FreeRW(currMusicFile);
+    Mix_FreeMusic(currMusic);
+
+    itMusicPath = musicPath.begin();
+
+    srand(SDL_GetTicks());
+
+    itMusicPath+= (rand() % (musicPath.size() - 1)) + 1;
+
+    StartMusic();
+}
+
 void App_Music::NextMusic()
 {
     SDL_FreeRW(currMusicFile);
@@ -113,18 +99,17 @@ void App_Music::NextMusic()
     {
         itMusicPath = musicPath.begin();
     }
+    StartMusic();
 }
 
 void App_Music::StartMusic()
 {
-    std::string path = *itMusicPath;
-
-    currMusicFile = SDL_RWFromFile(path.c_str(), "rb");
+    currMusicFile = SDL_RWFromFile(itMusicPath->c_str(), "rb");
     if (currMusicFile == NULL)
     {
         lastError += StringsHelper::Sprintf(
             "Unable to load file %s! SDL Error: %s",
-            path.c_str(),
+            itMusicPath->c_str(),
             SDL_GetError()
         );
 
@@ -136,7 +121,7 @@ void App_Music::StartMusic()
     {
         lastError += StringsHelper::Sprintf(
             "Unable to load music %s! SDL_Mixer Error: %s",
-            path.c_str(),
+            itMusicPath->c_str(),
             Mix_GetError()
         );
 

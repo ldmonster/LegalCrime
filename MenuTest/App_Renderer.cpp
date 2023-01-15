@@ -22,8 +22,6 @@ App_Renderer::~App_Renderer()
     appWindow = nullptr;
 }
 
-
-
 bool App_Renderer::init()
 {
 	renderer = SDL_CreateRenderer(appWindow->GetWindow(), -1, SDL_RENDERER_ACCELERATED);

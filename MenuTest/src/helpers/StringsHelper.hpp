@@ -35,3 +35,17 @@ inline std::string StringsHelper::Sprintf(const std::string& format, Args ...arg
 }
 
 #endif
+
+//Uint16 count = 0;
+//for (Uint16 i = 0; data.cFileName[i] != '\0'; i++)
+//{
+//    count++;
+//}
+//
+//std::string result = "";
+//for (Uint16 i = 0; i < count; i++)
+//{
+//    result += data.cFileName[i];
+//}
+//
+//pathVec.push_back(result);

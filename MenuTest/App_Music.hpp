@@ -43,6 +43,7 @@ public:
 
     void StartMusic();
     void NextMusic();
+    void RandMusic();
 
 };
 

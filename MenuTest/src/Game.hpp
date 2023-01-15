@@ -7,6 +7,14 @@
 #include "../App_Window.hpp"
 #include "../App_Renderer.hpp"
 
+enum GameSections {
+    DefaultSection,
+    OpeningSection,
+    MainMenuSection,
+    PlayingGameSection,
+    ShutdownSection
+};
+
 class GameSection
 {
 
@@ -21,7 +29,7 @@ public:
     virtual void handleEvent(SDL_Event* e) = 0;
 
     virtual bool isInitialized() = 0;
-    virtual bool isShutdown() = 0;
+    virtual GameSections GetGameSection() = 0;
 
     virtual std::string GetLastError() = 0;
 
@@ -32,22 +40,11 @@ class Game
 
 protected:
 
-    enum GameSections {
-        DefaultSection,
-        OpeningSection,
-        MainMenuSection,
-        PlayingGameSection,
-        ShutdownSection
-    };
-
     Game(Logger* alogger);
 
     ~Game();
 
     static Game* _instance;
-
-    Uint16 windowWidth = 800;
-    Uint16 windowHeight = 600;
 
     bool useVSync;
 
@@ -55,7 +52,7 @@ protected:
     
     Logger* logger;
 
-    Uint8 currSection;
+    GameSections currSection;
 
     bool quit;
 
@@ -71,7 +68,7 @@ public:
 
     bool start();
 
-    Uint8 eventLoop(GameSection* gameSection, SDL_Renderer* renderer, SDL_Event* e);
+    GameSections eventLoop(GameSection* gameSection, SDL_Renderer* renderer, SDL_Event* e);
 
 };
 
