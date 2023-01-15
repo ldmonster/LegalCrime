@@ -14,8 +14,8 @@ App_Music* App_Music::_instance = nullptr;
 
 App_Music::App_Music()
     : isInitialized { false }
-    , currMusicFile { nullptr }
-    , currMusic { nullptr }
+    , m_currMusicFile { nullptr }
+    , m_currMusic{ nullptr }
 {
 }
 
@@ -23,8 +23,8 @@ App_Music::~App_Music()
 {
     musicPath.clear();
 
-    Mix_FreeMusic(currMusic);
-    currMusic = NULL;
+    Mix_FreeMusic(m_currMusic);
+    m_currMusic = NULL;
 }
 
 App_Music* App_Music::GetInstance()
@@ -41,14 +41,14 @@ bool App_Music::init()
 {
     if (isInitialized)
     {
-        lastError += "App_Music init: audio device already initialized";
+        m_lastError += "App_Music init: audio device already initialized";
 
         return false;
     }
 
     if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0)
     {
-        lastError += StringsHelper::Sprintf(
+        m_lastError += StringsHelper::Sprintf(
             "SDL_mixer could not initialize! SDL_mixer Error: %s",
             Mix_GetError()
         );
@@ -64,6 +64,8 @@ bool App_Music::init()
 
     StartMusic();
 
+    printf("last error: %s\n", m_lastError.c_str());
+
     isInitialized = true;
 
     return true;
@@ -71,14 +73,14 @@ bool App_Music::init()
 
 std::string App_Music::GetLastError()
 {
-    return lastError;
+    return m_lastError;
 }
 
 
 void App_Music::RandMusic()
 {
-    SDL_FreeRW(currMusicFile);
-    Mix_FreeMusic(currMusic);
+    SDL_FreeRW(m_currMusicFile);
+    Mix_FreeMusic(m_currMusic);
 
     itMusicPath = musicPath.begin();
 
@@ -91,23 +93,25 @@ void App_Music::RandMusic()
 
 void App_Music::NextMusic()
 {
-    SDL_FreeRW(currMusicFile);
-    Mix_FreeMusic(currMusic);
+    SDL_FreeRW(m_currMusicFile);
+    Mix_FreeMusic(m_currMusic);
 
     itMusicPath++;
     if (itMusicPath == musicPath.end())
     {
         itMusicPath = musicPath.begin();
+        return;
     }
+
     StartMusic();
 }
 
 void App_Music::StartMusic()
 {
-    currMusicFile = SDL_RWFromFile(itMusicPath->c_str(), "rb");
-    if (currMusicFile == NULL)
+    SDL_RWops* rw = SDL_RWFromFile(itMusicPath->c_str(), "rb");
+    if (rw == NULL)
     {
-        lastError += StringsHelper::Sprintf(
+        m_lastError += StringsHelper::Sprintf(
             "Unable to load file %s! SDL Error: %s",
             itMusicPath->c_str(),
             SDL_GetError()
@@ -116,10 +120,10 @@ void App_Music::StartMusic()
         return;
     }
 
-    currMusic = Mix_LoadMUS_RW(currMusicFile,  1);
-    if (currMusic == NULL)
+    Mix_Music* nextMusic = Mix_LoadMUS_RW(rw,  1);
+    if (nextMusic == NULL)
     {
-        lastError += StringsHelper::Sprintf(
+        m_lastError += StringsHelper::Sprintf(
             "Unable to load music %s! SDL_Mixer Error: %s",
             itMusicPath->c_str(),
             Mix_GetError()
@@ -128,9 +132,12 @@ void App_Music::StartMusic()
         return;
     }
 
+    m_currMusicFile = rw;
+    m_currMusic = nextMusic;
+
     if (Mix_PlayingMusic() == 0)
     {
-        Mix_PlayMusic(currMusic, 0);
+        Mix_PlayMusic(m_currMusic, 0);
     }
 }
 
@@ -140,6 +147,5 @@ void playNextMusic()
     App_Music* appMusic = App_Music::GetInstance();
 
     appMusic->NextMusic();
-    appMusic->StartMusic();
 }
 

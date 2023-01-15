@@ -24,10 +24,10 @@ protected:
     std::vector <std::string> musicPath;
     std::vector<std::string>::iterator itMusicPath;
 
-    SDL_RWops* currMusicFile;
-    Mix_Music* currMusic;
+    SDL_RWops* m_currMusicFile;
+    Mix_Music* m_currMusic;
 
-    std::string lastError;
+    std::string m_lastError;
 
 public:
 
