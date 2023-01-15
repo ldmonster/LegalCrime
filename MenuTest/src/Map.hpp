@@ -55,8 +55,6 @@ protected:
 
 	// coords of first button press
 	SDL_Point* m_firstButtonPress;
-	int firstX;
-	int firstY;
 
 	// top left texture corner coords
 	int firstTextureX;
@@ -285,7 +283,6 @@ void Map::handleEvent(SDL_Event* e)
 
 						if (yZeroCenterPoint > xZeroCenterPoint)
 						{
-							//printf("debug signal: x: %d, y: %d, old x: %d, old y: %d\n", -newX + m_windowCenter->x, yPoint - m_windowCenter->y, newX, newY);
 							newY -= yZeroCenterPoint - xZeroCenterPoint;
 						}
 					}
@@ -297,13 +294,34 @@ void Map::handleEvent(SDL_Event* e)
 
 						if (yZeroCenterPoint < xZeroCenterPoint)
 						{
-							//printf("debug signal: x: %d, y: %d, old x: %d, old y: %d\n", -newX - m_mapSizeWidth / 2 + m_windowCenter->x, yPoint - m_mapSizeWidth, newX, -newY + m_windowCenter->y);
 							newY += yZeroCenterPoint - xZeroCenterPoint;
 						}
 					}
 				}
 				else
 				{
+					// left half
+					if (newX + m_mapSizeWidth / 2 - m_windowCenter->x > 0)
+					{
+						int yZeroCenterPoint = -(newY + m_mapSizeHeight / 2 - m_windowCenter->y);
+						int xZeroCenterPoint = -(newX - m_windowCenter->x) / 2;
+
+						if (yZeroCenterPoint > xZeroCenterPoint) 
+						{
+							newY += yZeroCenterPoint - xZeroCenterPoint;
+						}
+					}
+					// right half
+					else
+					{
+						int yZeroCenterPoint = newY + m_mapSizeHeight - m_windowCenter->y;
+						int xZeroCenterPoint = -(newX + m_mapSizeWidth / 2 - m_windowCenter->x) / 2;
+
+						if (yZeroCenterPoint < xZeroCenterPoint)
+						{
+							newY -= yZeroCenterPoint - xZeroCenterPoint;
+						}
+					}
 				}
 				
 				//// screen width minus map size in px
@@ -312,9 +330,9 @@ void Map::handleEvent(SDL_Event* e)
 					newX = m_windowCenter->x*2 - m_mapSizeWidth;
 				}
 				//// screen height minus map size in px
-				if (newY < 600 - m_mapSizeHeight)
+				if (newY < m_windowCenter->y * 2 - m_mapSizeHeight)
 				{
-					newY = 600 - m_mapSizeHeight;
+					newY = m_windowCenter->y * 2 - m_mapSizeHeight;
 				}
 
 				if (newX > 0)
