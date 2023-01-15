@@ -48,7 +48,7 @@ Gameplay::Gameplay(SDL_Renderer* renderer)
 {
 	m_renderer = renderer;
 
-	m_map = new Map(10, 10);
+	m_map = new Map(100, 100);
 	m_map->init();
 
 	m_isInitialized = false;

@@ -50,11 +50,17 @@ protected:
 	Texture* m_mapTexture;
 	SDL_Rect* m_MapTextureRenderQuad;
 
+	// is first time handle mouse button press
 	bool first;
-	int firstX;
-	int firstY;
+
+	// coords of first button press
+	SDL_Point* m_firstButtonPress;
+
+	// top left texture corner coords
 	int firstTextureX;
 	int firstTextureY;
+
+	SDL_Point* m_windowCenter;
 
 	std::string m_lastError;
 
@@ -122,8 +128,11 @@ Map::Map(Uint16 mapWidth, Uint16 mapHeight)
 	m_tileWidth = 30;
 	m_tileHeight = m_tileWidth / 2;
 
-	 m_mapSizeWidth= (m_mapWidth + m_mapHeight) * m_tileWidth;
-	 m_mapSizeHeight= (m_mapWidth + m_mapHeight) * m_tileHeight;
+	m_mapSizeWidth = (m_mapWidth + m_mapHeight) * m_tileWidth;
+	m_mapSizeHeight = (m_mapWidth + m_mapHeight) * m_tileHeight;
+
+	m_firstButtonPress = new SDL_Point;
+	m_windowCenter = new SDL_Point;
 
 	m_isInitialized = false;
 }
@@ -135,6 +144,13 @@ Map::~Map()
 
 bool Map::init()
 {
+	App_Window* window = App_Window::GetInstance();
+	Uint16 wWidth = window->GetWidth();
+	Uint16 wHeight = window->GetHeight();
+
+	m_windowCenter->x = wWidth / 2;
+	m_windowCenter->y = wHeight / 2;
+
 	m_map = new MapTile * [m_mapHeight];
 
 	for (Uint16 i = 0; i < m_mapHeight; i++)
@@ -158,10 +174,8 @@ bool Map::init()
 	//	}
 	//}
 
-	App_Window* window = App_Window::GetInstance();
-	Uint16 wWidth = window->GetWidth();
-	Uint16 wHeight = window->GetHeight();
-	m_MapTextureRenderQuad = new SDL_Rect{ -m_mapSizeWidth/2+ wWidth/2,-m_mapSizeHeight/2+ wHeight/2, m_mapSizeWidth , m_mapSizeHeight };
+
+	m_MapTextureRenderQuad = new SDL_Rect{ -m_mapSizeWidth / 2 + m_windowCenter->x,-m_mapSizeHeight / 2 + m_windowCenter->y, m_mapSizeWidth , m_mapSizeHeight };
 
 	m_isInitialized = true;
 
@@ -226,18 +240,19 @@ void Map::handleEvent(SDL_Event* e)
 		int x, y;
 		Uint32 mouseState = SDL_GetMouseState(&x, &y);
 
+		// left top corner of map texture
 		int tx, ty;
 		tx = x - m_MapTextureRenderQuad->x;
 		ty = y - m_MapTextureRenderQuad->y;
 
-		printf("coords by texture x: %d, y: %d\n", tx, ty);
+		//printf("coords by texture x: %d, y: %d\n", tx, ty);
 
 		if (mouseState == 1)
 		{
 			if (!first)
 			{
-				firstX = x;
-				firstY = y;
+				m_firstButtonPress->x = x;
+				m_firstButtonPress->y = y;
 				firstTextureX = m_MapTextureRenderQuad->x;
 				firstTextureY = m_MapTextureRenderQuad->y;
 				first = true;
@@ -245,45 +260,90 @@ void Map::handleEvent(SDL_Event* e)
 			if (e->type == SDL_MOUSEMOTION)
 			{
 				int newX, newY;
-				newX = firstTextureX - (firstX - x);
-				newY = firstTextureY - (firstY - y);
+				newX = firstTextureX - (m_firstButtonPress->x - x);
+				newY = firstTextureY - (m_firstButtonPress->y - y);
 
-				//if (newY > -m_mapSizeHeight / 2 + 300)
-				//{
-				//	if (newY > m_mapSizeWidth / 2 + newX)
-				//	{
-				//		printf("popchik: x: %d, y: %d\n", m_mapSizeWidth / 2 + newX, newY);
-				//	}
-				//	//if ( newY > )
-				//	/*if (newY < 800 - m_mapSizeWidth)
-				//	{
-				//		newX = 800 - m_mapSizeWidth;
-				//	}*/
-				//}
-				//else
-				//{
-				//}
-				
-				
+				//printf("coords of center screen x: %d, y: %d\n", xCenter, yCenter);
 
+				// formulas for all sides of the map rhombus
+				// firstly, we must to calculate center of our window on texture
+				// in this position, we have an easy formula of x and y ratio at center point
+				// y = x/2, because of isometric proportions
+
+				// top half of map
+				if (newY > -m_mapSizeHeight / 2 + m_windowCenter->y)
+				{
+					// left half
+					if (newX + m_mapSizeWidth / 2 - m_windowCenter->x > 0)
+					{
+						// yZeroCenterPoint count y from 0 + center of screen y coords (screen center point)
+						int yZeroCenterPoint = newY + m_mapSizeHeight / 2 - m_windowCenter->y;
+						// xZeroCenterPoint count x from 0 + center of screen x coords (screen center point)
+						int xZeroCenterPoint = -(newX - m_windowCenter->x) / 2;
+
+						if (yZeroCenterPoint > xZeroCenterPoint)
+						{
+							newY -= yZeroCenterPoint - xZeroCenterPoint;
+						}
+					}
+					// right half
+					else
+					{
+						int yZeroCenterPoint = -(newY - m_windowCenter->y);
+						int xZeroCenterPoint = -(newX + m_mapSizeWidth / 2 - m_windowCenter->x) / 2;
+
+						if (yZeroCenterPoint < xZeroCenterPoint)
+						{
+							newY += yZeroCenterPoint - xZeroCenterPoint;
+						}
+					}
+				}
+				else
+				{
+					// left half
+					if (newX + m_mapSizeWidth / 2 - m_windowCenter->x > 0)
+					{
+						int yZeroCenterPoint = -(newY + m_mapSizeHeight / 2 - m_windowCenter->y);
+						int xZeroCenterPoint = -(newX - m_windowCenter->x) / 2;
+
+						if (yZeroCenterPoint > xZeroCenterPoint) 
+						{
+							newY += yZeroCenterPoint - xZeroCenterPoint;
+						}
+					}
+					// right half
+					else
+					{
+						int yZeroCenterPoint = newY + m_mapSizeHeight - m_windowCenter->y;
+						int xZeroCenterPoint = -(newX + m_mapSizeWidth / 2 - m_windowCenter->x) / 2;
+
+						if (yZeroCenterPoint < xZeroCenterPoint)
+						{
+							newY -= yZeroCenterPoint - xZeroCenterPoint;
+						}
+					}
+				}
+				
 				//// screen width minus map size in px
-				//if (newX < 400 - m_mapSizeWidth)
-				//{
-				//	newX = 400 - m_mapSizeWidth;
-				//}
+				if (newX < m_windowCenter->x*2 - m_mapSizeWidth)
+				{
+					newX = m_windowCenter->x*2 - m_mapSizeWidth;
+				}
 				//// screen height minus map size in px
-				//if (newY < 600 - m_mapSizeHeight)
-				//{
-				//	newY = 600 - m_mapSizeHeight;
-				//}
-				//if (newX > 0)
-				//{
-				//	newX = 0;
-				//}
-				//if (newY > 0)
-				//{
-				//	newY = 0;
-				//}
+				if (newY < m_windowCenter->y * 2 - m_mapSizeHeight)
+				{
+					newY = m_windowCenter->y * 2 - m_mapSizeHeight;
+				}
+
+				if (newX > 0)
+				{
+					newX = 0;
+				}
+
+				if (newY > 0)
+				{
+					newY = 0;
+				}
 
 				m_MapTextureRenderQuad->x = newX;
 				m_MapTextureRenderQuad->y = newY;
