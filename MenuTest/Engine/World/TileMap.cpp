@@ -341,13 +341,19 @@ namespace Engine {
         int mapX = screenX - m_mapRenderRect.x - m_offsetX;
         int mapY = screenY - m_mapRenderRect.y - m_offsetY;
 
-        // Origin of isometric map in texture space
+        // Origin of isometric map in texture space (top corner of tile 0,0)
         int firstX = 0;
         int firstY = m_mapWidth * m_tileHeight;
 
+        // Adjust for the fact that TileToScreen returns the top corner of the diamond,
+        // but we want to detect based on the diamond's center for better accuracy
+        // The center of a diamond is offset by (tileWidth, tileHeight) from its top corner
+        int adjustedX = mapX - m_tileWidth;
+        int adjustedY = mapY;
+
         // Offset from origin
-        int offsetX = mapX - firstX;
-        int offsetY = firstY - mapY;
+        int offsetX = adjustedX - firstX;
+        int offsetY = firstY - adjustedY;
 
         // Convert from isometric screen space to tile coordinates
         // Using the inverse of the isometric transformation:

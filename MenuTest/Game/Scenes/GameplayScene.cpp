@@ -455,15 +455,33 @@ namespace LegalCrime {
             return;
         }
 
-        // Check if clicked on character's tile or within margin to the right
-        // Character sprites often extend beyond their tile, especially to the right in isometric view
+        if (m_logger) {
+            m_logger->Debug("Clicked tile (" + std::to_string(clickedRow) + ", " + std::to_string(clickedCol) + 
+                          ") | Character at (" + std::to_string(m_impl->characterRow) + ", " + std::to_string(m_impl->characterCol) + ")");
+        }
+
+        // Check if clicked on character's tile or within margins
+        // Character sprites extend beyond their tile in isometric view
         bool isOnCharacterTile = (clickedRow == m_impl->characterRow && clickedCol == m_impl->characterCol);
 
         // Check if within tile-width margin to the right (next column, same row)
         bool isInRightMargin = (clickedRow == m_impl->characterRow && 
                                clickedCol == m_impl->characterCol + 1);
 
-        if (isOnCharacterTile || isInRightMargin) {
+        // Also check left margin for more forgiving selection
+        bool isInLeftMargin = (clickedRow == m_impl->characterRow && 
+                              m_impl->characterCol > 0 &&
+                              clickedCol == m_impl->characterCol - 1);
+
+        // Check diagonal neighbors for even more forgiving selection
+        bool isNearby = false;
+        int rowDiff = abs(static_cast<int>(clickedRow) - static_cast<int>(m_impl->characterRow));
+        int colDiff = abs(static_cast<int>(clickedCol) - static_cast<int>(m_impl->characterCol));
+        if (rowDiff <= 1 && colDiff <= 1) {
+            isNearby = true;
+        }
+
+        if (isOnCharacterTile || isInRightMargin || isInLeftMargin || isNearby) {
             m_impl->isSelected = true;
             if (m_logger) {
                 m_logger->Info("Character selected at tile (" + std::to_string(clickedRow) + 
