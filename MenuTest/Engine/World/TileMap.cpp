@@ -193,6 +193,7 @@ namespace Engine {
 
             m_offsetX = m_initialOffset.x + deltaX;
             m_offsetY = m_initialOffset.y + deltaY;
+            ClampOffsetToBounds();
         }
         // Keyboard arrow keys
         else if (event.type == SDL_EVENT_KEY_DOWN) {
@@ -212,6 +213,7 @@ namespace Engine {
                     m_offsetX -= panSpeed;
                     break;
             }
+            ClampOffsetToBounds();
         }
     }
     
@@ -227,5 +229,45 @@ namespace Engine {
             return nullptr;
         }
         return &m_tiles[row][col];
+    }
+
+    void TileMap::SetOffset(int x, int y) {
+        m_offsetX = x;
+        m_offsetY = y;
+        ClampOffsetToBounds();
+    }
+
+    Rect TileMap::GetBounds() const {
+        // Bounds are 30% larger than map size (15% on each side)
+        int boundWidth = static_cast<int>(m_mapSizeWidth * 1.3f);
+        int boundHeight = static_cast<int>(m_mapSizeHeight * 1.3f);
+
+        // Center the bounds around the window center
+        int boundX = -boundWidth / 2 + m_windowCenter.x;
+        int boundY = -boundHeight / 2 + m_windowCenter.y;
+
+        return Rect(boundX, boundY, boundWidth, boundHeight);
+    }
+
+    void TileMap::ClampOffsetToBounds() {
+        // Calculate the bounds - 30% additional space beyond map size
+        int boundWidth = static_cast<int>(m_mapSizeWidth * 1.3f);
+        int boundHeight = static_cast<int>(m_mapSizeHeight * 1.3f);
+
+        // Calculate how far the map can be offset
+        // The map starts centered, so we calculate max offset in each direction
+        int extraSpace = static_cast<int>(m_mapSizeWidth * 0.50f);
+        int extraSpaceY = static_cast<int>(m_mapSizeHeight * 0.50f);
+
+        int maxOffsetX = extraSpace;
+        int minOffsetX = -extraSpace;
+        int maxOffsetY = extraSpaceY;
+        int minOffsetY = -extraSpaceY;
+
+        // Clamp the offsets
+        if (m_offsetX > maxOffsetX) m_offsetX = maxOffsetX;
+        if (m_offsetX < minOffsetX) m_offsetX = minOffsetX;
+        if (m_offsetY > maxOffsetY) m_offsetY = maxOffsetY;
+        if (m_offsetY < minOffsetY) m_offsetY = minOffsetY;
     }
 }

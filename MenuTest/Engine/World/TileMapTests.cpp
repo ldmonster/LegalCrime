@@ -622,6 +622,232 @@ TEST_CASE(TileMap_ArrowKey_NonArrowKeyDoesNotAffectOffset) {
     return SimpleTest::TestResult{__FUNCTION__, true, ""};
 }
 
+// ============================================================================
+// Bounds Tests
+// ============================================================================
+
+TEST_CASE(TileMap_Bounds_GetBoundsReturns30PercentLargerArea) {
+    TestLogger logger;
+    TileMap tilemap(10, 10, &logger);
+    tilemap.Initialize(1024, 768);
+
+    // Map size for 10x10 is (10+10)*30 = 600 width, (10+10)*15 = 300 height
+    // Bounds should be 1.3x that: 780 width, 390 height
+    Rect bounds = tilemap.GetBounds();
+
+    ASSERT_EQUAL(bounds.w, 780);
+    ASSERT_EQUAL(bounds.h, 390);
+    return SimpleTest::TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(TileMap_Bounds_BoundsCenteredAtWindowCenter) {
+    TestLogger logger;
+    TileMap tilemap(10, 10, &logger);
+    tilemap.Initialize(1024, 768);
+
+    Rect bounds = tilemap.GetBounds();
+
+    // Window center is at 512, 384
+    // Bounds width is 780, so x should be 512 - 390 = 122
+    // Bounds height is 390, so y should be 384 - 195 = 189
+    ASSERT_EQUAL(bounds.x, 122);
+    ASSERT_EQUAL(bounds.y, 189);
+    return SimpleTest::TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(TileMap_Bounds_SetOffsetClampsToPositiveXBound) {
+    TestLogger logger;
+    TileMap tilemap(10, 10, &logger);
+    tilemap.Initialize(1024, 768);
+
+    // Map size width is 600, 15% extra is 90
+    tilemap.SetOffset(200, 0);
+
+    Point offset = tilemap.GetOffset();
+    ASSERT_EQUAL(offset.x, 90); // Clamped to max
+    return SimpleTest::TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(TileMap_Bounds_SetOffsetClampsToNegativeXBound) {
+    TestLogger logger;
+    TileMap tilemap(10, 10, &logger);
+    tilemap.Initialize(1024, 768);
+
+    tilemap.SetOffset(-200, 0);
+
+    Point offset = tilemap.GetOffset();
+    ASSERT_EQUAL(offset.x, -90); // Clamped to min
+    return SimpleTest::TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(TileMap_Bounds_SetOffsetClampsToPositiveYBound) {
+    TestLogger logger;
+    TileMap tilemap(10, 10, &logger);
+    tilemap.Initialize(1024, 768);
+
+    // Map size height is 300, 15% extra is 45
+    tilemap.SetOffset(0, 200);
+
+    Point offset = tilemap.GetOffset();
+    ASSERT_EQUAL(offset.y, 45); // Clamped to max
+    return SimpleTest::TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(TileMap_Bounds_SetOffsetClampsToNegativeYBound) {
+    TestLogger logger;
+    TileMap tilemap(10, 10, &logger);
+    tilemap.Initialize(1024, 768);
+
+    tilemap.SetOffset(0, -200);
+
+    Point offset = tilemap.GetOffset();
+    ASSERT_EQUAL(offset.y, -45); // Clamped to min
+    return SimpleTest::TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(TileMap_Bounds_SetOffsetWithinBoundsNotClamped) {
+    TestLogger logger;
+    TileMap tilemap(10, 10, &logger);
+    tilemap.Initialize(1024, 768);
+
+    tilemap.SetOffset(50, 30);
+
+    Point offset = tilemap.GetOffset();
+    ASSERT_EQUAL(offset.x, 50);
+    ASSERT_EQUAL(offset.y, 30);
+    return SimpleTest::TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(TileMap_Bounds_ArrowKeyClampsAtBoundary) {
+    TestLogger logger;
+    TileMap tilemap(10, 10, &logger);
+    tilemap.Initialize(1024, 768);
+
+    // Set to near max boundary
+    tilemap.SetOffset(80, 0);
+
+    SDL_Event event{};
+    event.type = SDL_EVENT_KEY_DOWN;
+    event.key.key = SDLK_LEFT; // Would add 20
+
+    tilemap.HandleEvent(event);
+
+    Point offset = tilemap.GetOffset();
+    ASSERT_EQUAL(offset.x, 90); // Clamped to max (80 + 20 = 100, but max is 90)
+    return SimpleTest::TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(TileMap_Bounds_MultiplePressesStopAtBoundary) {
+    TestLogger logger;
+    TileMap tilemap(10, 10, &logger);
+    tilemap.Initialize(1024, 768);
+
+    SDL_Event event{};
+    event.type = SDL_EVENT_KEY_DOWN;
+    event.key.key = SDLK_UP;
+
+    // Press up 10 times (would be 200 without bounds)
+    for (int i = 0; i < 10; i++) {
+        tilemap.HandleEvent(event);
+    }
+
+    Point offset = tilemap.GetOffset();
+    ASSERT_EQUAL(offset.y, 45); // Clamped to max Y
+    return SimpleTest::TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(TileMap_Bounds_DifferentMapSizeHasDifferentBounds) {
+    TestLogger logger;
+    TileMap tilemap(20, 20, &logger); // Larger map
+    tilemap.Initialize(1024, 768);
+
+    // Map size for 20x20 is (20+20)*30 = 1200 width, (20+20)*15 = 600 height
+    // Bounds should be 1.3x that: 1560 width, 780 height
+    Rect bounds = tilemap.GetBounds();
+
+    ASSERT_EQUAL(bounds.w, 1560);
+    ASSERT_EQUAL(bounds.h, 780);
+    return SimpleTest::TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(TileMap_Bounds_LargerMapAllowsMorePanning) {
+    TestLogger logger;
+    TileMap tilemap(20, 20, &logger);
+    tilemap.Initialize(1024, 768);
+
+    // Map size width is 1200, 15% extra is 180
+    tilemap.SetOffset(200, 0);
+
+    Point offset = tilemap.GetOffset();
+    ASSERT_EQUAL(offset.x, 180); // Larger bound than 10x10 map
+    return SimpleTest::TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(TileMap_Bounds_BothAxesClamped) {
+    TestLogger logger;
+    TileMap tilemap(10, 10, &logger);
+    tilemap.Initialize(1024, 768);
+
+    tilemap.SetOffset(500, 500);
+
+    Point offset = tilemap.GetOffset();
+    ASSERT_EQUAL(offset.x, 90);
+    ASSERT_EQUAL(offset.y, 45);
+    return SimpleTest::TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(TileMap_Bounds_NegativeBothAxesClamped) {
+    TestLogger logger;
+    TileMap tilemap(10, 10, &logger);
+    tilemap.Initialize(1024, 768);
+
+    tilemap.SetOffset(-500, -500);
+
+    Point offset = tilemap.GetOffset();
+    ASSERT_EQUAL(offset.x, -90);
+    ASSERT_EQUAL(offset.y, -45);
+    return SimpleTest::TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(TileMap_Bounds_EdgeCaseZeroOffset) {
+    TestLogger logger;
+    TileMap tilemap(10, 10, &logger);
+    tilemap.Initialize(1024, 768);
+
+    tilemap.SetOffset(0, 0);
+
+    Point offset = tilemap.GetOffset();
+    ASSERT_EQUAL(offset.x, 0);
+    ASSERT_EQUAL(offset.y, 0);
+    return SimpleTest::TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(TileMap_Bounds_ExactlyAtPositiveBoundary) {
+    TestLogger logger;
+    TileMap tilemap(10, 10, &logger);
+    tilemap.Initialize(1024, 768);
+
+    tilemap.SetOffset(90, 45);
+
+    Point offset = tilemap.GetOffset();
+    ASSERT_EQUAL(offset.x, 90);
+    ASSERT_EQUAL(offset.y, 45);
+    return SimpleTest::TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(TileMap_Bounds_ExactlyAtNegativeBoundary) {
+    TestLogger logger;
+    TileMap tilemap(10, 10, &logger);
+    tilemap.Initialize(1024, 768);
+
+    tilemap.SetOffset(-90, -45);
+
+    Point offset = tilemap.GetOffset();
+    ASSERT_EQUAL(offset.x, -90);
+    ASSERT_EQUAL(offset.y, -45);
+    return SimpleTest::TestResult{__FUNCTION__, true, ""};
+}
+
 int main() {
     return SimpleTest::TestRunner::RunAll();
 }

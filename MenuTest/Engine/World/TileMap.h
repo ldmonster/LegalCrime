@@ -55,12 +55,16 @@ namespace Engine {
         uint16_t GetTileHeight() const { return m_tileHeight; }
         
         // Camera/viewport offset
-        void SetOffset(int x, int y) { m_offsetX = x; m_offsetY = y; }
+        void SetOffset(int x, int y);
         Point GetOffset() const { return Point(m_offsetX, m_offsetY); }
+
+        // Bounds (30% additional space beyond map size)
+        Rect GetBounds() const;
         
     private:
         void RenderMapTexture(IRenderer* renderer);
         void RegenerateMapTexture(IRenderer* renderer);
+        void ClampOffsetToBounds();
         
         ILogger* m_logger;
         
