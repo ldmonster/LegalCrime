@@ -64,6 +64,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="ARCHITECTURE_SUMMARY.md" />
+    <None Include="BOUNDS_IMPLEMENTATION.md" />
     <None Include="BUILD_AND_TEST.md" />
     <None Include="BUILD_FIXES_APPLIED.md" />
     <None Include="BUILD_INSTRUCTIONS.md" />

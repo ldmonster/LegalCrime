@@ -149,6 +149,9 @@
     <ClInclude Include="Engine\Audio\SoundEffect.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Engine\World\SimpleTest.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="ARCHITECTURE_SUMMARY.md" />
@@ -175,5 +178,15 @@
     <None Include="PHASE5_GAMELOOP_COMPLETE.md" />
     <None Include="COMPLETE_MIGRATION_ALL_PHASES.md" />
     <None Include="MIGRATION_CHECKLIST.md" />
+    <None Include="Engine\World\README.md" />
+    <None Include="Engine\World\TILEMAP_TESTS_README.md" />
+    <None Include="run_tests.bat">
+      <Filter>Source Files</Filter>
+    </None>
+    <None Include="run_tests_simple.ps1" />
+    <None Include="run_tilemap_tests.ps1" />
+    <None Include="TESTING.md" />
+    <None Include="Tests\.gitignore" />
+    <None Include="BOUNDS_IMPLEMENTATION.md" />
   </ItemGroup>
 </Project>

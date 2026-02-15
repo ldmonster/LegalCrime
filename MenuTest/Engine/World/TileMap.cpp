@@ -2,6 +2,7 @@
 #include "../Renderer/IRenderer.h"
 #include "../Core/Logger/ILogger.h"
 #include <SDL3/SDL.h>
+#include <cmath>
 
 namespace Engine {
     
@@ -238,9 +239,9 @@ namespace Engine {
     }
 
     Rect TileMap::GetBounds() const {
-        // Bounds are 30% larger than map size (15% on each side)
-        int boundWidth = static_cast<int>(m_mapSizeWidth * 1.3f);
-        int boundHeight = static_cast<int>(m_mapSizeHeight * 1.3f);
+        // Bounds are same as map size (ensures ~50% visibility at edges)
+        int boundWidth = m_mapSizeWidth;
+        int boundHeight = m_mapSizeHeight;
 
         // Center the bounds around the window center
         int boundX = -boundWidth / 2 + m_windowCenter.x;
@@ -250,24 +251,37 @@ namespace Engine {
     }
 
     void TileMap::ClampOffsetToBounds() {
-        // Calculate the bounds - 30% additional space beyond map size
-        int boundWidth = static_cast<int>(m_mapSizeWidth * 1.3f);
-        int boundHeight = static_cast<int>(m_mapSizeHeight * 1.3f);
+        // Rhombus (diamond) bounds matching isometric tilemap shape
+        // The tilemap forms a diamond with 4 vertices
 
-        // Calculate how far the map can be offset
-        // The map starts centered, so we calculate max offset in each direction
-        int extraSpace = static_cast<int>(m_mapSizeWidth * 0.50f);
-        int extraSpaceY = static_cast<int>(m_mapSizeHeight * 0.50f);
+        // Calculate the half-dimensions of the map diamond
+        float halfWidth = m_mapSizeWidth / 2.0f;   // Horizontal extent from center
+        float halfHeight = m_mapSizeHeight / 2.0f; // Vertical extent from center
 
-        int maxOffsetX = extraSpace;
-        int minOffsetX = -extraSpace;
-        int maxOffsetY = extraSpaceY;
-        int minOffsetY = -extraSpaceY;
+        // Limit bounds to ensure at least 50% of tilemap remains visible
+        // Using 1.0x means we can pan to the edge, showing ~50% of map at bounds
+        // Adjust this value: 1.0 = 50% visible, 1.1 = ~40% visible, 1.3 = ~20% visible
+        float boundHalfWidth = halfWidth * 1.0f;
+        float boundHalfHeight = halfHeight * 1.0f;
 
-        // Clamp the offsets
-        if (m_offsetX > maxOffsetX) m_offsetX = maxOffsetX;
-        if (m_offsetX < minOffsetX) m_offsetX = minOffsetX;
-        if (m_offsetY > maxOffsetY) m_offsetY = maxOffsetY;
-        if (m_offsetY < minOffsetY) m_offsetY = minOffsetY;
+        // For a diamond/rhombus, the edge equation is: |x|/w + |y|/h <= 1
+        // This works for all 4 edges (top, right, bottom, left)
+        // Diamond vertices in offset space: 
+        //   - Right:  (+boundHalfWidth, 0)
+        //   - Top:    (0, -boundHalfHeight) [negative Y is up]
+        //   - Left:   (-boundHalfWidth, 0)
+        //   - Bottom: (0, +boundHalfHeight)
+
+        float normalizedX = std::abs(static_cast<float>(m_offsetX)) / boundHalfWidth;
+        float normalizedY = std::abs(static_cast<float>(m_offsetY)) / boundHalfHeight;
+        float distance = normalizedX + normalizedY;
+
+        // If outside the diamond bounds, scale back to the edge
+        if (distance > 1.0f) {
+            // Scale the offset to be exactly on the diamond edge
+            float scale = 1.0f / distance;
+            m_offsetX = static_cast<int>(m_offsetX * scale);
+            m_offsetY = static_cast<int>(m_offsetY * scale);
+        }
     }
 }

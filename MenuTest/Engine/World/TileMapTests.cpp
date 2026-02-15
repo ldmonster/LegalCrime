@@ -626,17 +626,17 @@ TEST_CASE(TileMap_ArrowKey_NonArrowKeyDoesNotAffectOffset) {
 // Bounds Tests
 // ============================================================================
 
-TEST_CASE(TileMap_Bounds_GetBoundsReturns30PercentLargerArea) {
+TEST_CASE(TileMap_Bounds_GetBoundsMatchesMapSize) {
     TestLogger logger;
     TileMap tilemap(10, 10, &logger);
     tilemap.Initialize(1024, 768);
 
     // Map size for 10x10 is (10+10)*30 = 600 width, (10+10)*15 = 300 height
-    // Bounds should be 1.3x that: 780 width, 390 height
+    // Bounds are 1.0x (same as map size for ~50% visibility at edges)
     Rect bounds = tilemap.GetBounds();
 
-    ASSERT_EQUAL(bounds.w, 780);
-    ASSERT_EQUAL(bounds.h, 390);
+    ASSERT_EQUAL(bounds.w, 600);
+    ASSERT_EQUAL(bounds.h, 300);
     return SimpleTest::TestResult{__FUNCTION__, true, ""};
 }
 
@@ -648,10 +648,10 @@ TEST_CASE(TileMap_Bounds_BoundsCenteredAtWindowCenter) {
     Rect bounds = tilemap.GetBounds();
 
     // Window center is at 512, 384
-    // Bounds width is 780, so x should be 512 - 390 = 122
-    // Bounds height is 390, so y should be 384 - 195 = 189
-    ASSERT_EQUAL(bounds.x, 122);
-    ASSERT_EQUAL(bounds.y, 189);
+    // Bounds width is 600, so x should be 512 - 300 = 212
+    // Bounds height is 300, so y should be 384 - 150 = 234
+    ASSERT_EQUAL(bounds.x, 212);
+    ASSERT_EQUAL(bounds.y, 234);
     return SimpleTest::TestResult{__FUNCTION__, true, ""};
 }
 
@@ -660,11 +660,11 @@ TEST_CASE(TileMap_Bounds_SetOffsetClampsToPositiveXBound) {
     TileMap tilemap(10, 10, &logger);
     tilemap.Initialize(1024, 768);
 
-    // Map size width is 600, 15% extra is 90
-    tilemap.SetOffset(200, 0);
+    // Map size width is 600, half is 300 (max offset)
+    tilemap.SetOffset(500, 0);
 
     Point offset = tilemap.GetOffset();
-    ASSERT_EQUAL(offset.x, 90); // Clamped to max
+    ASSERT_EQUAL(offset.x, 300); // Clamped to max (half of map width)
     return SimpleTest::TestResult{__FUNCTION__, true, ""};
 }
 
@@ -673,10 +673,10 @@ TEST_CASE(TileMap_Bounds_SetOffsetClampsToNegativeXBound) {
     TileMap tilemap(10, 10, &logger);
     tilemap.Initialize(1024, 768);
 
-    tilemap.SetOffset(-200, 0);
+    tilemap.SetOffset(-500, 0);
 
     Point offset = tilemap.GetOffset();
-    ASSERT_EQUAL(offset.x, -90); // Clamped to min
+    ASSERT_EQUAL(offset.x, -300); // Clamped to min (half of map width)
     return SimpleTest::TestResult{__FUNCTION__, true, ""};
 }
 
@@ -685,11 +685,11 @@ TEST_CASE(TileMap_Bounds_SetOffsetClampsToPositiveYBound) {
     TileMap tilemap(10, 10, &logger);
     tilemap.Initialize(1024, 768);
 
-    // Map size height is 300, 15% extra is 45
-    tilemap.SetOffset(0, 200);
+    // Map size height is 300, half is 150 (max offset)
+    tilemap.SetOffset(0, 300);
 
     Point offset = tilemap.GetOffset();
-    ASSERT_EQUAL(offset.y, 45); // Clamped to max
+    ASSERT_EQUAL(offset.y, 150); // Clamped to max (half of map height)
     return SimpleTest::TestResult{__FUNCTION__, true, ""};
 }
 
@@ -698,10 +698,10 @@ TEST_CASE(TileMap_Bounds_SetOffsetClampsToNegativeYBound) {
     TileMap tilemap(10, 10, &logger);
     tilemap.Initialize(1024, 768);
 
-    tilemap.SetOffset(0, -200);
+    tilemap.SetOffset(0, -300);
 
     Point offset = tilemap.GetOffset();
-    ASSERT_EQUAL(offset.y, -45); // Clamped to min
+    ASSERT_EQUAL(offset.y, -150); // Clamped to min (half of map height)
     return SimpleTest::TestResult{__FUNCTION__, true, ""};
 }
 
@@ -724,7 +724,7 @@ TEST_CASE(TileMap_Bounds_ArrowKeyClampsAtBoundary) {
     tilemap.Initialize(1024, 768);
 
     // Set to near max boundary
-    tilemap.SetOffset(80, 0);
+    tilemap.SetOffset(290, 0);
 
     SDL_Event event{};
     event.type = SDL_EVENT_KEY_DOWN;
@@ -733,7 +733,7 @@ TEST_CASE(TileMap_Bounds_ArrowKeyClampsAtBoundary) {
     tilemap.HandleEvent(event);
 
     Point offset = tilemap.GetOffset();
-    ASSERT_EQUAL(offset.x, 90); // Clamped to max (80 + 20 = 100, but max is 90)
+    ASSERT_EQUAL(offset.x, 300); // Clamped to max (290 + 20 = 310, but max is 300)
     return SimpleTest::TestResult{__FUNCTION__, true, ""};
 }
 
@@ -752,7 +752,7 @@ TEST_CASE(TileMap_Bounds_MultiplePressesStopAtBoundary) {
     }
 
     Point offset = tilemap.GetOffset();
-    ASSERT_EQUAL(offset.y, 45); // Clamped to max Y
+    ASSERT_EQUAL(offset.y, 150); // Clamped to max Y
     return SimpleTest::TestResult{__FUNCTION__, true, ""};
 }
 
@@ -762,11 +762,11 @@ TEST_CASE(TileMap_Bounds_DifferentMapSizeHasDifferentBounds) {
     tilemap.Initialize(1024, 768);
 
     // Map size for 20x20 is (20+20)*30 = 1200 width, (20+20)*15 = 600 height
-    // Bounds should be 1.3x that: 1560 width, 780 height
+    // Bounds are 1.0x (same as map size)
     Rect bounds = tilemap.GetBounds();
 
-    ASSERT_EQUAL(bounds.w, 1560);
-    ASSERT_EQUAL(bounds.h, 780);
+    ASSERT_EQUAL(bounds.w, 1200);
+    ASSERT_EQUAL(bounds.h, 600);
     return SimpleTest::TestResult{__FUNCTION__, true, ""};
 }
 
@@ -775,11 +775,11 @@ TEST_CASE(TileMap_Bounds_LargerMapAllowsMorePanning) {
     TileMap tilemap(20, 20, &logger);
     tilemap.Initialize(1024, 768);
 
-    // Map size width is 1200, 15% extra is 180
-    tilemap.SetOffset(200, 0);
+    // Map size width is 1200, half is 600 (max offset)
+    tilemap.SetOffset(800, 0);
 
     Point offset = tilemap.GetOffset();
-    ASSERT_EQUAL(offset.x, 180); // Larger bound than 10x10 map
+    ASSERT_EQUAL(offset.x, 600); // Larger bound than 10x10 map
     return SimpleTest::TestResult{__FUNCTION__, true, ""};
 }
 
@@ -791,8 +791,12 @@ TEST_CASE(TileMap_Bounds_BothAxesClamped) {
     tilemap.SetOffset(500, 500);
 
     Point offset = tilemap.GetOffset();
-    ASSERT_EQUAL(offset.x, 90);
-    ASSERT_EQUAL(offset.y, 45);
+    // With diamond bounds: |x|/300 + |y|/150 <= 1
+    // 500/300 + 500/150 = 1.667 + 3.333 = 5.0
+    // Scale factor = 1/5.0 = 0.2
+    // Result: x=100, y=100
+    ASSERT_EQUAL(offset.x, 100);
+    ASSERT_EQUAL(offset.y, 100);
     return SimpleTest::TestResult{__FUNCTION__, true, ""};
 }
 
@@ -804,8 +808,10 @@ TEST_CASE(TileMap_Bounds_NegativeBothAxesClamped) {
     tilemap.SetOffset(-500, -500);
 
     Point offset = tilemap.GetOffset();
-    ASSERT_EQUAL(offset.x, -90);
-    ASSERT_EQUAL(offset.y, -45);
+    // Same scaling as positive: scale = 0.2
+    // Result: x=-100, y=-100
+    ASSERT_EQUAL(offset.x, -100);
+    ASSERT_EQUAL(offset.y, -100);
     return SimpleTest::TestResult{__FUNCTION__, true, ""};
 }
 
@@ -827,11 +833,12 @@ TEST_CASE(TileMap_Bounds_ExactlyAtPositiveBoundary) {
     TileMap tilemap(10, 10, &logger);
     tilemap.Initialize(1024, 768);
 
-    tilemap.SetOffset(90, 45);
+    // Diamond vertices: (±300, 0) and (0, ±150)
+    tilemap.SetOffset(300, 0);
 
     Point offset = tilemap.GetOffset();
-    ASSERT_EQUAL(offset.x, 90);
-    ASSERT_EQUAL(offset.y, 45);
+    ASSERT_EQUAL(offset.x, 300);
+    ASSERT_EQUAL(offset.y, 0);
     return SimpleTest::TestResult{__FUNCTION__, true, ""};
 }
 
@@ -840,11 +847,11 @@ TEST_CASE(TileMap_Bounds_ExactlyAtNegativeBoundary) {
     TileMap tilemap(10, 10, &logger);
     tilemap.Initialize(1024, 768);
 
-    tilemap.SetOffset(-90, -45);
+    tilemap.SetOffset(-300, 0);
 
     Point offset = tilemap.GetOffset();
-    ASSERT_EQUAL(offset.x, -90);
-    ASSERT_EQUAL(offset.y, -45);
+    ASSERT_EQUAL(offset.x, -300);
+    ASSERT_EQUAL(offset.y, 0);
     return SimpleTest::TestResult{__FUNCTION__, true, ""};
 }
 
