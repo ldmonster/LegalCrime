@@ -68,6 +68,7 @@ namespace Engine {
         // Coordinate conversion
         Point TileToScreen(uint16_t row, uint16_t col) const;
         Point TileToScreenCenter(uint16_t row, uint16_t col) const;
+        bool ScreenToTile(int screenX, int screenY, uint16_t& outRow, uint16_t& outCol) const;
         
     private:
         void RenderMapTexture(IRenderer* renderer);

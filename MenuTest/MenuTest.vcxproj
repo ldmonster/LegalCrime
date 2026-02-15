@@ -98,6 +98,7 @@
     <None Include="PHASE5_GAMELOOP_COMPLETE.md" />
     <None Include="QUICK_REFERENCE_SCENES.md" />
     <None Include="REFACTORING_PHASE1_COMPLETE.md" />
+    <None Include="RTS_CONTROLS.md" />
     <None Include="run_tests.bat" />
     <None Include="run_tests_simple.ps1" />
     <None Include="run_tilemap_tests.ps1" />

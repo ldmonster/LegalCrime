@@ -87,5 +87,6 @@
     <None Include="Tests\.gitignore" />
     <None Include="update_project.ps1" />
     <None Include="Engine\Graphics\CHARACTER_SPRITE_SYSTEM.md" />
+    <None Include="RTS_CONTROLS.md" />
   </ItemGroup>
 </Project>

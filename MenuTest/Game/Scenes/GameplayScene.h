@@ -27,6 +27,10 @@ namespace LegalCrime {
         // Character movement
         void MoveCharacterToTile(uint16_t row, uint16_t col, float duration = 0.3f);
 
+        // RTS-style commands
+        void SelectCharacterAt(int screenX, int screenY);
+        void CommandMoveToPosition(int screenX, int screenY);
+
     private:
         std::unique_ptr<GameplaySceneImpl> m_impl;
     };

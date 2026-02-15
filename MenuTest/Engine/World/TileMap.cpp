@@ -331,4 +331,57 @@ namespace Engine {
 
         return topLeft;
     }
+
+    bool TileMap::ScreenToTile(int screenX, int screenY, uint16_t& outRow, uint16_t& outCol) const {
+        if (!m_initialized) {
+            return false;
+        }
+
+        // Convert screen coordinates to map texture space
+        int mapX = screenX - m_mapRenderRect.x - m_offsetX;
+        int mapY = screenY - m_mapRenderRect.y - m_offsetY;
+
+        // Origin of isometric map in texture space
+        int firstX = 0;
+        int firstY = m_mapWidth * m_tileHeight;
+
+        // Offset from origin
+        int offsetX = mapX - firstX;
+        int offsetY = firstY - mapY;
+
+        // Convert from isometric screen space to tile coordinates
+        // Using the inverse of the isometric transformation:
+        // tileX = firstX + (col + row) * tileWidth
+        // tileY = firstY - (col - row) * tileHeight
+        //
+        // Solving for row and col:
+        // offsetX = (col + row) * tileWidth
+        // offsetY = (col - row) * tileHeight
+        //
+        // col + row = offsetX / tileWidth
+        // col - row = offsetY / tileHeight
+        //
+        // 2 * col = offsetX / tileWidth + offsetY / tileHeight
+        // 2 * row = offsetX / tileWidth - offsetY / tileHeight
+
+        float colPlusRow = static_cast<float>(offsetX) / m_tileWidth;
+        float colMinusRow = static_cast<float>(offsetY) / m_tileHeight;
+
+        float col = (colPlusRow + colMinusRow) / 2.0f;
+        float row = (colPlusRow - colMinusRow) / 2.0f;
+
+        // Round to nearest tile
+        int tileCol = static_cast<int>(std::round(col));
+        int tileRow = static_cast<int>(std::round(row));
+
+        // Check if within map bounds
+        if (tileRow < 0 || tileRow >= m_mapHeight || tileCol < 0 || tileCol >= m_mapWidth) {
+            return false;
+        }
+
+        outRow = static_cast<uint16_t>(tileRow);
+        outCol = static_cast<uint16_t>(tileCol);
+        return true;
+    }
 }
+
