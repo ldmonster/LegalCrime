@@ -3,8 +3,8 @@
 #ifndef Sprite_H
 #define Sprite_H
 
-#include <SDL.h>
-#include <SDL_Image.h>
+#include <SDL3/SDL.h>
+#include <SDL3_image/SDL_image.h>
 
 #include <string>
 

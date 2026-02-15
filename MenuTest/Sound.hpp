@@ -5,7 +5,7 @@
 
 #include <string>
 
-#include <SDL_mixer.h>
+#include <SDL3_mixer/SDL_mixer.h>
 
 class Sound
 {
@@ -42,8 +42,8 @@ protected:
 
     bool isInitialized;
 
-    Mix_Chunk* overButtonSound;
-    Mix_Chunk* hitButtonSound;
+    MIX_Audio* overButtonSound;
+    MIX_Audio* hitButtonSound;
 
     std::string lastError;
 
@@ -60,8 +60,8 @@ public:
     bool init();
     void free();
 
-    Mix_Chunk* GetOverButtonSound();
-    Mix_Chunk* GetHitButtonSound();
+    MIX_Audio* GetOverButtonSound();
+    MIX_Audio* GetHitButtonSound();
 
     std::string GetLastError();
 

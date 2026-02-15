@@ -1,4 +1,4 @@
-#include <SDL.h>
+#include <SDL3/SDL.h>
 
 #include "./src/helpers/StringsHelper.hpp"
 
@@ -24,7 +24,10 @@ App_Renderer::~App_Renderer()
 
 bool App_Renderer::init()
 {
-	renderer = SDL_CreateRenderer(appWindow->GetWindow(), -1, SDL_RENDERER_ACCELERATED);
+	SDL_PropertiesID props = SDL_CreateProperties();
+	SDL_SetPointerProperty(props, SDL_PROP_RENDERER_CREATE_WINDOW_POINTER, appWindow->GetWindow());
+	renderer = SDL_CreateRendererWithProperties(props);
+    SDL_DestroyProperties(props);
 	if (renderer == NULL)
 	{
         lastError += StringsHelper::Sprintf(
@@ -54,7 +57,7 @@ SDL_Renderer* App_Renderer::GetRenderer()
 bool App_Renderer::ToggleVSync()
 {
     useVSync = !useVSync;
-    return SDL_RenderSetVSync(renderer, useVSync);
+    return SDL_SetRenderVSync(renderer, useVSync ? 1 : 0);
 }
 
 bool App_Renderer::IsUsingVSync()

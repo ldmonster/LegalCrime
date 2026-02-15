@@ -3,7 +3,7 @@
 #ifndef Map_H
 #define Map_H
 
-#include <SDL.h>
+#include <SDL3/SDL.h>
 
 #include <string>
 
@@ -115,7 +115,7 @@ bool MapTile::render(SDL_Renderer* renderer, SDL_Point leftTopPoint)
 	points[3] = SDL_Point{ leftTopPoint.x + 1 * xMultiplier, leftTopPoint.y + 1 * yMultiplier };
 	points[4] = SDL_Point{ leftTopPoint.x, leftTopPoint.y };
 
-	return SDL_RenderDrawLines(renderer, points, 5);
+	return SDL_RenderLines(renderer, (SDL_FPoint*)points, 5);
 }
 
 Map::Map(Uint16 mapWidth, Uint16 mapHeight)
@@ -225,7 +225,7 @@ void Map::renderMapTexture(SDL_Renderer* renderer)
 	points[3] = SDL_Point{ 0, m_mapSizeHeight - 1 };
 	points[4] = SDL_Point{ 0, 0 };
 
-	SDL_RenderDrawLines(renderer, points, 5);
+	SDL_RenderLines(renderer, (SDL_FPoint*)points, 5);
 
 	m_mapTexture = new Texture(target_texture);
 
@@ -235,9 +235,9 @@ void Map::renderMapTexture(SDL_Renderer* renderer)
 
 void Map::handleEvent(SDL_Event* e)
 {
-	if (e->type == SDL_MOUSEMOTION || e->type == SDL_MOUSEBUTTONDOWN || e->type == SDL_MOUSEBUTTONUP)
+	if (e->type == SDL_EVENT_MOUSE_MOTION || e->type == SDL_EVENT_MOUSE_BUTTON_DOWN || e->type == SDL_EVENT_MOUSE_BUTTON_UP)
 	{
-		int x, y;
+		float x, y;
 		Uint32 mouseState = SDL_GetMouseState(&x, &y);
 
 		// left top corner of map texture
@@ -255,10 +255,10 @@ void Map::handleEvent(SDL_Event* e)
 				m_firstButtonPress->y = y;
 				firstTextureX = m_MapTextureRenderQuad->x;
 				firstTextureY = m_MapTextureRenderQuad->y;
-				first = true;
-			}
-			if (e->type == SDL_MOUSEMOTION)
-			{
+					first = true;
+				}
+				if (e->type == SDL_EVENT_MOUSE_MOTION)
+				{
 				int newX, newY;
 				newX = firstTextureX - (m_firstButtonPress->x - x);
 				newY = firstTextureY - (m_firstButtonPress->y - y);

@@ -1,5 +1,5 @@
-#include <SDL_mixer.h>
-#include <SDL_ttf.h>
+#include <SDL3_mixer/SDL_mixer.h>
+#include <SDL3_ttf/SDL_ttf.h>
 
 #include "../src/Game.hpp"
 #include "../src/Gameplay.hpp"
@@ -98,27 +98,28 @@ bool Game::init()
 		return false;
 	}
 
-	Mix_Chunk* welcomeChunk = Mix_LoadWAV("Sound/Welcome.wav");
-	if (welcomeChunk == NULL)
-	{
-		logger->LogError(
-			StringsHelper::Sprintf(
-				"Failed to load beat music! SDL_mixer Error: %s",
-				Mix_GetError()
-			)
-		);
-
-		return false;
-	}
-
-	Mix_PlayChannel(1, welcomeChunk, 0);
+	// TODO: SDL3_mixer uses MIX_Audio and tracks instead of Mix_Chunk and channels
+	// Mix_Chunk* welcomeChunk = Mix_LoadWAV("Sound/Welcome.wav");
+	// if (welcomeChunk == NULL)
+	// {
+	// 	logger->LogError(
+	// 		StringsHelper::Sprintf(
+	// 			"Failed to load beat music! SDL_mixer Error: %s",
+	// 			Mix_GetError()
+	// 		)
+	// 	);
+	//
+	// 	return false;
+	// }
+	//
+	// Mix_PlayChannel(1, welcomeChunk, 0);
 
 	if (TTF_Init() == -1)
 	{
 		logger->LogError(
 			StringsHelper::Sprintf(
 				"SDL_ttf could not initialize! SDL_ttf Error: %s",
-				TTF_GetError()
+				SDL_GetError()
 			)
 		);
 
@@ -249,7 +250,7 @@ GameSections Game::eventLoop(GameSection* gameSection, SDL_Renderer* renderer, S
 		{
 			gameSection->handleEvent(e);
 
-			if (e->type == SDL_QUIT)
+			if (e->type == SDL_EVENT_QUIT)
 			{
 				quit = true;
 			}

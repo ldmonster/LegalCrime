@@ -1,5 +1,5 @@
-#include <SDL.h>
-#include <SDL_mixer.h>
+#include <SDL3/SDL.h>
+#include <SDL3_mixer/SDL_mixer.h>
 
 #include <time.h>
 #include <stdio.h>
@@ -10,12 +10,16 @@
 
 #include "./App_Music.hpp"
 
+void playNextMusicCallback(void* userdata, MIX_Track* track);
+
 App_Music* App_Music::_instance = nullptr;
 
 App_Music::App_Music()
     : isInitialized { false }
     , m_currMusicFile { nullptr }
     , m_currMusic{ nullptr }
+    , m_mixer{ nullptr }
+    , m_track{ nullptr }
 {
 }
 
@@ -23,8 +27,16 @@ App_Music::~App_Music()
 {
     musicPath.clear();
 
-    Mix_FreeMusic(m_currMusic);
-    m_currMusic = NULL;
+    if (m_track) {
+        MIX_StopTrack(m_track,0);
+        MIX_DestroyTrack(m_track);
+    }
+    if (m_mixer) {
+        MIX_DestroyMixer(m_mixer);
+    }
+    if (m_currMusic) {
+        MIX_DestroyAudio(m_currMusic);
+    }
 }
 
 App_Music* App_Music::GetInstance()
@@ -46,25 +58,46 @@ bool App_Music::init()
         return false;
     }
 
-    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0)
+    if (!MIX_Init())
     {
         m_lastError += StringsHelper::Sprintf(
             "SDL_mixer could not initialize! SDL_mixer Error: %s",
-            Mix_GetError()
+            SDL_GetError()
+        );
+
+        return false;
+    }
+
+    // In SDL3_mixer, use SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK for default audio device
+    m_mixer = MIX_CreateMixerDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, nullptr);
+    if (!m_mixer)
+    {
+        m_lastError += StringsHelper::Sprintf(
+            "SDL_mixer could not create mixer! SDL_mixer Error: %s",
+            SDL_GetError()
+        );
+
+        return false;
+    }
+
+    m_track = MIX_CreateTrack(m_mixer);
+    if (!m_track)
+    {
+        m_lastError += StringsHelper::Sprintf(
+            "SDL_mixer could not create track! SDL_mixer Error: %s",
+            SDL_GetError()
         );
 
         return false;
     }
 
     musicPath = directory_files("./Music/", true);
-    
-    Mix_HookMusicFinished(playNextMusic);
+
+    MIX_SetTrackStoppedCallback(m_track, nullptr, playNextMusicCallback);
 
     itMusicPath = musicPath.begin();
 
     StartMusic();
-
-    printf("last error: %s\n", m_lastError.c_str());
 
     isInitialized = true;
 
@@ -79,8 +112,8 @@ std::string App_Music::GetLastError()
 
 void App_Music::RandMusic()
 {
-    SDL_FreeRW(m_currMusicFile);
-    Mix_FreeMusic(m_currMusic);
+    MIX_StopTrack(m_track, 0);
+    MIX_DestroyAudio(m_currMusic);
 
     itMusicPath = musicPath.begin();
 
@@ -93,8 +126,8 @@ void App_Music::RandMusic()
 
 void App_Music::NextMusic()
 {
-    SDL_FreeRW(m_currMusicFile);
-    Mix_FreeMusic(m_currMusic);
+    MIX_StopTrack(m_track, 0);
+    MIX_DestroyAudio(m_currMusic);
 
     itMusicPath++;
     if (itMusicPath == musicPath.end())
@@ -108,7 +141,7 @@ void App_Music::NextMusic()
 
 void App_Music::StartMusic()
 {
-    SDL_RWops* rw = SDL_RWFromFile(itMusicPath->c_str(), "rb");
+    SDL_IOStream* rw = SDL_IOFromFile(itMusicPath->c_str(), "rb");
     if (rw == NULL)
     {
         m_lastError += StringsHelper::Sprintf(
@@ -120,28 +153,30 @@ void App_Music::StartMusic()
         return;
     }
 
-    Mix_Music* nextMusic = Mix_LoadMUS_RW(rw,  1);
-    if (nextMusic == NULL)
+    MIX_Audio* nextAudio = MIX_LoadAudio_IO(m_mixer, rw, true, NULL);
+    if (nextAudio == NULL)
     {
         m_lastError += StringsHelper::Sprintf(
             "Unable to load music %s! SDL_Mixer Error: %s",
             itMusicPath->c_str(),
-            Mix_GetError()
+            SDL_GetError()
         );
 
         return;
     }
 
     m_currMusicFile = rw;
-    m_currMusic = nextMusic;
+    m_currMusic = nextAudio;
 
-    if (Mix_PlayingMusic() == 0)
+    MIX_SetTrackAudio(m_track, m_currMusic);
+
+    if (MIX_TrackPlaying(m_track) == 0)
     {
-        Mix_PlayMusic(m_currMusic, 0);
+        MIX_PlayTrack(m_track, 0);
     }
 }
 
-void playNextMusic()
+void playNextMusicCallback(void* userdata, MIX_Track* track)
 {
     printf("music stopped\n");
     App_Music* appMusic = App_Music::GetInstance();

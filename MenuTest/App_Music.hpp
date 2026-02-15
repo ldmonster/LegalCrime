@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 
-#include <SDL_mixer.h>
+#include <SDL3_mixer/SDL_mixer.h>
 
 class App_Music
 {
@@ -24,8 +24,11 @@ protected:
     std::vector <std::string> musicPath;
     std::vector<std::string>::iterator itMusicPath;
 
-    SDL_RWops* m_currMusicFile;
-    Mix_Music* m_currMusic;
+    SDL_IOStream* m_currMusicFile;
+    MIX_Audio* m_currMusic;
+
+    MIX_Mixer* m_mixer;
+    MIX_Track* m_track;
 
     std::string m_lastError;
 

@@ -1,4 +1,4 @@
-#include <SDL_image.h>
+#include <SDL3_image/SDL_image.h>
 
 #include "./src/helpers/StringsHelper.hpp"
 
@@ -17,7 +17,7 @@ App_Window::App_Window()
 
 App_Window::~App_Window() 
 {
-    SDL_FreeSurface(m_icon);
+    SDL_DestroySurface(m_icon);
     m_icon = NULL;
 
     SDL_DestroyWindow(m_window);
@@ -76,20 +76,15 @@ bool App_Window::init(ScreenResolutions sr, std::string aTitle)
         return false;
     }
 
-    if (!SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "1"))
-    {
-        m_lastError += StringsHelper::Sprintf(
-            "App_Window init: Linear texture filtering not enabled!"
-        );
-    }
-
-    m_window = SDL_CreateWindow(m_title.c_str(),
-        SDL_WINDOWPOS_UNDEFINED,
-        SDL_WINDOWPOS_UNDEFINED,
-        m_width,
-        m_height,
-        SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE
-    );
+    SDL_PropertiesID props = SDL_CreateProperties();
+    SDL_SetStringProperty(props, SDL_PROP_WINDOW_CREATE_TITLE_STRING, m_title.c_str());
+    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_X_NUMBER, SDL_WINDOWPOS_UNDEFINED);
+    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_Y_NUMBER, SDL_WINDOWPOS_UNDEFINED);
+    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_WIDTH_NUMBER, m_width);
+    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_HEIGHT_NUMBER, m_height);
+    SDL_SetNumberProperty(props, SDL_PROP_WINDOW_CREATE_FLAGS_NUMBER, SDL_WINDOW_RESIZABLE);
+    m_window = SDL_CreateWindowWithProperties(props);
+    SDL_DestroyProperties(props);
 
     if (m_window == nullptr)
     {
@@ -121,7 +116,7 @@ SDL_Window* App_Window::GetWindow()
 
 bool App_Window::SetIconFromFile(std::string aPath)
 {
-    SDL_RWops* file = SDL_RWFromFile(aPath.c_str(), "rb");
+    SDL_IOStream* file = SDL_IOFromFile(aPath.c_str(), "rb");
     if (file == NULL)
     {
         m_lastError += StringsHelper::Sprintf(
@@ -133,13 +128,13 @@ bool App_Window::SetIconFromFile(std::string aPath)
         return false;
     }
 
-    SDL_Surface* loadedSurface = IMG_LoadICO_RW(file);
+    SDL_Surface* loadedSurface = IMG_LoadICO_IO(file);
     if (loadedSurface == NULL)
     {
         m_lastError += StringsHelper::Sprintf(
             "Unable to load image %s! SDL_image Error: %s",
             aPath.c_str(),
-            IMG_GetError()
+            SDL_GetError()
         );
 
         return false;
@@ -147,7 +142,7 @@ bool App_Window::SetIconFromFile(std::string aPath)
 
     SDL_SetWindowIcon(m_window, loadedSurface);
 
-    SDL_FreeRW(file);
+    SDL_CloseIO(file);
 
     return true;
 }

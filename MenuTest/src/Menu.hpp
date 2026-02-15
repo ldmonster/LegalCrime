@@ -3,8 +3,8 @@
 #ifndef Menu_H
 #define Menu_H
 
-#include <SDL.h>
-#include <SDL_mixer.h>
+#include <SDL3/SDL.h>
+#include <SDL3_mixer/SDL_mixer.h>
 
 #include <vector>
 #include <string>
@@ -238,10 +238,10 @@ void MainPage::handleEvent(SDL_Event* e)
 	int heightButton = 42;
 	int offsetButton = 26;
 
-	if (e->type == SDL_MOUSEMOTION || e->type == SDL_MOUSEBUTTONDOWN || e->type == SDL_MOUSEBUTTONUP)
+	if (e->type == SDL_EVENT_MOUSE_MOTION || e->type == SDL_EVENT_MOUSE_BUTTON_DOWN || e->type == SDL_EVENT_MOUSE_BUTTON_UP)
 	{
 
-		int x, y;
+		float x, y;
 		Uint32 mouseState = SDL_GetMouseState(&x, &y);
 
 		if (x > xButton && x < xButton + widthButton)

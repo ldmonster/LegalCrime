@@ -4,7 +4,10 @@
 #define AppFpsController_H
 
 #include <string>
-#include <SDL.h>
+#include <SDL3/SDL.h>
+
+#include "src/Texture.hpp"
+#include "src/helpers/StringsHelper.hpp"
 
 class SimpleTimer
 {
@@ -16,15 +19,15 @@ public:
 	void pause();
 	void unpause();
 
-	Uint32 getTicks();
+	Uint64 getTicks();
 
 	bool isStarted();
 	bool isPaused();
 
 private:
-	Uint32 m_startTicks;
+	Uint64 m_startTicks;
 
-	Uint32 m_pausedTicks;
+	Uint64 m_pausedTicks;
 
 	bool m_paused;
 	bool m_started;
@@ -89,8 +92,8 @@ protected:
 
     Uint32 m_countedFrames;
 
-    Texture* m_fpsTextTexture = new Texture();
-    Texture* m_fpsTextCounterTexture = new Texture();
+    Texture* m_fpsTextTexture;
+    Texture* m_fpsTextCounterTexture;
     SDL_Color m_fpsTextColor;
     SDL_Rect* m_fpsTextRenderQuad;
     SDL_Rect* m_fpsTextCounterRenderQuad;
@@ -205,9 +208,9 @@ void SimpleTimer::unpause()
     }
 }
 
-Uint32 SimpleTimer::getTicks()
+Uint64 SimpleTimer::getTicks()
 {
-    Uint32 time = 0;
+    Uint64 time = 0;
 
     if (m_started)
     {
@@ -259,6 +262,11 @@ App_FpsController::~App_FpsController()
 {
     delete m_fpsTimer;
     delete m_capTimer;
+
+    delete m_fpsTextTexture;
+    delete m_fpsTextCounterTexture;
+    delete m_fpsTextRenderQuad;
+    delete m_fpsTextCounterRenderQuad;
 
     m_fpsTimer = NULL;
     m_capTimer = NULL;
@@ -315,7 +323,7 @@ bool App_FpsController::init(SDL_Renderer* renderer)
 void App_FpsController::SetFpsCap(Uint8 fpsCap)
 {
     m_screenFpsCap = fpsCap;
-    m_screenTickPerFrame = 1000 / m_screenFpsCap;
+    m_screenTickPerFrame = 1000000000LL / m_screenFpsCap;
 }
 
 void App_FpsController::FpsCounterStart()
@@ -331,7 +339,7 @@ void App_FpsController::FpsCountAdd()
 
 Uint16 App_FpsController::GetAverageFps()
 {
-    m_averageFps = m_countedFrames / (m_fpsTimer->getTicks() / 1000.f);
+    m_averageFps = m_countedFrames / (m_fpsTimer->getTicks() / 1000000000.0);
     if (m_averageFps > 2000000)
     {
         m_averageFps = 0;
@@ -347,10 +355,10 @@ void App_FpsController::CapTicksCounterStart()
 
 void App_FpsController::CappingFrame()
 {
-    int frameTicks = m_capTimer->getTicks();
+    Uint64 frameTicks = m_capTimer->getTicks();
     if (frameTicks < m_screenTickPerFrame)
     {
-        SDL_Delay(m_screenTickPerFrame - frameTicks);
+        SDL_DelayNS(m_screenTickPerFrame - frameTicks);
     }
 }
 
@@ -397,4 +405,5 @@ void App_FpsControllerVSync::CappingFrame() {
 }
 
 void App_FpsControllerVSync::SetFpsCap(Uint8 fpsCap) {}
+
 

@@ -3,8 +3,8 @@
 #ifndef Button_H
 #define Button_H
 
-#include <SDL.h>
-#include <SDL_mixer.h>
+#include <SDL3/SDL.h>
+#include <SDL3_mixer/SDL_mixer.h>
 
 #include <string>
 
@@ -21,8 +21,8 @@ protected:
 
 	SDL_Rect* renderQuad;
 
-	Mix_Chunk* overButtonSound;
-	Mix_Chunk* hitButtonSound;
+	MIX_Audio* overButtonSound;
+	MIX_Audio* hitButtonSound;
 
 	bool mouseOver;
 	bool mouseHit;
@@ -32,7 +32,7 @@ protected:
 
 public:
 
-	Button(Sprite* aSpriteOver, Sprite* aSpriteHit, SDL_Rect* aRenderQuad, Mix_Chunk* aOverButtonSound, Mix_Chunk* aHitButtonSound);
+	Button(Sprite* aSpriteOver, Sprite* aSpriteHit, SDL_Rect* aRenderQuad, MIX_Audio* aOverButtonSound, MIX_Audio* aHitButtonSound);
 	~Button();
 
 	bool isOver();
@@ -56,7 +56,7 @@ public:
 #endif
 
 
-Button::Button(Sprite* aSpriteOver, Sprite* aSpriteHit, SDL_Rect* aRenderQuad, Mix_Chunk* aOverButtonSound, Mix_Chunk* aHitButtonSound)
+Button::Button(Sprite* aSpriteOver, Sprite* aSpriteHit, SDL_Rect* aRenderQuad, MIX_Audio* aOverButtonSound, MIX_Audio* aHitButtonSound)
 	: spriteOver{ aSpriteOver }
 	, spriteHit { aSpriteHit }
 	, renderQuad{ aRenderQuad }
@@ -119,7 +119,8 @@ void Button::renderOver(SDL_Renderer* renderer)
 
 void Button::playOverSound()
 {
-	Mix_PlayChannel(-1, overButtonSound, 0);
+	// TODO: SDL3_mixer uses tracks instead of channels - needs refactoring
+	// Mix_PlayChannel(-1, overButtonSound, 0);
 }
 
 void Button::renderHit(SDL_Renderer* renderer)
@@ -130,7 +131,8 @@ void Button::renderHit(SDL_Renderer* renderer)
 
 void Button::playHitSound()
 {
-	Mix_PlayChannel(-1, hitButtonSound, 0);
+	// TODO: SDL3_mixer uses tracks instead of channels - needs refactoring
+	// Mix_PlayChannel(-1, hitButtonSound, 0);
 }
 
 void Button::resetButtonStates()

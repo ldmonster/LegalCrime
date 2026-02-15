@@ -3,9 +3,9 @@
 #ifndef Texture_H
 #define Texture_H
 
-#include <SDL.h>
-#include <SDL_Image.h>
-#include <SDL_ttf.h>
+#include <SDL3/SDL.h>
+#include <SDL3_image/SDL_image.h>
+#include <SDL3_ttf/SDL_ttf.h>
 
 #include <string>
 
@@ -36,7 +36,7 @@ public:
 	void setAlpha(Uint8 alpha);
 
 	//void render(SDL_Renderer* renderer, SDL_Rect* clip, SDL_Rect* renderQuad);
-	void render(SDL_Renderer* renderer, SDL_Rect* renderQuad, SDL_Rect* clip = NULL, double angle = 0.0, SDL_Point* center = NULL, SDL_RendererFlip flip = SDL_FLIP_NONE);
+	void render(SDL_Renderer* renderer, SDL_Rect* renderQuad, SDL_Rect* clip = NULL, double angle = 0.0, SDL_Point* center = NULL, SDL_FlipMode flip = SDL_FLIP_NONE);
 
 	int getWidth();
 	int getHeight();
@@ -84,7 +84,7 @@ bool Texture::SetFont(std::string fontPath, Uint8 ptSize) {
 	m_font = TTF_OpenFont(fontPath.c_str(), ptSize);
 	if (m_font == NULL)
 	{
-		printf("Failed to load lazy font! SDL_ttf Error: %s\n", TTF_GetError());
+		printf("Failed to load lazy font! SDL_ttf Error: %s\n", SDL_GetError());
 
 		return false;
 	}
@@ -102,7 +102,7 @@ bool Texture::loadFromFile(SDL_Renderer* renderer, std::string path)
 	SDL_Surface* loadedSurface = IMG_Load(path.c_str());
 	if (loadedSurface == NULL)
 	{
-		printf("Unable to load image %s! SDL_image Error: %s\n", path.c_str(), IMG_GetError());
+		printf("Unable to load image %s! SDL_image Error: %s\n", path.c_str(), SDL_GetError());
 
 		return false;
 	}
@@ -118,7 +118,7 @@ bool Texture::loadFromFile(SDL_Renderer* renderer, std::string path)
 	width = loadedSurface->w;
 	height = loadedSurface->h;
 
-	SDL_FreeSurface(loadedSurface);
+	SDL_DestroySurface(loadedSurface);
 
 	m_sdlTexture = newTexture;
 
@@ -133,7 +133,7 @@ bool Texture::loadFromRenderedText(SDL_Renderer* renderer, std::string textureTe
 		SDL_DestroyTexture(m_sdlTexture);
 	}
 
-	SDL_Surface* textSurface = TTF_RenderText_Solid(m_font, textureText.c_str(), textColor);
+	SDL_Surface* textSurface = TTF_RenderText_Solid(m_font, textureText.c_str(), 0, textColor);
 	if (textSurface != NULL)
 	{
 		m_sdlTexture = SDL_CreateTextureFromSurface(renderer, textSurface);
@@ -149,11 +149,11 @@ bool Texture::loadFromRenderedText(SDL_Renderer* renderer, std::string textureTe
 			height = textSurface->h;
 		}
 
-		SDL_FreeSurface(textSurface);
+		SDL_DestroySurface(textSurface);
 	}
 	else
 	{
-		printf("Unable to render text surface! SDL_ttf Error: %s\n", TTF_GetError());
+		printf("Unable to render text surface! SDL_ttf Error: %s\n", SDL_GetError());
 
 		return false;
 	}
@@ -182,7 +182,28 @@ void Texture::setAlpha(Uint8 alpha)
 //	SDL_RenderCopy(renderer, m_sdlTexture, clip, renderQuad);
 //}
 
-void Texture::render(SDL_Renderer* renderer, SDL_Rect* renderQuad, SDL_Rect* clip, double angle, SDL_Point* center, SDL_RendererFlip flip)
+void Texture::render(SDL_Renderer* renderer, SDL_Rect* renderQuad, SDL_Rect* clip, double angle, SDL_Point* center, SDL_FlipMode flip)
 {
-	SDL_RenderCopyEx(renderer, m_sdlTexture, clip, renderQuad, angle, center, flip);
+	SDL_FRect fRenderQuad = { (float)renderQuad->x, (float)renderQuad->y, (float)renderQuad->w, (float)renderQuad->h };
+	SDL_FRect* fClip = nullptr;
+	if (clip != nullptr)
+	{
+		fClip = new SDL_FRect{ (float)clip->x, (float)clip->y, (float)clip->w, (float)clip->h };
+	}
+	SDL_FPoint* fCenter = nullptr;
+	if (center != nullptr)
+	{
+		fCenter = new SDL_FPoint{ (float)center->x, (float)center->y };
+	}
+
+	SDL_RenderTextureRotated(renderer, m_sdlTexture, fClip, &fRenderQuad, angle, fCenter, flip);
+
+	if (fClip != nullptr)
+	{
+		delete fClip;
+	}
+	if (fCenter != nullptr)
+	{
+		delete fCenter;
+	}
 }

@@ -1,4 +1,5 @@
-#include <SDL_mixer.h>
+#include <SDL3/SDL.h>
+#include <SDL3_mixer/SDL_mixer.h>
 
 #include "./src/helpers/StringsHelper.hpp"
 
@@ -21,8 +22,8 @@ MainMenu_Sound::~MainMenu_Sound()
 {
     printf("MAINPAGE SOUND DESTRUCT\n");
 
-    Mix_FreeChunk(overButtonSound);
-    Mix_FreeChunk(hitButtonSound);
+    MIX_DestroyAudio(overButtonSound);
+    MIX_DestroyAudio(hitButtonSound);
     overButtonSound = NULL;
     hitButtonSound = NULL;
 
@@ -46,23 +47,45 @@ bool MainMenu_Sound::init()
         return false;
     }
 
-    overButtonSound = Mix_LoadWAV("Sound/OverButton.wav");
-    if (overButtonSound == NULL)
+    SDL_IOStream* overRw = SDL_IOFromFile("Sound/OverButton.wav", "rb");
+    if (overRw == NULL)
     {
         lastError += StringsHelper::Sprintf(
-            "Failed to load over button sound effect! SDL_mixer Error: %s",
-            Mix_GetError()
+            "Failed to open over button sound file! SDL Error: %s",
+            SDL_GetError()
         );
 
         return false;
     }
 
-    hitButtonSound = Mix_LoadWAV("Sound/ButtonClick.wav");
+    overButtonSound = MIX_LoadAudio_IO(nullptr, overRw, true, NULL);
+    if (overButtonSound == NULL)
+    {
+        lastError += StringsHelper::Sprintf(
+            "Failed to load over button sound effect! SDL Error: %s",
+            SDL_GetError()
+        );
+
+        return false;
+    }
+
+    SDL_IOStream* hitRw = SDL_IOFromFile("Sound/ButtonClick.wav", "rb");
+    if (hitRw == NULL)
+    {
+        lastError += StringsHelper::Sprintf(
+            "Failed to open hit button sound file! SDL Error: %s",
+            SDL_GetError()
+        );
+
+        return false;
+    }
+
+    hitButtonSound = MIX_LoadAudio_IO(nullptr, hitRw, true, NULL);
     if (hitButtonSound == NULL)
     {
         lastError += StringsHelper::Sprintf(
-            "Failed to load hit button sound effect! SDL_mixer Error: %s",
-            Mix_GetError()
+            "Failed to load hit button sound effect! SDL Error: %s",
+            SDL_GetError()
         );
 
         return false;
@@ -75,20 +98,20 @@ bool MainMenu_Sound::init()
 
 void MainMenu_Sound::free()
 {
-    Mix_FreeChunk(overButtonSound);
-    Mix_FreeChunk(hitButtonSound);
+    MIX_DestroyAudio(overButtonSound);
+    MIX_DestroyAudio(hitButtonSound);
     overButtonSound = nullptr;
     hitButtonSound = nullptr;
 
     isInitialized = false;
 }
 
-Mix_Chunk* MainMenu_Sound::GetOverButtonSound()
+MIX_Audio* MainMenu_Sound::GetOverButtonSound()
 {
     return overButtonSound;
 }
 
-Mix_Chunk* MainMenu_Sound::GetHitButtonSound()
+MIX_Audio* MainMenu_Sound::GetHitButtonSound()
 {
     return hitButtonSound;
 }

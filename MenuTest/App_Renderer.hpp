@@ -4,7 +4,7 @@
 #define AppRenderer_H
 
 #include <string>
-#include <SDL.h>
+#include <SDL3/SDL.h>
 
 #include "./App_Window.hpp"
 
