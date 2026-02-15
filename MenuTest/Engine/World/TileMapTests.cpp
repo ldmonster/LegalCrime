@@ -383,12 +383,242 @@ TEST_CASE(TileMap_EdgeCase_RectangularMapTall) {
 TEST_CASE(TileMap_EdgeCase_TileIdMaxValue) {
     TestLogger logger;
     TileMap tilemap(10, 10, &logger);
-    
+
     Tile* tile = tilemap.GetTile(0, 0);
     ASSERT_NOT_NULL(tile);
-    
+
     tile->SetId(UINT16_MAX);
     ASSERT_EQUAL(tile->GetId(), UINT16_MAX);
+    return SimpleTest::TestResult{__FUNCTION__, true, ""};
+}
+
+// ============================================================================
+// Arrow Key Event Tests
+// ============================================================================
+
+TEST_CASE(TileMap_ArrowKey_UpKeyIncreasesOffsetY) {
+    TestLogger logger;
+    TileMap tilemap(10, 10, &logger);
+    tilemap.Initialize(1024, 768);
+
+    Point initialOffset = tilemap.GetOffset();
+
+    SDL_Event event{};
+    event.type = SDL_EVENT_KEY_DOWN;
+    event.key.key = SDLK_UP;
+
+    tilemap.HandleEvent(event);
+
+    Point newOffset = tilemap.GetOffset();
+    ASSERT_EQUAL(newOffset.x, initialOffset.x);
+    ASSERT_EQUAL(newOffset.y, initialOffset.y + 20);
+    return SimpleTest::TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(TileMap_ArrowKey_DownKeyDecreasesOffsetY) {
+    TestLogger logger;
+    TileMap tilemap(10, 10, &logger);
+    tilemap.Initialize(1024, 768);
+
+    Point initialOffset = tilemap.GetOffset();
+
+    SDL_Event event{};
+    event.type = SDL_EVENT_KEY_DOWN;
+    event.key.key = SDLK_DOWN;
+
+    tilemap.HandleEvent(event);
+
+    Point newOffset = tilemap.GetOffset();
+    ASSERT_EQUAL(newOffset.x, initialOffset.x);
+    ASSERT_EQUAL(newOffset.y, initialOffset.y - 20);
+    return SimpleTest::TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(TileMap_ArrowKey_LeftKeyIncreasesOffsetX) {
+    TestLogger logger;
+    TileMap tilemap(10, 10, &logger);
+    tilemap.Initialize(1024, 768);
+
+    Point initialOffset = tilemap.GetOffset();
+
+    SDL_Event event{};
+    event.type = SDL_EVENT_KEY_DOWN;
+    event.key.key = SDLK_LEFT;
+
+    tilemap.HandleEvent(event);
+
+    Point newOffset = tilemap.GetOffset();
+    ASSERT_EQUAL(newOffset.x, initialOffset.x + 20);
+    ASSERT_EQUAL(newOffset.y, initialOffset.y);
+    return SimpleTest::TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(TileMap_ArrowKey_RightKeyDecreasesOffsetX) {
+    TestLogger logger;
+    TileMap tilemap(10, 10, &logger);
+    tilemap.Initialize(1024, 768);
+
+    Point initialOffset = tilemap.GetOffset();
+
+    SDL_Event event{};
+    event.type = SDL_EVENT_KEY_DOWN;
+    event.key.key = SDLK_RIGHT;
+
+    tilemap.HandleEvent(event);
+
+    Point newOffset = tilemap.GetOffset();
+    ASSERT_EQUAL(newOffset.x, initialOffset.x - 20);
+    ASSERT_EQUAL(newOffset.y, initialOffset.y);
+    return SimpleTest::TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(TileMap_ArrowKey_MultipleUpPresses) {
+    TestLogger logger;
+    TileMap tilemap(10, 10, &logger);
+    tilemap.Initialize(1024, 768);
+
+    SDL_Event event{};
+    event.type = SDL_EVENT_KEY_DOWN;
+    event.key.key = SDLK_UP;
+
+    tilemap.HandleEvent(event);
+    tilemap.HandleEvent(event);
+    tilemap.HandleEvent(event);
+
+    Point offset = tilemap.GetOffset();
+    ASSERT_EQUAL(offset.y, 60); // 3 * 20
+    return SimpleTest::TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(TileMap_ArrowKey_AlternatingDirections) {
+    TestLogger logger;
+    TileMap tilemap(10, 10, &logger);
+    tilemap.Initialize(1024, 768);
+
+    SDL_Event upEvent{};
+    upEvent.type = SDL_EVENT_KEY_DOWN;
+    upEvent.key.key = SDLK_UP;
+
+    SDL_Event downEvent{};
+    downEvent.type = SDL_EVENT_KEY_DOWN;
+    downEvent.key.key = SDLK_DOWN;
+
+    tilemap.HandleEvent(upEvent);    // +20
+    tilemap.HandleEvent(downEvent);  // -20
+
+    Point offset = tilemap.GetOffset();
+    ASSERT_EQUAL(offset.y, 0);
+    return SimpleTest::TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(TileMap_ArrowKey_CombinedHorizontalVertical) {
+    TestLogger logger;
+    TileMap tilemap(10, 10, &logger);
+    tilemap.Initialize(1024, 768);
+
+    SDL_Event upEvent{};
+    upEvent.type = SDL_EVENT_KEY_DOWN;
+    upEvent.key.key = SDLK_UP;
+
+    SDL_Event leftEvent{};
+    leftEvent.type = SDL_EVENT_KEY_DOWN;
+    leftEvent.key.key = SDLK_LEFT;
+
+    tilemap.HandleEvent(upEvent);
+    tilemap.HandleEvent(leftEvent);
+
+    Point offset = tilemap.GetOffset();
+    ASSERT_EQUAL(offset.x, 20);
+    ASSERT_EQUAL(offset.y, 20);
+    return SimpleTest::TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(TileMap_ArrowKey_WithExistingOffset) {
+    TestLogger logger;
+    TileMap tilemap(10, 10, &logger);
+    tilemap.Initialize(1024, 768);
+
+    tilemap.SetOffset(100, 50);
+
+    SDL_Event event{};
+    event.type = SDL_EVENT_KEY_DOWN;
+    event.key.key = SDLK_UP;
+
+    tilemap.HandleEvent(event);
+
+    Point offset = tilemap.GetOffset();
+    ASSERT_EQUAL(offset.x, 100);
+    ASSERT_EQUAL(offset.y, 70); // 50 + 20
+    return SimpleTest::TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(TileMap_ArrowKey_WorksWithNegativeOffset) {
+    TestLogger logger;
+    TileMap tilemap(10, 10, &logger);
+    tilemap.Initialize(1024, 768);
+
+    tilemap.SetOffset(-100, -100);
+
+    SDL_Event event{};
+    event.type = SDL_EVENT_KEY_DOWN;
+    event.key.key = SDLK_RIGHT;
+
+    tilemap.HandleEvent(event);
+
+    Point offset = tilemap.GetOffset();
+    ASSERT_EQUAL(offset.x, -120); // -100 - 20
+    ASSERT_EQUAL(offset.y, -100);
+    return SimpleTest::TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(TileMap_ArrowKey_IgnoredWhenNotInitialized) {
+    TestLogger logger;
+    TileMap tilemap(10, 10, &logger);
+    // Note: NOT calling Initialize
+
+    SDL_Event event{};
+    event.type = SDL_EVENT_KEY_DOWN;
+    event.key.key = SDLK_UP;
+
+    tilemap.HandleEvent(event);
+
+    Point offset = tilemap.GetOffset();
+    ASSERT_EQUAL(offset.x, 0);
+    ASSERT_EQUAL(offset.y, 0);
+    return SimpleTest::TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(TileMap_ArrowKey_KeyUpEventDoesNotChangePan) {
+    TestLogger logger;
+    TileMap tilemap(10, 10, &logger);
+    tilemap.Initialize(1024, 768);
+
+    SDL_Event event{};
+    event.type = SDL_EVENT_KEY_UP;
+    event.key.key = SDLK_UP;
+
+    tilemap.HandleEvent(event);
+
+    Point offset = tilemap.GetOffset();
+    ASSERT_EQUAL(offset.x, 0);
+    ASSERT_EQUAL(offset.y, 0);
+    return SimpleTest::TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(TileMap_ArrowKey_NonArrowKeyDoesNotAffectOffset) {
+    TestLogger logger;
+    TileMap tilemap(10, 10, &logger);
+    tilemap.Initialize(1024, 768);
+
+    SDL_Event event{};
+    event.type = SDL_EVENT_KEY_DOWN;
+    event.key.key = SDLK_SPACE;
+
+    tilemap.HandleEvent(event);
+
+    Point offset = tilemap.GetOffset();
+    ASSERT_EQUAL(offset.x, 0);
+    ASSERT_EQUAL(offset.y, 0);
     return SimpleTest::TestResult{__FUNCTION__, true, ""};
 }
 

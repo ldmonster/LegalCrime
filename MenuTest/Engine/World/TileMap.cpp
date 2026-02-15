@@ -177,7 +177,8 @@ namespace Engine {
     
     void TileMap::HandleEvent(const SDL_Event& event) {
         if (!m_initialized) return;
-        
+
+        // Mouse dragging
         if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_LEFT) {
             m_isDragging = true;
             m_dragStart = Point((int)event.button.x, (int)event.button.y);
@@ -189,9 +190,28 @@ namespace Engine {
         else if (event.type == SDL_EVENT_MOUSE_MOTION && m_isDragging) {
             int deltaX = (int)event.motion.x - m_dragStart.x;
             int deltaY = (int)event.motion.y - m_dragStart.y;
-            
+
             m_offsetX = m_initialOffset.x + deltaX;
             m_offsetY = m_initialOffset.y + deltaY;
+        }
+        // Keyboard arrow keys
+        else if (event.type == SDL_EVENT_KEY_DOWN) {
+            const int panSpeed = 20; // Pixels to move per key press
+
+            switch (event.key.key) {
+                case SDLK_UP:
+                    m_offsetY += panSpeed;
+                    break;
+                case SDLK_DOWN:
+                    m_offsetY -= panSpeed;
+                    break;
+                case SDLK_LEFT:
+                    m_offsetX += panSpeed;
+                    break;
+                case SDLK_RIGHT:
+                    m_offsetX -= panSpeed;
+                    break;
+            }
         }
     }
     
