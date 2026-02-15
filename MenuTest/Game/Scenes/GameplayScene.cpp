@@ -1,6 +1,8 @@
 #include "GameplayScene.h"
 #include "../../Engine/World/TileMap.h"
-#include "../../Engine/Graphics/AnimatedSprite.h"
+#include "../../Engine/Graphics/CharacterSprite.h"
+#include "../../Engine/Graphics/CharacterSpriteLoader.h"
+#include "../CharacterConfigs.h"
 
 namespace LegalCrime {
 
@@ -8,7 +10,8 @@ namespace LegalCrime {
     class GameplaySceneImpl {
     public:
         std::unique_ptr<Engine::TileMap> tileMap;
-        std::unique_ptr<Engine::AnimatedSprite> character;
+        std::unique_ptr<Engine::CharacterSprite> character;
+        std::unique_ptr<Engine::CharacterSpriteLoader> spriteLoader;
 
         // Character tile position
         uint16_t characterRow;
@@ -52,6 +55,7 @@ namespace LegalCrime {
 
         void Cleanup() {
             character.reset();
+            spriteLoader.reset();
             tileMap.reset();
         }
     };
@@ -78,7 +82,7 @@ namespace LegalCrime {
             m_logger->Info("Initializing Gameplay Scene");
         }
 
-        // Create and initialize new TileMap system (100x100 tiles)
+        // Create and initialize new TileMap system (20x20 tiles)
         m_impl->tileMap = std::make_unique<Engine::TileMap>(20, 20, m_logger);
 
         // Initialize with default window size (800x600)
@@ -88,96 +92,19 @@ namespace LegalCrime {
             return Engine::Result<void>::Failure("Failed to initialize TileMap: " + initResult.error);
         }
 
-        // Load character sprite sheet
-        auto characterTexture = Engine::Texture::LoadFromFile(
-            m_renderer,
-            "Pics/Thug_Frames.png",
-            m_logger
-        );
+        // Create character sprite loader
+        m_impl->spriteLoader = std::make_unique<Engine::CharacterSpriteLoader>(m_renderer, m_logger);
 
-        if (characterTexture) {
-            m_impl->character = std::make_unique<Engine::AnimatedSprite>(characterTexture, m_logger);
+        // Register all character configurations
+        m_impl->spriteLoader->RegisterConfig(CharacterConfigs::CreateThugConfig());
+        // Add more character types as needed:
+        // m_impl->spriteLoader->RegisterConfig(CharacterConfigs::CreateCopConfig());
+        // m_impl->spriteLoader->RegisterConfig(CharacterConfigs::CreateCivilianConfig());
 
-            // Create animations for different directions
-            // Note: Adjust rows/columns when you replace the sprite sheet
-            // Current setup assumes: each row = different direction, each having multiple frames
+        // Create a thug character
+        m_impl->character = m_impl->spriteLoader->CreateCharacter("thug");
 
-            // Idle animation (row 0, frames 0-1)
-            auto idleAnim = Engine::CreateGridAnimation(
-                "idle",      // Animation name
-                50,          // Frame width
-                50,          // Frame height
-                6,           // Columns
-                1,           // Total rows in sheet
-                0,           // Start frame
-                2,           // Frame count (using first 2 frames for idle)
-                0.2f,        // Frame duration (slower for idle)
-                true         // Loop
-            );
-
-            // Walk down animation (using frames 0-2 for now)
-            auto walkDownAnim = Engine::CreateGridAnimation(
-                "walk_down",
-                50,
-                50,
-                6,
-                1,
-                0,           // Start frame 0
-                3,           // 3 frames
-                0.1f,
-                true
-            );
-
-            // Walk left animation (using frames 2-4 for now)
-            auto walkLeftAnim = Engine::CreateGridAnimation(
-                "walk_left",
-                50,
-                50,
-                6,
-                1,
-                2,           // Start frame 2
-                2,           // 2 frames
-                0.1f,
-                true
-            );
-
-            // Walk right animation (using frames 4-5 for now)
-            auto walkRightAnim = Engine::CreateGridAnimation(
-                "walk_right",
-                50,
-                50,
-                6,
-                1,
-                4,           // Start frame 4
-                2,           // 2 frames
-                0.1f,
-                true
-            );
-
-            // Walk up animation (using frames 0-2, will be same as down for now)
-            auto walkUpAnim = Engine::CreateGridAnimation(
-                "walk_up",
-                50,
-                50,
-                6,
-                1,
-                0,           // Start frame 0
-                3,           // 3 frames
-                0.1f,
-                true
-            );
-
-            // Add all animations
-            m_impl->character->AddAnimation(idleAnim);
-            m_impl->character->AddAnimation(walkDownAnim);
-            m_impl->character->AddAnimation(walkLeftAnim);
-            m_impl->character->AddAnimation(walkRightAnim);
-            m_impl->character->AddAnimation(walkUpAnim);
-
-            // Set initial animation to idle
-            m_impl->character->SetAnimation("idle");
-            m_impl->character->SetScale(2.0f); // Scale up for visibility
-
+        if (m_impl->character) {
             // Place character at center of map
             m_impl->characterRow = m_impl->tileMap->GetHeight() / 2;
             m_impl->characterCol = m_impl->tileMap->GetWidth() / 2;
@@ -205,7 +132,7 @@ namespace LegalCrime {
             }
         } else {
             if (m_logger) {
-                m_logger->Warning("Failed to load character sprite from Pics/Thug_Frames.png");
+                m_logger->Warning("Failed to create character sprite");
             }
         }
 

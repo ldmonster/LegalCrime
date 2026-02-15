@@ -24,6 +24,8 @@
     <ClCompile Include="Engine\Core\Application.cpp" />
     <ClCompile Include="Engine\Core\Logger\Logger.cpp" />
     <ClCompile Include="Engine\Graphics\AnimatedSprite.cpp" />
+    <ClCompile Include="Engine\Graphics\CharacterSprite.cpp" />
+    <ClCompile Include="Engine\Graphics\CharacterSpriteLoader.cpp" />
     <ClCompile Include="Engine\Graphics\Sprite.cpp" />
     <ClCompile Include="Engine\Graphics\Texture.cpp" />
     <ClCompile Include="Engine\Platform\Window.cpp" />
@@ -46,6 +48,9 @@
     <ClInclude Include="Engine\Core\Logger\Logger.h" />
     <ClInclude Include="Engine\Core\Types.h" />
     <ClInclude Include="Engine\Graphics\AnimatedSprite.h" />
+    <ClInclude Include="Engine\Graphics\CharacterSprite.h" />
+    <ClInclude Include="Engine\Graphics\CharacterSpriteConfig.h" />
+    <ClInclude Include="Engine\Graphics\CharacterSpriteLoader.h" />
     <ClInclude Include="Engine\Graphics\Sprite.h" />
     <ClInclude Include="Engine\Graphics\Texture.h" />
     <ClInclude Include="Engine\Platform\IWindow.h" />
@@ -58,6 +63,7 @@
     <ClInclude Include="Engine\UI\Button.h" />
     <ClInclude Include="Engine\World\SimpleTest.h" />
     <ClInclude Include="Engine\World\TileMap.h" />
+    <ClInclude Include="Game\CharacterConfigs.h" />
     <ClInclude Include="Game\LegalCrimeApp.h" />
     <ClInclude Include="Game\Scenes\MainMenuScene.h" />
     <ClInclude Include="Game\Scenes\GameplayScene.h" />
@@ -75,6 +81,7 @@
     <None Include="COMPILATION_FIXES.md" />
     <None Include="COMPLETE_LEGACY_INVENTORY.md" />
     <None Include="COMPLETE_MIGRATION_ALL_PHASES.md" />
+    <None Include="Engine\Graphics\CHARACTER_SPRITE_SYSTEM.md" />
     <None Include="Engine\World\README.md" />
     <None Include="Engine\World\TILEMAP_TESTS_README.md" />
     <None Include="FIXES_COMPLETE.md" />
