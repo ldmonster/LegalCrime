@@ -236,6 +236,25 @@ namespace LegalCrime {
     void GameplayScene::HandleInputActions() {
         using namespace InputBindings;
 
+        // Camera Pan (middle mouse button)
+        if (m_impl->inputManager->WasActionJustPressed(Actions::CAMERA_PAN)) {
+            if (m_logger) {
+                m_logger->Debug("Camera Pan PRESSED - starting pan");
+            }
+            Engine::Input::MousePosition mousePos = m_impl->inputManager->GetMousePosition();
+            m_impl->camera->StartPan(mousePos.x, mousePos.y);
+        } else if (m_impl->inputManager->IsActionHeld(Actions::CAMERA_PAN)) {
+            if (m_impl->camera->IsPanning()) {
+                Engine::Input::MousePosition mousePos = m_impl->inputManager->GetMousePosition();
+                m_impl->camera->UpdatePan(mousePos.x, mousePos.y);
+            }
+        } else if (m_impl->inputManager->WasActionJustReleased(Actions::CAMERA_PAN)) {
+            if (m_logger) {
+                m_logger->Debug("Camera Pan RELEASED - ending pan");
+            }
+            m_impl->camera->EndPan();
+        }
+
         // Selection system handles SELECT action internally
         // Command (right mouse button) - move selected character
         if (m_impl->inputManager->WasActionJustPressed(Actions::COMMAND)) {

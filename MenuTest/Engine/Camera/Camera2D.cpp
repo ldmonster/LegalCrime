@@ -17,6 +17,9 @@ namespace Engine {
         , m_isFollowing(false)
         , m_followTarget(0, 0)
         , m_followSmoothness(0.1f)
+        , m_isPanning(false)
+        , m_panStartMousePos(0, 0)
+        , m_panStartCameraPos(0, 0)
         , m_shakeTimeRemaining(0.0f)
         , m_shakeDuration(0.0f)
         , m_shakeIntensity(0.0f)
@@ -115,6 +118,48 @@ namespace Engine {
         m_isFollowing = false;
     }
 
+    void Camera2D::StartPan(int mouseX, int mouseY) {
+        m_isPanning = true;
+        m_panStartMousePos = Point(mouseX, mouseY);
+        m_panStartCameraPos = m_position;
+
+        // Stop following when user manually pans
+        StopFollowing();
+
+        if (m_logger) {
+            m_logger->Debug("Camera pan started at mouse position (" + 
+                          std::to_string(mouseX) + ", " + std::to_string(mouseY) + ")");
+        }
+    }
+
+    void Camera2D::UpdatePan(int mouseX, int mouseY) {
+        if (!m_isPanning) {
+            return;
+        }
+
+        // Calculate delta in screen space
+        int deltaX = mouseX - m_panStartMousePos.x;
+        int deltaY = mouseY - m_panStartMousePos.y;
+
+        // Convert to world space (invert because camera moves opposite to drag)
+        int worldDeltaX = static_cast<int>(-deltaX / m_zoom);
+        int worldDeltaY = static_cast<int>(-deltaY / m_zoom);
+
+        // Update camera position
+        m_position.x = m_panStartCameraPos.x + worldDeltaX;
+        m_position.y = m_panStartCameraPos.y + worldDeltaY;
+
+        ClampToBounds();
+    }
+
+    void Camera2D::EndPan() {
+        if (m_isPanning && m_logger) {
+            m_logger->Debug("Camera pan ended at position (" + 
+                          std::to_string(m_position.x) + ", " + std::to_string(m_position.y) + ")");
+        }
+        m_isPanning = false;
+    }
+
     void Camera2D::Shake(float duration, float intensity) {
         m_shakeDuration = duration;
         m_shakeTimeRemaining = duration;
@@ -153,27 +198,36 @@ namespace Engine {
             return;
         }
 
-        // Calculate half viewport size in world space
-        int halfWidth = static_cast<int>(m_viewportWidth / (2.0f * m_zoom));
-        int halfHeight = static_cast<int>(m_viewportHeight / (2.0f * m_zoom));
+        // Diamond/rhombus clamping for isometric maps
+        // Allow camera to pan until 50% of the map is visible (multiplier = 0.5)
+        // At multiplier = 0.5, the camera can move until half the map goes off-screen
+        // At multiplier = 1.0, the camera can't move (full map always visible)
+        // At multiplier = 0.0, unlimited panning
 
-        // Calculate bounds accounting for viewport
-        int minX = m_bounds.x + halfWidth;
-        int maxX = m_bounds.x + m_bounds.w - halfWidth;
-        int minY = m_bounds.y + halfHeight;
-        int maxY = m_bounds.y + m_bounds.h - halfHeight;
+        const float visibilityMultiplier = 1.0f; // 50% of map must remain visible
 
-        // Center camera if viewport is larger than bounds
-        if (m_viewportWidth / m_zoom >= m_bounds.w) {
-            m_position.x = m_bounds.x + m_bounds.w / 2;
-        } else {
-            m_position.x = std::clamp(m_position.x, minX, maxX);
-        }
+        // Calculate diamond half-dimensions
+        // The bounds rect represents the bounding box of the diamond
+        float boundHalfWidth = (m_bounds.w / 2.0f) * visibilityMultiplier;
+        float boundHalfHeight = (m_bounds.h / 2.0f) * visibilityMultiplier;
 
-        if (m_viewportHeight / m_zoom >= m_bounds.h) {
-            m_position.y = m_bounds.y + m_bounds.h / 2;
-        } else {
-            m_position.y = std::clamp(m_position.y, minY, maxY);
+        // Diamond edge equation: |x|/w + |y|/h <= 1
+        // This creates a rhombus (diamond) shape in 2D space
+        float normalizedX = std::abs(static_cast<float>(m_position.x)) / boundHalfWidth;
+        float normalizedY = std::abs(static_cast<float>(m_position.y)) / boundHalfHeight;
+        float distance = normalizedX + normalizedY;
+
+        // If outside the diamond bounds, scale back to the edge
+        if (distance > 1.0f) {
+            float scale = 1.0f / distance;
+            m_position.x = static_cast<int>(m_position.x * scale);
+            m_position.y = static_cast<int>(m_position.y * scale);
+
+            if (m_logger) {
+                m_logger->Debug("Camera clamped to diamond bounds: (" + 
+                              std::to_string(m_position.x) + ", " + 
+                              std::to_string(m_position.y) + ")");
+            }
         }
     }
 

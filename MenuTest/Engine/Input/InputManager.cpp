@@ -79,9 +79,17 @@ namespace Input {
         // Debug: Log mouse button state changes
         if (m_logger && m_mouseButtonState != previousMouseState) {
             bool leftPressed = (m_mouseButtonState & SDL_BUTTON_MASK(SDL_BUTTON_LEFT)) != 0;
-            m_logger->Debug("Mouse button state changed. Left button: " + 
-                          std::string(leftPressed ? "PRESSED" : "RELEASED") +
-                          " (state: " + std::to_string(m_mouseButtonState) + ")");
+            bool middlePressed = (m_mouseButtonState & SDL_BUTTON_MASK(SDL_BUTTON_MIDDLE)) != 0;
+            bool rightPressed = (m_mouseButtonState & SDL_BUTTON_MASK(SDL_BUTTON_RIGHT)) != 0;
+
+            std::string buttonInfo = "Buttons: ";
+            if (leftPressed) buttonInfo += "LEFT ";
+            if (middlePressed) buttonInfo += "MIDDLE ";
+            if (rightPressed) buttonInfo += "RIGHT ";
+            if (!leftPressed && !middlePressed && !rightPressed) buttonInfo += "NONE";
+
+            m_logger->Debug("Mouse state changed: " + buttonInfo + 
+                          " (raw state: " + std::to_string(m_mouseButtonState) + ")");
         }
 
         // Calculate mouse delta

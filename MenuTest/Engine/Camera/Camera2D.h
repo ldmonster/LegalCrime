@@ -38,6 +38,12 @@ namespace Engine {
         void Follow(const Point& target, float smoothness = 0.1f);
         void StopFollowing();
 
+        // Panning (for user-controlled camera drag)
+        void StartPan(int mouseX, int mouseY);
+        void UpdatePan(int mouseX, int mouseY);
+        void EndPan();
+        bool IsPanning() const { return m_isPanning; }
+
         // Shake
         void Shake(float duration, float intensity);
         void StopShake();
@@ -62,6 +68,9 @@ namespace Engine {
         bool m_isFollowing;
         Point m_followTarget;
         float m_followSmoothness;
+        bool m_isPanning;
+        Point m_panStartMousePos;
+        Point m_panStartCameraPos;
         float m_shakeTimeRemaining;
         float m_shakeDuration;
         float m_shakeIntensity;

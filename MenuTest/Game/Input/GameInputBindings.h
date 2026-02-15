@@ -19,7 +19,8 @@ namespace LegalCrime {
             constexpr const char* CANCEL = "Cancel";
             constexpr const char* PAUSE = "Pause";
             constexpr const char* CONFIRM = "Confirm";
-            
+            constexpr const char* CAMERA_PAN = "CameraPan";
+
             // Character actions (for keyboard movement)
             constexpr const char* MOVE_UP = "MoveUp";
             constexpr const char* MOVE_DOWN = "MoveDown";
@@ -51,6 +52,10 @@ namespace LegalCrime {
             // Command (right mouse button)
             auto* commandAction = inputManager->CreateAction(Actions::COMMAND);
             commandAction->BindMouseButton(Engine::Input::MouseButton::Right);
+
+            // Camera Pan (middle mouse button)
+            auto* cameraPanAction = inputManager->CreateAction(Actions::CAMERA_PAN);
+            cameraPanAction->BindMouseButton(Engine::Input::MouseButton::Middle);
 
             // Cancel (ESC key)
             auto* cancelAction = inputManager->CreateAction(Actions::CANCEL);
