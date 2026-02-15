@@ -204,16 +204,16 @@ namespace Engine {
         if (!m_texture || !renderer) {
             return;
         }
-        
-        SDL_FRect dest = destRect.ToSDLFloat();
+
+        SDL_FRect dest = RectToSDLFloat(destRect);
         SDL_FRect* src = nullptr;
         SDL_FRect srcFloat;
-        
+
         if (sourceRect) {
-            srcFloat = sourceRect->ToSDLFloat();
+            srcFloat = RectToSDLFloat(*sourceRect);
             src = &srcFloat;
         }
-        
+
         SDL_RenderTextureRotated(
             renderer->GetNativeRenderer(),
             m_texture,

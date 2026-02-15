@@ -49,6 +49,14 @@ namespace Engine {
         Point(int xPos = 0, int yPos = 0) : x(xPos), y(yPos) {}
     };
 
+    struct Rect {
+        int x, y;
+        int w, h;
+
+        Rect() : x(0), y(0), w(0), h(0) {}
+        Rect(int _x, int _y, int _w, int _h) : x(_x), y(_y), w(_w), h(_h) {}
+    };
+
     // Result type for operations that can fail
     template<typename T>
     struct Result {

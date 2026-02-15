@@ -8,9 +8,10 @@
 #include <string>
 
 namespace Engine {
-    
+
     class IRenderer;
     class ILogger;
+    class Camera2D;  // Forward declaration
     
     // Tile types
     enum class TileType : uint16_t {
@@ -55,10 +56,10 @@ namespace Engine {
         bool IsInitialized() const { return m_initialized; }
         
         // Rendering
-        void Render(IRenderer* renderer);
-        
-        // Event handling
-        void HandleEvent(const SDL_Event& event);
+        void Render(IRenderer* renderer, Camera2D* camera = nullptr);
+
+        // Event handling (for camera panning if camera provided)
+        void HandleEvent(const SDL_Event& event, Camera2D* camera = nullptr);
         
         // Tile access
         Tile* GetTile(uint16_t row, uint16_t col);
@@ -77,11 +78,11 @@ namespace Engine {
         // Bounds (30% additional space beyond map size)
         Rect GetBounds() const;
 
-        // Coordinate conversion
-        Point TileToScreen(uint16_t row, uint16_t col) const;
-        Point TileToScreenCenter(uint16_t row, uint16_t col) const;
-        bool ScreenToTile(int screenX, int screenY, uint16_t& outRow, uint16_t& outCol) const;
-        
+        // Coordinate conversion (with optional camera for world-space conversion)
+        Point TileToScreen(uint16_t row, uint16_t col, Camera2D* camera = nullptr) const;
+        Point TileToScreenCenter(uint16_t row, uint16_t col, Camera2D* camera = nullptr) const;
+        bool ScreenToTile(int screenX, int screenY, uint16_t& outRow, uint16_t& outCol, Camera2D* camera = nullptr) const;
+
     private:
         void RenderMapTexture(IRenderer* renderer);
         void RegenerateMapTexture(IRenderer* renderer);

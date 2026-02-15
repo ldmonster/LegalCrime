@@ -47,6 +47,11 @@ namespace Entities {
         bool IsMoving() const;
         void StopMovement();
 
+        // Tile position (for grid-based movement)
+        void SetTilePosition(uint16_t row, uint16_t col);
+        uint16_t GetTileRow() const { return m_tileRow; }
+        uint16_t GetTileCol() const { return m_tileCol; }
+
         // Character data
         CharacterType GetCharacterType() const { return m_characterType; }
         const CharacterData& GetCharacterData() const { return m_data; }
@@ -61,6 +66,10 @@ namespace Entities {
         Direction m_direction;
         std::unique_ptr<Engine::AnimatedSprite> m_sprite;
         Engine::IRenderer* m_cachedRenderer;  // For parameterless Render()
+
+        // Tile position
+        uint16_t m_tileRow;
+        uint16_t m_tileCol;
 
         void InitializeAnimations(const Engine::CharacterSpriteConfig& config);
         void UpdateDirectionAnimation();

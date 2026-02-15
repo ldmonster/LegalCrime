@@ -15,7 +15,9 @@ namespace Entities {
         , m_data()
         , m_direction(Direction::Down)
         , m_sprite(nullptr)
-        , m_cachedRenderer(nullptr) {
+        , m_cachedRenderer(nullptr)
+        , m_tileRow(0)
+        , m_tileCol(0) {
 
         m_data.type = type;
         m_data.name = CharacterDataUtils::CharacterTypeToString(type);
@@ -27,10 +29,10 @@ namespace Entities {
         if (texture) {
             m_sprite = std::make_unique<Engine::AnimatedSprite>(texture, logger);
             m_sprite->SetScale(GetScale());
-            
+
             // Initialize animations
             InitializeAnimations(config);
-            
+
             // Set default animation
             if (!config.defaultAnimation.empty()) {
                 SetAnimation(config.defaultAnimation);
@@ -143,7 +145,7 @@ namespace Entities {
         if (m_sprite) {
             m_sprite->MoveTo(x, y, duration);
         }
-        
+
         // Movement will be synced in Update()
     }
 
@@ -158,12 +160,17 @@ namespace Entities {
     void Character::StopMovement() {
         if (m_sprite) {
             m_sprite->StopMovement();
-            
+
             // Sync position back to transform
             int x, y;
             m_sprite->GetPosition(x, y);
             m_transform.SetPosition(x, y);
         }
+    }
+
+    void Character::SetTilePosition(uint16_t row, uint16_t col) {
+        m_tileRow = row;
+        m_tileCol = col;
     }
 
 } // namespace Entities

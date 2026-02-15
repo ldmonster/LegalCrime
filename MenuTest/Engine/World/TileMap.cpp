@@ -1,6 +1,7 @@
 #include "TileMap.h"
 #include "../Renderer/IRenderer.h"
 #include "../Core/Logger/ILogger.h"
+#include "../Camera/Camera2D.h"
 #include <SDL3/SDL.h>
 #include <cmath>
 
@@ -124,11 +125,11 @@ namespace Engine {
         return Result<void>::Success();
     }
     
-    void TileMap::Render(IRenderer* renderer) {
+    void TileMap::Render(IRenderer* renderer, Camera2D* camera) {
         if (!m_initialized || !renderer) {
             return;
         }
-        
+
         // Regenerate texture if needed
         if (!m_mapTexture) {
             if (m_logger) {
@@ -136,14 +137,24 @@ namespace Engine {
             }
             RegenerateMapTexture(renderer);
         }
-        
+
         // Render the pre-generated map texture
         if (m_mapTexture) {
-            // Apply camera offset
             Rect renderRect = m_mapRenderRect;
-            renderRect.x += m_offsetX;
-            renderRect.y += m_offsetY;
-            
+
+            if (camera) {
+                // Use camera for positioning
+                Point worldPos(0, 0);  // Map is at world origin
+                Point screenPos = camera->WorldToScreen(worldPos);
+
+                renderRect.x = screenPos.x - m_mapSizeWidth / 2;
+                renderRect.y = screenPos.y - m_mapSizeHeight / 2;
+            } else {
+                // Fallback to old offset system
+                renderRect.x += m_offsetX;
+                renderRect.y += m_offsetY;
+            }
+
             Rect sourceRect(0, 0, m_mapSizeWidth, m_mapSizeHeight);
             m_mapTexture->Render(renderer, renderRect, &sourceRect);
         }
@@ -216,10 +227,16 @@ namespace Engine {
         }
     }
     
-    void TileMap::HandleEvent(const SDL_Event& event) {
+    void TileMap::HandleEvent(const SDL_Event& event, Camera2D* camera) {
         if (!m_initialized) return;
 
-        // Mouse dragging
+        // If camera provided, ignore old dragging/keyboard controls
+        // (camera will handle its own controls)
+        if (camera) {
+            return;
+        }
+
+        // Mouse dragging (legacy support when no camera)
         if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_LEFT) {
             m_isDragging = true;
             m_dragStart = Point((int)event.button.x, (int)event.button.y);
@@ -339,7 +356,7 @@ namespace Engine {
         }
     }
 
-    Point TileMap::TileToScreen(uint16_t row, uint16_t col) const {
+    Point TileMap::TileToScreen(uint16_t row, uint16_t col, Camera2D* camera) const {
         if (!m_initialized) {
             return Point(0, 0);
         }
@@ -351,15 +368,23 @@ namespace Engine {
         int tileX = firstX + (col + row) * m_tileWidth;
         int tileY = firstY - (col - row) * m_tileHeight;
 
-        // Convert to screen space with map offset and camera offset
-        int screenX = tileX + m_mapRenderRect.x + m_offsetX;
-        int screenY = tileY + m_mapRenderRect.y + m_offsetY;
+        if (camera) {
+            // Convert from map-local to world space (map is centered at origin)
+            int worldX = tileX - m_mapSizeWidth / 2;
+            int worldY = tileY - m_mapSizeHeight / 2;
 
-        return Point(screenX, screenY);
+            // Convert to screen space using camera
+            return camera->WorldToScreen(Point(worldX, worldY));
+        } else {
+            // Fallback to old offset system
+            int screenX = tileX + m_mapRenderRect.x + m_offsetX;
+            int screenY = tileY + m_mapRenderRect.y + m_offsetY;
+            return Point(screenX, screenY);
+        }
     }
 
-    Point TileMap::TileToScreenCenter(uint16_t row, uint16_t col) const {
-        Point topLeft = TileToScreen(row, col);
+    Point TileMap::TileToScreenCenter(uint16_t row, uint16_t col, Camera2D* camera) const {
+        Point topLeft = TileToScreen(row, col, camera);
 
         // Center of isometric diamond is at (tileWidth, 0) from top-left point
         topLeft.x += m_tileWidth;
@@ -367,14 +392,25 @@ namespace Engine {
         return topLeft;
     }
 
-    bool TileMap::ScreenToTile(int screenX, int screenY, uint16_t& outRow, uint16_t& outCol) const {
+    bool TileMap::ScreenToTile(int screenX, int screenY, uint16_t& outRow, uint16_t& outCol, Camera2D* camera) const {
         if (!m_initialized) {
             return false;
         }
 
-        // Convert screen coordinates to map texture space
-        int mapX = screenX - m_mapRenderRect.x - m_offsetX;
-        int mapY = screenY - m_mapRenderRect.y - m_offsetY;
+        int mapX, mapY;
+
+        if (camera) {
+            // Convert screen to world space
+            Point worldPos = camera->ScreenToWorld(Point(screenX, screenY));
+
+            // Convert from world space to map-local (map is centered at origin)
+            mapX = worldPos.x + m_mapSizeWidth / 2;
+            mapY = worldPos.y + m_mapSizeHeight / 2;
+        } else {
+            // Fallback to old offset system
+            mapX = screenX - m_mapRenderRect.x - m_offsetX;
+            mapY = screenY - m_mapRenderRect.y - m_offsetY;
+        }
 
         // Origin of isometric map in texture space (top corner of tile 0,0)
         int firstX = 0;
@@ -382,7 +418,6 @@ namespace Engine {
 
         // Adjust for the fact that TileToScreen returns the top corner of the diamond,
         // but we want to detect based on the diamond's center for better accuracy
-        // The center of a diamond is offset by (tileWidth, tileHeight) from its top corner
         int adjustedX = mapX - m_tileWidth;
         int adjustedY = mapY;
 

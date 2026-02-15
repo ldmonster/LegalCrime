@@ -21,6 +21,7 @@
   <ItemGroup>
     <ClCompile Include="Engine\Audio\AudioEngine.cpp" />
     <ClCompile Include="Engine\Audio\SoundEffect.cpp" />
+    <ClCompile Include="Engine\Camera\Camera2D.cpp" />
     <ClCompile Include="Engine\Core\Application.cpp" />
     <ClCompile Include="Engine\Core\Logger\Logger.cpp" />
     <ClCompile Include="Engine\Entity\Entity.cpp" />
@@ -49,12 +50,16 @@
     <ClCompile Include="Game\Resources\GameResources.cpp" />
     <ClCompile Include="Game\Scenes\GameplayScene.cpp" />
     <ClCompile Include="Game\Scenes\MainMenuScene.cpp" />
+    <ClCompile Include="Game\World\Systems\MovementSystem.cpp" />
+    <ClCompile Include="Game\World\Systems\SelectionSystem.cpp" />
+    <ClCompile Include="Game\World\World.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Engine\Audio\AudioEngine.h" />
     <ClInclude Include="Engine\Audio\IAudioEngine.h" />
     <ClInclude Include="Engine\Audio\SoundEffect.h" />
+    <ClInclude Include="Engine\Camera\Camera2D.h" />
     <ClInclude Include="Engine\Core\Application.h" />
     <ClInclude Include="Engine\Core\Logger\ILogger.h" />
     <ClInclude Include="Engine\Core\Logger\Logger.h" />
@@ -97,6 +102,9 @@
     <ClInclude Include="Game\Resources\ResourcePaths.h" />
     <ClInclude Include="Game\Scenes\MainMenuScene.h" />
     <ClInclude Include="Game\Scenes\GameplayScene.h" />
+    <ClInclude Include="Game\World\Systems\MovementSystem.h" />
+    <ClInclude Include="Game\World\Systems\SelectionSystem.h" />
+    <ClInclude Include="Game\World\World.h" />
     <ClInclude Include="src\helpers\OsHelper.hpp" />
     <ClInclude Include="src\helpers\StringsHelper.hpp" />
   </ItemGroup>
@@ -108,6 +116,7 @@
     <None Include="BUILD_FIXES_APPLIED.md" />
     <None Include="BUILD_INSTRUCTIONS.md" />
     <None Include="BUILD_SUCCESS_FINAL.md" />
+    <None Include="CAMERA_SYSTEM_COMPLETE.md" />
     <None Include="COMPILATION_FIXES.md" />
     <None Include="COMPLETE_LEGACY_INVENTORY.md" />
     <None Include="COMPLETE_MIGRATION_ALL_PHASES.md" />
@@ -131,6 +140,8 @@
     <None Include="PHASE3_TILEMAP_COMPLETE.md" />
     <None Include="PHASE4_SOUND_COMPLETE.md" />
     <None Include="PHASE5_GAMELOOP_COMPLETE.md" />
+    <None Include="PHASE_1_COMPLETE.md" />
+    <None Include="PHASE_2_PROGRESS.md" />
     <None Include="PROJECT_ANALYSIS_AND_RECOMMENDATIONS.md" />
     <None Include="QUICK_REFERENCE_SCENES.md" />
     <None Include="REFACTORING_PHASE1_COMPLETE.md" />

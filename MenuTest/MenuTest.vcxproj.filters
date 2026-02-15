@@ -81,6 +81,7 @@
     <ClInclude Include="Game\Entities\CharacterData.h" />
     <ClInclude Include="Game\Entities\Character.h" />
     <ClInclude Include="Game\Entities\CharacterFactory.h" />
+    <ClInclude Include="Engine\Camera\Camera2D.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ADAPTIVE_BOUNDS.md" />
@@ -126,5 +127,6 @@
     <None Include="RESOURCE_SYSTEM_COMPLETE.md" />
     <None Include="ENTITY_SYSTEM_COMPLETE.md" />
     <None Include="ENTITY_SYSTEM.md" />
+    <None Include="PHASE_1_COMPLETE.md" />
   </ItemGroup>
 </Project>

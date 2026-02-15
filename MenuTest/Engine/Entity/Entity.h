@@ -42,6 +42,7 @@ namespace Engine {
         float GetScale() const { return m_transform.scale; }
 
         // Name/ID
+        uint32_t GetId() const { return m_id; }
         const std::string& GetName() const { return m_name; }
         void SetName(const std::string& name) { m_name = name; }
 
@@ -50,10 +51,14 @@ namespace Engine {
         void SetActive(bool active) { m_active = active; }
 
     protected:
+        uint32_t m_id;
         Transform m_transform;
         std::string m_name;
         bool m_active;
         ILogger* m_logger;
+
+    private:
+        static uint32_t s_nextId;
     };
 
 } // namespace Engine

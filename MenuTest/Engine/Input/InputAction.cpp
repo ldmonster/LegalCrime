@@ -50,7 +50,7 @@ namespace Input {
     }
 
     void InputAction::UpdateFromKeyboard(const bool* keyState, const SDL_Event* event) {
-        if (!keyState) return;
+        if (!keyState || m_boundKeys.empty()) return;
 
         // Check if any bound key is pressed
         bool isDown = false;
@@ -77,6 +77,8 @@ namespace Input {
     }
 
     void InputAction::UpdateFromMouse(uint32_t mouseState, const SDL_Event* event) {
+        if (m_boundMouseButtons.empty()) return;
+
         // Check if any bound mouse button is pressed
         bool isDown = false;
         for (MouseButton button : m_boundMouseButtons) {
