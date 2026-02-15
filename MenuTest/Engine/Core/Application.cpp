@@ -11,7 +11,8 @@
 namespace Engine {
     
     Application::Application()
-        : m_initialized(false)
+        : m_logger(nullptr)
+        , m_initialized(false)
         , m_running(false)
         , m_lastFrameTime(0) {
     }
@@ -36,13 +37,13 @@ namespace Engine {
             return Result<void>::Failure(std::string("SDL_ttf initialization failed: ") + SDL_GetError());
         }
         
-        // Create logger
-        m_logger = std::make_unique<Logger>();
+        // Create logger FIRST - it will be destroyed LAST
+        m_logger = new Logger();
         m_logger->SetLogLevel(config.logLevel);
         m_logger->Info("=== Initializing " + config.appName + " ===");
-        
+
         // Create window
-        m_window = std::make_unique<Window>(m_logger.get());
+        m_window = std::make_unique<Window>(m_logger);
         auto windowResult = m_window->Initialize(config.windowConfig);
         if (!windowResult) {
             m_logger->Error("Window initialization failed: " + windowResult.error);
@@ -52,7 +53,7 @@ namespace Engine {
         }
         
         // Create renderer
-        m_renderer = std::make_unique<Renderer>(m_logger.get());
+        m_renderer = std::make_unique<Renderer>(m_logger);
         auto rendererResult = m_renderer->Initialize(m_window.get(), config.rendererConfig);
         if (!rendererResult) {
             m_logger->Error("Renderer initialization failed: " + rendererResult.error);
@@ -63,7 +64,7 @@ namespace Engine {
         }
         
         // Create audio engine
-        m_audioEngine = std::make_unique<AudioEngine>(m_logger.get());
+        m_audioEngine = std::make_unique<AudioEngine>(m_logger);
         auto audioResult = m_audioEngine->Initialize();
         if (!audioResult) {
             m_logger->Warning("Audio engine initialization failed: " + audioResult.error);
@@ -71,19 +72,19 @@ namespace Engine {
         }
 
         // Create input manager
-        m_inputManager = std::make_unique<Input::InputManager>(m_logger.get());
+        m_inputManager = std::make_unique<Input::InputManager>(m_logger);
         m_inputManager->Initialize();
 
         // Create resource manager
         m_resourceManager = std::make_unique<Resources::ResourceManager>(
             m_renderer.get(),
             m_audioEngine.get(),
-            m_logger.get()
+            m_logger
         );
         m_resourceManager->Initialize();
 
         // Create scene manager
-        m_sceneManager = std::make_unique<SceneManager>(m_logger.get());
+        m_sceneManager = std::make_unique<SceneManager>(m_logger);
         
         m_initialized = true;
         m_logger->Info("Engine initialized successfully");
@@ -103,14 +104,15 @@ namespace Engine {
         if (!m_initialized) {
             return;
         }
-        
+
         if (m_logger) {
             m_logger->Info("Shutting down application");
         }
-        
+
         OnShutdown();
 
         m_sceneManager.reset();
+        m_resourceManager.reset();
         m_inputManager.reset();
         m_audioEngine.reset();
         m_renderer.reset();
@@ -118,12 +120,14 @@ namespace Engine {
 
         TTF_Quit();
         SDL_Quit();
-        
+
         if (m_logger) {
             m_logger->Info("Application shutdown complete");
         }
-        
-        m_logger.reset();
+
+        // Delete logger LAST - after all other subsystems are destroyed
+        delete m_logger;
+        m_logger = nullptr;
         m_initialized = false;
     }
     

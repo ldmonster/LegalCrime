@@ -37,7 +37,7 @@ namespace Engine {
         void Quit();
         
         // Subsystem accessors
-        ILogger* GetLogger() const { return m_logger.get(); }
+        ILogger* GetLogger() const { return m_logger; }
         IWindow* GetWindow() const { return m_window.get(); }
         IRenderer* GetRenderer() const { return m_renderer.get(); }
         IAudioEngine* GetAudioEngine() const { return m_audioEngine.get(); }
@@ -52,7 +52,7 @@ namespace Engine {
         virtual void OnUpdate(float deltaTime) {}
         
     private:
-        std::unique_ptr<ILogger> m_logger;
+        ILogger* m_logger;  // Raw pointer - managed manually to ensure it outlives all subsystems
         std::unique_ptr<IWindow> m_window;
         std::unique_ptr<IRenderer> m_renderer;
         std::unique_ptr<IAudioEngine> m_audioEngine;
