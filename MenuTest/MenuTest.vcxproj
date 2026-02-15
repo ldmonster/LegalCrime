@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
@@ -19,30 +19,73 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Engine\Audio\AudioEngine.cpp" />
+    <ClCompile Include="Engine\Audio\SoundEffect.cpp" />
+    <ClCompile Include="Engine\Core\Application.cpp" />
+    <ClCompile Include="Engine\Core\Logger\Logger.cpp" />
+    <ClCompile Include="Engine\Graphics\Sprite.cpp" />
+    <ClCompile Include="Engine\Graphics\Texture.cpp" />
+    <ClCompile Include="Engine\Platform\Window.cpp" />
+    <ClCompile Include="Engine\Renderer\Renderer.cpp" />
+    <ClCompile Include="Engine\Scene\Scene.cpp" />
+    <ClCompile Include="Engine\Scene\SceneManager.cpp" />
+    <ClCompile Include="Engine\UI\Button.cpp" />
+    <ClCompile Include="Engine\World\TileMap.cpp" />
+    <ClCompile Include="Game\LegalCrimeApp.cpp" />
+    <ClCompile Include="Game\Scenes\GameplayScene.cpp" />
+    <ClCompile Include="Game\Scenes\MainMenuScene.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="App_Window.cpp" />
-    <ClCompile Include="App_Renderer.cpp" />
-    <ClCompile Include="App_Music.cpp" />
-    <ClCompile Include="Sound.cpp" />
-    <ClCompile Include="src\Game.cpp" />
-    <ClCompile Include="src\logger\Logger.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="App_Window.hpp" />
-    <ClInclude Include="App_Renderer.hpp" />
-    <ClInclude Include="App_Music.hpp" />
-    <ClInclude Include="App_FpsController.hpp" />
-    <ClInclude Include="Sound.hpp" />
-    <ClInclude Include="src\Button.hpp" />
-    <ClInclude Include="src\Game.hpp" />
-    <ClInclude Include="src\Gameplay.hpp" />
+    <ClInclude Include="Engine\Audio\AudioEngine.h" />
+    <ClInclude Include="Engine\Audio\IAudioEngine.h" />
+    <ClInclude Include="Engine\Audio\SoundEffect.h" />
+    <ClInclude Include="Engine\Core\Application.h" />
+    <ClInclude Include="Engine\Core\Logger\ILogger.h" />
+    <ClInclude Include="Engine\Core\Logger\Logger.h" />
+    <ClInclude Include="Engine\Core\Types.h" />
+    <ClInclude Include="Engine\Graphics\Sprite.h" />
+    <ClInclude Include="Engine\Graphics\Texture.h" />
+    <ClInclude Include="Engine\Platform\IWindow.h" />
+    <ClInclude Include="Engine\Platform\Window.h" />
+    <ClInclude Include="Engine\Renderer\IRenderer.h" />
+    <ClInclude Include="Engine\Renderer\Renderer.h" />
+    <ClInclude Include="Engine\Scene\IScene.h" />
+    <ClInclude Include="Engine\Scene\Scene.h" />
+    <ClInclude Include="Engine\Scene\SceneManager.h" />
+    <ClInclude Include="Engine\UI\Button.h" />
+    <ClInclude Include="Engine\World\TileMap.h" />
+    <ClInclude Include="Game\LegalCrimeApp.h" />
+    <ClInclude Include="Game\Scenes\MainMenuScene.h" />
+    <ClInclude Include="Game\Scenes\GameplayScene.h" />
     <ClInclude Include="src\helpers\OsHelper.hpp" />
     <ClInclude Include="src\helpers\StringsHelper.hpp" />
-    <ClInclude Include="src\Map.hpp" />
-    <ClInclude Include="src\Sprite.hpp" />
-    <ClInclude Include="src\Texture.hpp" />
-    <ClInclude Include="src\logger\Logger.hpp" />
-    <ClInclude Include="src\Menu.hpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ARCHITECTURE_SUMMARY.md" />
+    <None Include="BUILD_AND_TEST.md" />
+    <None Include="BUILD_FIXES_APPLIED.md" />
+    <None Include="BUILD_INSTRUCTIONS.md" />
+    <None Include="BUILD_SUCCESS_FINAL.md" />
+    <None Include="COMPILATION_FIXES.md" />
+    <None Include="COMPLETE_LEGACY_INVENTORY.md" />
+    <None Include="COMPLETE_MIGRATION_ALL_PHASES.md" />
+    <None Include="FIXES_COMPLETE.md" />
+    <None Include="LEGACY_MIGRATION_STATUS.md" />
+    <None Include="MIGRATION_CHECKLIST.md" />
+    <None Include="MIGRATION_COMPLETED.md" />
+    <None Include="MIGRATION_COMPLETE_SUMMARY.md" />
+    <None Include="MIGRATION_GUIDE_PHASE2.md" />
+    <None Include="PHASE2_COMPLETE.md" />
+    <None Include="PHASE2_DELETION_SUMMARY.md" />
+    <None Include="PHASE3_COMPLETE.md" />
+    <None Include="PHASE3_TILEMAP_COMPLETE.md" />
+    <None Include="PHASE4_SOUND_COMPLETE.md" />
+    <None Include="PHASE5_GAMELOOP_COMPLETE.md" />
+    <None Include="QUICK_REFERENCE_SCENES.md" />
+    <None Include="REFACTORING_PHASE1_COMPLETE.md" />
+    <None Include="SCENE_MIGRATION_COMPLETE.md" />
+    <None Include="update_project.ps1" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
@@ -98,18 +141,18 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>C:\vslib\SDL2_image-2.6.2\include;C:\vslib\SDL2_ttf-2.20.1\include;C:\vslib\SDL2-2.26.1\include;C:\vslib\SDL2_mixer-2.6.2\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\vslib\SDL2_mixer-2.6.2\lib\x64;C:\vslib\SDL2_ttf-2.20.1\lib\x64;C:\vslib\SDL2-2.26.1\lib\x64;C:\vslib\SDL2_image-2.6.2\lib\x64;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\vslib\SDL3_image-3.4.0\include;C:\vslib\SDL3_ttf-3.2.2\include;C:\vslib\SDL3-3.4.0\include;C:\vslib\SDL3_mixer-3.1.2\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\vslib\SDL3_mixer-3.1.2\lib\x64;C:\vslib\SDL3_ttf-3.2.2\lib\x64;C:\vslib\SDL3-3.4.0\lib\x64;C:\vslib\SDL3_image-3.4.0\lib\x64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>C:\vslib\SDL2-2.26.1\include;C:\vslib\SDL2_ttf-2.20.1\include;C:\vslib\SDL2_mixer-2.6.2\include;C:\vslib\SDL2_image-2.6.2\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\vslib\SDL2-2.26.1\lib\x64;C:\vslib\SDL2_ttf-2.20.1\lib\x64;C:\vslib\SDL2_image-2.6.2\lib\x64;C:\vslib\SDL2_mixer-2.6.2\lib\x64;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\vslib\SDL3-3.4.0\include;C:\vslib\SDL3_ttf-3.2.2\include;C:\vslib\SDL3_mixer-3.1.2\include;C:\vslib\SDL3_image-3.4.0\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\vslib\SDL3-3.4.0\lib\x64;C:\vslib\SDL3_ttf-3.2.2\lib\x64;C:\vslib\SDL3_image-3.4.0\lib\x64;C:\vslib\SDL3_mixer-3.1.2\lib\x64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;SDL_MAIN_HANDLED;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
@@ -123,7 +166,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
     </ClCompile>
     <Link>
@@ -137,13 +180,14 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>SDL2.lib;SDL2main.lib;SDL2_image.lib;SDL2_ttf.lib;SDL2_mixer.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SDL3.lib;SDL3_image.lib;SDL3_ttf.lib;SDL3_mixer.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -152,15 +196,16 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp20</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>SDL2.lib;SDL2main.lib;SDL2_image.lib;SDL2_ttf.lib;SDL2_mixer.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>SDL3.lib;SDL3_image.lib;SDL3_ttf.lib;SDL3_mixer.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

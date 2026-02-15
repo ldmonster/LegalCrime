@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
     <Filter Include="Source Files">
@@ -30,73 +30,150 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Engine\Audio\AudioEngine.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Core\Application.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Core\Logger\Logger.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Platform\Window.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Renderer\Renderer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Scene\Scene.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Scene\SceneManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\LegalCrimeApp.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\Scenes\GameplayScene.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Game\Scenes\MainMenuScene.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="main.cpp">
-      <Filter>Resource Files</Filter>
-    </ClCompile>
-    <ClCompile Include="App_Window.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="App_Renderer.cpp">
+    <ClCompile Include="Engine\Graphics\Sprite.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Game.cpp">
-      <Filter>Source Files\src</Filter>
-    </ClCompile>
-    <ClCompile Include="src\logger\Logger.cpp">
-      <Filter>Source Files\src\logger</Filter>
-    </ClCompile>
-    <ClCompile Include="App_Music.cpp">
+    <ClCompile Include="Engine\Graphics\Texture.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Sound.cpp">
+    <ClCompile Include="Engine\UI\Button.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\World\TileMap.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Audio\SoundEffect.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="App_Window.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="App_Renderer.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Game.hpp">
-      <Filter>Header Files\src</Filter>
-    </ClInclude>
-    <ClInclude Include="src\logger\Logger.hpp">
-      <Filter>Header Files\src\logger</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Texture.hpp">
-      <Filter>Header Files\src</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Sprite.hpp">
-      <Filter>Header Files\src</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Menu.hpp">
-      <Filter>Header Files\src</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Button.hpp">
-      <Filter>Header Files\src</Filter>
-    </ClInclude>
-    <ClInclude Include="App_Music.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\helpers\StringsHelper.hpp">
       <Filter>Header Files\src\helpers</Filter>
-    </ClInclude>
-    <ClInclude Include="Sound.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Gameplay.hpp">
-      <Filter>Header Files\src</Filter>
-    </ClInclude>
-    <ClInclude Include="App_FpsController.hpp">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Map.hpp">
-      <Filter>Header Files\src</Filter>
     </ClInclude>
     <ClInclude Include="src\helpers\OsHelper.hpp">
       <Filter>Header Files\src\helpers</Filter>
     </ClInclude>
+    <ClInclude Include="Engine\Audio\AudioEngine.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Audio\IAudioEngine.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Core\Application.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Core\Logger\ILogger.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Core\Logger\Logger.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Core\Types.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Platform\IWindow.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Platform\Window.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Renderer\IRenderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Renderer\Renderer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Scene\IScene.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Scene\Scene.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Scene\SceneManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\LegalCrimeApp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\Scenes\MainMenuScene.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Game\Scenes\GameplayScene.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Graphics\Sprite.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Graphics\Texture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\UI\Button.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\World\TileMap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Audio\SoundEffect.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ARCHITECTURE_SUMMARY.md" />
+    <None Include="BUILD_AND_TEST.md" />
+    <None Include="BUILD_FIXES_APPLIED.md" />
+    <None Include="BUILD_INSTRUCTIONS.md" />
+    <None Include="COMPILATION_FIXES.md" />
+    <None Include="FIXES_COMPLETE.md" />
+    <None Include="MIGRATION_GUIDE_PHASE2.md" />
+    <None Include="PHASE2_COMPLETE.md" />
+    <None Include="PHASE3_COMPLETE.md" />
+    <None Include="QUICK_REFERENCE_SCENES.md" />
+    <None Include="REFACTORING_PHASE1_COMPLETE.md" />
+    <None Include="SCENE_MIGRATION_COMPLETE.md" />
+    <None Include="update_project.ps1" />
+    <None Include="BUILD_SUCCESS_FINAL.md" />
+    <None Include="COMPLETE_LEGACY_INVENTORY.md" />
+    <None Include="LEGACY_MIGRATION_STATUS.md" />
+    <None Include="MIGRATION_COMPLETED.md" />
+    <None Include="PHASE2_DELETION_SUMMARY.md" />
+    <None Include="PHASE3_TILEMAP_COMPLETE.md" />
+    <None Include="MIGRATION_COMPLETE_SUMMARY.md" />
+    <None Include="PHASE4_SOUND_COMPLETE.md" />
+    <None Include="PHASE5_GAMELOOP_COMPLETE.md" />
+    <None Include="COMPLETE_MIGRATION_ALL_PHASES.md" />
+    <None Include="MIGRATION_CHECKLIST.md" />
   </ItemGroup>
 </Project>
