@@ -20,6 +20,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Engine\Graphics\CharacterSpriteLoader.cpp" />
     <ClCompile Include="Engine\Graphics\CharacterSprite.cpp" />
+    <ClCompile Include="Engine\World\Pathfinding.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Engine\Audio\AudioEngine.h" />
@@ -51,6 +52,7 @@
     <ClInclude Include="Engine\Graphics\CharacterSprite.h" />
     <ClInclude Include="Engine\Graphics\CharacterSpriteConfig.h" />
     <ClInclude Include="Game\CharacterConfigs.h" />
+    <ClInclude Include="Engine\World\Pathfinding.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ADAPTIVE_BOUNDS.md" />
@@ -88,5 +90,6 @@
     <None Include="update_project.ps1" />
     <None Include="Engine\Graphics\CHARACTER_SPRITE_SYSTEM.md" />
     <None Include="RTS_CONTROLS.md" />
+    <None Include="PATHFINDING.md" />
   </ItemGroup>
 </Project>

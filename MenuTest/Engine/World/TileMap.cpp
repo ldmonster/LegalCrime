@@ -9,21 +9,56 @@ namespace Engine {
     // Tile rendering implementation
     bool Tile::Render(IRenderer* renderer, const Point& topLeft, int tileWidth, int tileHeight) const {
         if (!renderer) return false;
-        
+
         SDL_Renderer* sdlRenderer = renderer->GetNativeRenderer();
-        
+
         // Calculate isometric diamond points
         int xMult = tileWidth;
         int yMult = tileHeight;
-        
+
         SDL_FPoint points[5];
         points[0] = SDL_FPoint{ (float)topLeft.x, (float)topLeft.y };
         points[1] = SDL_FPoint{ (float)(topLeft.x + xMult), (float)(topLeft.y - yMult) };
         points[2] = SDL_FPoint{ (float)(topLeft.x + 2 * xMult), (float)topLeft.y };
         points[3] = SDL_FPoint{ (float)(topLeft.x + xMult), (float)(topLeft.y + yMult) };
         points[4] = SDL_FPoint{ (float)topLeft.x, (float)topLeft.y };
-        
-        return SDL_RenderLines(sdlRenderer, points, 5);
+
+        // Draw tile outline (default black)
+        SDL_SetRenderDrawColor(sdlRenderer, 0, 0, 0, 255);
+        SDL_RenderLines(sdlRenderer, points, 5);
+
+        // Fill obstacle tiles with a different color
+        if (!m_walkable) {
+            // Fill with red color for obstacles
+            SDL_SetRenderDrawColor(sdlRenderer, 180, 50, 50, 255);
+
+            // Simple scanline fill for diamond shape
+            for (int y = (int)points[1].y; y <= (int)points[3].y; ++y) {
+                // Calculate left and right x boundaries for this scanline
+                float t = (y - points[1].y) / (points[3].y - points[1].y);
+
+                float leftX, rightX;
+                if (t < 0.5f) {
+                    // Top half of diamond
+                    float t2 = t * 2.0f;
+                    leftX = points[1].x - (points[1].x - points[0].x) * t2;
+                    rightX = points[1].x + (points[2].x - points[1].x) * t2;
+                } else {
+                    // Bottom half of diamond
+                    float t2 = (t - 0.5f) * 2.0f;
+                    leftX = points[0].x + (points[3].x - points[0].x) * t2;
+                    rightX = points[2].x - (points[2].x - points[3].x) * t2;
+                }
+
+                SDL_RenderLine(sdlRenderer, leftX, (float)y, rightX, (float)y);
+            }
+
+            // Redraw outline in black
+            SDL_SetRenderDrawColor(sdlRenderer, 0, 0, 0, 255);
+            SDL_RenderLines(sdlRenderer, points, 5);
+        }
+
+        return true;
     }
     
     // TileMap implementation

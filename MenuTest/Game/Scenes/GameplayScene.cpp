@@ -1,5 +1,6 @@
 #include "GameplayScene.h"
 #include "../../Engine/World/TileMap.h"
+#include "../../Engine/World/Pathfinding.h"
 #include "../../Engine/Graphics/CharacterSprite.h"
 #include "../../Engine/Graphics/CharacterSpriteLoader.h"
 #include "../CharacterConfigs.h"
@@ -13,6 +14,7 @@ namespace LegalCrime {
         std::unique_ptr<Engine::TileMap> tileMap;
         std::unique_ptr<Engine::CharacterSprite> character;
         std::unique_ptr<Engine::CharacterSpriteLoader> spriteLoader;
+        std::unique_ptr<Engine::Pathfinding> pathfinder;
 
         // Character tile position
         uint16_t characterRow;
@@ -21,6 +23,10 @@ namespace LegalCrime {
         // Target tile position during movement
         uint16_t targetRow;
         uint16_t targetCol;
+
+        // Current path being followed
+        Engine::Path currentPath;
+        size_t currentPathIndex;
 
         // Movement state
         bool isMoving;
@@ -47,6 +53,7 @@ namespace LegalCrime {
             , characterCol(0)
             , targetRow(0)
             , targetCol(0)
+            , currentPathIndex(0)
             , isMoving(false)
             , moveTime(0.0f)
             , moveDuration(0.3f)
@@ -61,6 +68,7 @@ namespace LegalCrime {
         void Cleanup() {
             character.reset();
             spriteLoader.reset();
+            pathfinder.reset();
             tileMap.reset();
         }
     };
@@ -96,6 +104,25 @@ namespace LegalCrime {
         if (!initResult) {
             return Engine::Result<void>::Failure("Failed to initialize TileMap: " + initResult.error);
         }
+
+        // Create some obstacle tiles for testing pathfinding
+        // Create a wall pattern
+        for (uint16_t i = 5; i < 15; ++i) {
+            Engine::Tile* tile = m_impl->tileMap->GetTile(i, 10);
+            if (tile) {
+                tile->SetWalkable(false);
+                tile->SetId(2); // Wall tile ID
+            }
+        }
+        // Add a gap in the wall
+        Engine::Tile* gapTile = m_impl->tileMap->GetTile(10, 10);
+        if (gapTile) {
+            gapTile->SetWalkable(true);
+            gapTile->SetId(1);
+        }
+
+        // Create pathfinding system
+        m_impl->pathfinder = std::make_unique<Engine::Pathfinding>();
 
         // Create character sprite loader
         m_impl->spriteLoader = std::make_unique<Engine::CharacterSpriteLoader>(m_renderer, m_logger);
@@ -293,15 +320,61 @@ namespace LegalCrime {
                 m_impl->moveTime += deltaTime;
 
                 if (m_impl->moveTime >= m_impl->moveDuration) {
-                    // Movement complete
-                    m_impl->isMoving = false;
+                    // Movement to current tile complete
                     m_impl->moveTime = 0.0f;
                     m_impl->characterRow = m_impl->targetRow;
                     m_impl->characterCol = m_impl->targetCol;
 
-                    // Switch to idle animation when movement stops
-                    m_impl->character->SetAnimation("idle");
-                    m_impl->currentDirection = GameplaySceneImpl::Direction::None;
+                    // Check if there's more path to follow
+                    if (!m_impl->currentPath.empty() && m_impl->currentPathIndex < m_impl->currentPath.size() - 1) {
+                        // Move to next tile in path
+                        m_impl->currentPathIndex++;
+                        const Engine::TilePosition& nextTile = m_impl->currentPath[m_impl->currentPathIndex];
+
+                        m_impl->targetRow = nextTile.row;
+                        m_impl->targetCol = nextTile.col;
+
+                        // Update animation direction
+                        int rowDiff = static_cast<int>(m_impl->targetRow) - static_cast<int>(m_impl->characterRow);
+                        int colDiff = static_cast<int>(m_impl->targetCol) - static_cast<int>(m_impl->characterCol);
+
+                        GameplaySceneImpl::Direction direction = GameplaySceneImpl::Direction::None;
+                        if (abs(rowDiff) > abs(colDiff)) {
+                            direction = rowDiff > 0 ? GameplaySceneImpl::Direction::Down : GameplaySceneImpl::Direction::Up;
+                        } else if (abs(colDiff) > 0) {
+                            direction = colDiff > 0 ? GameplaySceneImpl::Direction::Right : GameplaySceneImpl::Direction::Left;
+                        }
+
+                        m_impl->currentDirection = direction;
+                        switch (direction) {
+                            case GameplaySceneImpl::Direction::Up:
+                                m_impl->character->SetAnimation("walk_up");
+                                break;
+                            case GameplaySceneImpl::Direction::Down:
+                                m_impl->character->SetAnimation("walk_down");
+                                break;
+                            case GameplaySceneImpl::Direction::Left:
+                                m_impl->character->SetAnimation("walk_left");
+                                break;
+                            case GameplaySceneImpl::Direction::Right:
+                                m_impl->character->SetAnimation("walk_right");
+                                break;
+                            default:
+                                break;
+                        }
+
+                        // Continue moving
+                        m_impl->moveTime = 0.0f;
+                    } else {
+                        // Path complete
+                        m_impl->isMoving = false;
+                        m_impl->currentPath.clear();
+                        m_impl->currentPathIndex = 0;
+
+                        // Switch to idle animation when movement stops
+                        m_impl->character->SetAnimation("idle");
+                        m_impl->currentDirection = GameplaySceneImpl::Direction::None;
+                    }
                 }
             }
 
@@ -374,6 +447,44 @@ namespace LegalCrime {
 
         // Render the TileMap using the modern renderer interface
         m_impl->tileMap->Render(m_renderer);
+
+        // Render the current path if character is selected and has a path
+        if (m_impl->isSelected && !m_impl->currentPath.empty()) {
+            SDL_Renderer* sdlRenderer = m_renderer->GetNativeRenderer();
+            if (sdlRenderer) {
+                // Draw path as green line segments
+                SDL_SetRenderDrawColor(sdlRenderer, 0, 200, 0, 255);
+
+                for (size_t i = 0; i < m_impl->currentPath.size() - 1; ++i) {
+                    const Engine::TilePosition& pos1 = m_impl->currentPath[i];
+                    const Engine::TilePosition& pos2 = m_impl->currentPath[i + 1];
+
+                    Engine::Point screen1 = m_impl->tileMap->TileToScreenCenter(pos1.row, pos1.col);
+                    Engine::Point screen2 = m_impl->tileMap->TileToScreenCenter(pos2.row, pos2.col);
+
+                    SDL_RenderLine(sdlRenderer, (float)screen1.x, (float)screen1.y, 
+                                                (float)screen2.x, (float)screen2.y);
+                }
+
+                // Draw dots at each waypoint
+                for (const Engine::TilePosition& pos : m_impl->currentPath) {
+                    Engine::Point screen = m_impl->tileMap->TileToScreenCenter(pos.row, pos.col);
+
+                    // Draw a small circle
+                    const int radius = 4;
+                    const int segments = 12;
+                    SDL_FPoint points[segments + 1];
+
+                    for (int i = 0; i <= segments; ++i) {
+                        float angle = (i * 2.0f * 3.14159f) / segments;
+                        points[i].x = screen.x + radius * cos(angle);
+                        points[i].y = screen.y + radius * sin(angle);
+                    }
+
+                    SDL_RenderLines(sdlRenderer, points, segments + 1);
+                }
+            }
+        }
 
         // Render character on top of tilemap
         if (m_impl->character) {
@@ -522,44 +633,110 @@ namespace LegalCrime {
             return;
         }
 
-        // Determine direction for animation
-        GameplaySceneImpl::Direction direction = GameplaySceneImpl::Direction::None;
-
-        int rowDiff = static_cast<int>(targetRow) - static_cast<int>(m_impl->characterRow);
-        int colDiff = static_cast<int>(targetCol) - static_cast<int>(m_impl->characterCol);
-
-        // Choose primary direction based on larger movement
-        if (abs(rowDiff) > abs(colDiff)) {
-            direction = rowDiff > 0 ? GameplaySceneImpl::Direction::Down : GameplaySceneImpl::Direction::Up;
-        } else if (abs(colDiff) > 0) {
-            direction = colDiff > 0 ? GameplaySceneImpl::Direction::Right : GameplaySceneImpl::Direction::Left;
+        // Check if target tile is walkable
+        const Engine::Tile* targetTile = m_impl->tileMap->GetTile(targetRow, targetCol);
+        if (!targetTile || !targetTile->IsWalkable()) {
+            if (m_logger) {
+                m_logger->Warning("Cannot move to obstacle tile (" + std::to_string(targetRow) + 
+                                ", " + std::to_string(targetCol) + ")");
+            }
+            return;
         }
 
-        // Set animation based on direction
-        m_impl->currentDirection = direction;
-        switch (direction) {
-            case GameplaySceneImpl::Direction::Up:
-                m_impl->character->SetAnimation("walk_up");
-                break;
-            case GameplaySceneImpl::Direction::Down:
-                m_impl->character->SetAnimation("walk_down");
-                break;
-            case GameplaySceneImpl::Direction::Left:
-                m_impl->character->SetAnimation("walk_left");
-                break;
-            case GameplaySceneImpl::Direction::Right:
-                m_impl->character->SetAnimation("walk_right");
-                break;
-            default:
-                break;
+        // Find path using A* pathfinding
+        Engine::TilePosition start(m_impl->characterRow, m_impl->characterCol);
+        Engine::TilePosition goal(targetRow, targetCol);
+
+        // Create walkability checker lambda
+        auto isWalkable = [this](uint16_t row, uint16_t col) -> bool {
+            const Engine::Tile* tile = m_impl->tileMap->GetTile(row, col);
+            return tile && tile->IsWalkable();
+        };
+
+        // Configure pathfinding options
+        Engine::Pathfinding::Options options;
+        options.allowDiagonal = true;
+        options.cutCorners = false;  // Don't cut through corners
+
+        // Find path
+        Engine::Path path = m_impl->pathfinder->FindPath(
+            start,
+            goal,
+            m_impl->tileMap->GetWidth(),
+            m_impl->tileMap->GetHeight(),
+            isWalkable,
+            options
+        );
+
+        if (path.empty()) {
+            if (m_logger) {
+                m_logger->Warning("No path found from (" + std::to_string(m_impl->characterRow) + 
+                                ", " + std::to_string(m_impl->characterCol) + ") to (" +
+                                std::to_string(targetRow) + ", " + std::to_string(targetCol) + ")");
+            }
+            return;
         }
 
         if (m_logger) {
-            m_logger->Info("Command: Move character to tile (" + std::to_string(targetRow) + 
-                         ", " + std::to_string(targetCol) + ")");
+            const Engine::Pathfinding::Stats& stats = m_impl->pathfinder->GetLastStats();
+            m_logger->Info("Path found! Length: " + std::to_string(stats.pathLength) + 
+                         " tiles, Nodes explored: " + std::to_string(stats.nodesExplored) +
+                         ", Time: " + std::to_string(stats.searchTime) + "ms");
         }
 
-        // Execute movement
-        MoveCharacterToTile(targetRow, targetCol, 0.3f);
+        // Store the path and start following it
+        m_impl->currentPath = path;
+        m_impl->currentPathIndex = 0;
+
+        // Start moving to the first tile in the path (which should be the current position)
+        // Skip to the next tile if path starts at current position
+        if (!m_impl->currentPath.empty() && 
+            m_impl->currentPath[0].row == m_impl->characterRow && 
+            m_impl->currentPath[0].col == m_impl->characterCol) {
+            m_impl->currentPathIndex = 0;
+
+            // If there's a next tile, start moving to it
+            if (m_impl->currentPath.size() > 1) {
+                m_impl->currentPathIndex = 1;
+                const Engine::TilePosition& nextTile = m_impl->currentPath[1];
+
+                // Determine direction for animation
+                int rowDiff = static_cast<int>(nextTile.row) - static_cast<int>(m_impl->characterRow);
+                int colDiff = static_cast<int>(nextTile.col) - static_cast<int>(m_impl->characterCol);
+
+                GameplaySceneImpl::Direction direction = GameplaySceneImpl::Direction::None;
+                if (abs(rowDiff) > abs(colDiff)) {
+                    direction = rowDiff > 0 ? GameplaySceneImpl::Direction::Down : GameplaySceneImpl::Direction::Up;
+                } else if (abs(colDiff) > 0) {
+                    direction = colDiff > 0 ? GameplaySceneImpl::Direction::Right : GameplaySceneImpl::Direction::Left;
+                }
+
+                // Set animation based on direction
+                m_impl->currentDirection = direction;
+                switch (direction) {
+                    case GameplaySceneImpl::Direction::Up:
+                        m_impl->character->SetAnimation("walk_up");
+                        break;
+                    case GameplaySceneImpl::Direction::Down:
+                        m_impl->character->SetAnimation("walk_down");
+                        break;
+                    case GameplaySceneImpl::Direction::Left:
+                        m_impl->character->SetAnimation("walk_left");
+                        break;
+                    case GameplaySceneImpl::Direction::Right:
+                        m_impl->character->SetAnimation("walk_right");
+                        break;
+                    default:
+                        break;
+                }
+
+                // Start movement
+                m_impl->targetRow = nextTile.row;
+                m_impl->targetCol = nextTile.col;
+                m_impl->isMoving = true;
+                m_impl->moveTime = 0.0f;
+                m_impl->moveDuration = 0.3f;
+            }
+        }
     }
 }

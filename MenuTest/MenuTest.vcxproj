@@ -33,6 +33,7 @@
     <ClCompile Include="Engine\Scene\Scene.cpp" />
     <ClCompile Include="Engine\Scene\SceneManager.cpp" />
     <ClCompile Include="Engine\UI\Button.cpp" />
+    <ClCompile Include="Engine\World\Pathfinding.cpp" />
     <ClCompile Include="Engine\World\TileMap.cpp" />
     <ClCompile Include="Game\LegalCrimeApp.cpp" />
     <ClCompile Include="Game\Scenes\GameplayScene.cpp" />
@@ -61,6 +62,7 @@
     <ClInclude Include="Engine\Scene\Scene.h" />
     <ClInclude Include="Engine\Scene\SceneManager.h" />
     <ClInclude Include="Engine\UI\Button.h" />
+    <ClInclude Include="Engine\World\Pathfinding.h" />
     <ClInclude Include="Engine\World\SimpleTest.h" />
     <ClInclude Include="Engine\World\TileMap.h" />
     <ClInclude Include="Game\CharacterConfigs.h" />
@@ -90,6 +92,7 @@
     <None Include="MIGRATION_COMPLETED.md" />
     <None Include="MIGRATION_COMPLETE_SUMMARY.md" />
     <None Include="MIGRATION_GUIDE_PHASE2.md" />
+    <None Include="PATHFINDING.md" />
     <None Include="PHASE2_COMPLETE.md" />
     <None Include="PHASE2_DELETION_SUMMARY.md" />
     <None Include="PHASE3_COMPLETE.md" />

@@ -12,20 +12,32 @@ namespace Engine {
     class IRenderer;
     class ILogger;
     
+    // Tile types
+    enum class TileType : uint16_t {
+        Empty = 0,
+        Floor = 1,
+        Wall = 2,
+        Obstacle = 3
+    };
+
     // Represents a single tile in the tilemap
     class Tile {
     public:
-        Tile() : m_id(0) {}
-        explicit Tile(uint16_t id) : m_id(id) {}
-        
+        Tile() : m_id(0), m_walkable(true) {}
+        explicit Tile(uint16_t id) : m_id(id), m_walkable(true) {}
+
         void SetId(uint16_t id) { m_id = id; }
         uint16_t GetId() const { return m_id; }
-        
+
+        void SetWalkable(bool walkable) { m_walkable = walkable; }
+        bool IsWalkable() const { return m_walkable; }
+
         // Render this tile as an isometric diamond
         bool Render(IRenderer* renderer, const Point& topLeft, int tileWidth, int tileHeight) const;
-        
+
     private:
         uint16_t m_id;
+        bool m_walkable;
     };
     
     // Modern tilemap class with proper resource management
