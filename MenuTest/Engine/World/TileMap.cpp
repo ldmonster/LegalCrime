@@ -31,10 +31,10 @@ namespace Engine {
         : m_logger(logger)
         , m_mapWidth(width)
         , m_mapHeight(height)
-        , m_tileWidth(30)
-        , m_tileHeight(15)  // Half of tileWidth for isometric
-        , m_mapSizeWidth((width + height) * 30)
-        , m_mapSizeHeight((width + height) * 15)
+        , m_tileWidth(DEFAULT_TILE_WIDTH)
+        , m_tileHeight(DEFAULT_TILE_HEIGHT)  // Half of tileWidth for isometric
+        , m_mapSizeWidth((width + height) * DEFAULT_TILE_WIDTH)
+        , m_mapSizeHeight((width + height) * DEFAULT_TILE_HEIGHT)
         , m_mapTexture(nullptr)
         , m_windowCenter(0, 0)
         , m_offsetX(0)
@@ -302,5 +302,33 @@ namespace Engine {
             m_offsetX = static_cast<int>(m_offsetX * scale);
             m_offsetY = static_cast<int>(m_offsetY * scale);
         }
+    }
+
+    Point TileMap::TileToScreen(uint16_t row, uint16_t col) const {
+        if (!m_initialized) {
+            return Point(0, 0);
+        }
+
+        // Calculate tile position in map texture space
+        int firstX = 0;
+        int firstY = m_mapWidth * m_tileHeight;
+
+        int tileX = firstX + (col + row) * m_tileWidth;
+        int tileY = firstY - (col - row) * m_tileHeight;
+
+        // Convert to screen space with map offset and camera offset
+        int screenX = tileX + m_mapRenderRect.x + m_offsetX;
+        int screenY = tileY + m_mapRenderRect.y + m_offsetY;
+
+        return Point(screenX, screenY);
+    }
+
+    Point TileMap::TileToScreenCenter(uint16_t row, uint16_t col) const {
+        Point topLeft = TileToScreen(row, col);
+
+        // Center of isometric diamond is at (tileWidth, 0) from top-left point
+        topLeft.x += m_tileWidth;
+
+        return topLeft;
     }
 }

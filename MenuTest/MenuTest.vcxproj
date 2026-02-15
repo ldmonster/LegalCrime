@@ -23,6 +23,7 @@
     <ClCompile Include="Engine\Audio\SoundEffect.cpp" />
     <ClCompile Include="Engine\Core\Application.cpp" />
     <ClCompile Include="Engine\Core\Logger\Logger.cpp" />
+    <ClCompile Include="Engine\Graphics\AnimatedSprite.cpp" />
     <ClCompile Include="Engine\Graphics\Sprite.cpp" />
     <ClCompile Include="Engine\Graphics\Texture.cpp" />
     <ClCompile Include="Engine\Platform\Window.cpp" />
@@ -44,6 +45,7 @@
     <ClInclude Include="Engine\Core\Logger\ILogger.h" />
     <ClInclude Include="Engine\Core\Logger\Logger.h" />
     <ClInclude Include="Engine\Core\Types.h" />
+    <ClInclude Include="Engine\Graphics\AnimatedSprite.h" />
     <ClInclude Include="Engine\Graphics\Sprite.h" />
     <ClInclude Include="Engine\Graphics\Texture.h" />
     <ClInclude Include="Engine\Platform\IWindow.h" />

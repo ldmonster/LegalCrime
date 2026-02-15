@@ -24,6 +24,9 @@ namespace LegalCrime {
         void Update(float deltaTime) override;
         void Render() override;
 
+        // Character movement
+        void MoveCharacterToTile(uint16_t row, uint16_t col, float duration = 0.3f);
+
     private:
         std::unique_ptr<GameplaySceneImpl> m_impl;
     };

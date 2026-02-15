@@ -63,7 +63,7 @@
     <ClCompile Include="main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Engine\Graphics\Sprite.cpp">
+    <ClCompile Include="Engine\Graphics\AnimatedSprite.cpp">`r`n      <Filter>Engine\Graphics</Filter>`r`n    </ClCompile>`r`n    <ClCompile Include="Engine\Graphics\Sprite.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Graphics\Texture.cpp">
@@ -76,6 +76,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Engine\Audio\SoundEffect.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Engine\Graphics\AnimatedSprite.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -134,7 +137,7 @@
     <ClInclude Include="Game\Scenes\GameplayScene.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Engine\Graphics\Sprite.h">
+    <ClInclude Include="Engine\Graphics\AnimatedSprite.h">`r`n      <Filter>Engine\Graphics</Filter>`r`n    </ClInclude>`r`n    <ClInclude Include="Engine\Graphics\Sprite.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Engine\Graphics\Texture.h">
@@ -150,6 +153,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Engine\World\SimpleTest.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\Graphics\AnimatedSprite.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

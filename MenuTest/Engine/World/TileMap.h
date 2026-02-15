@@ -31,6 +31,10 @@ namespace Engine {
     // Modern tilemap class with proper resource management
     class TileMap {
     public:
+        // Default isometric tile dimensions
+        static constexpr uint16_t DEFAULT_TILE_WIDTH = 50;
+        static constexpr uint16_t DEFAULT_TILE_HEIGHT = 25;  // Half of width for isometric
+
         TileMap(uint16_t width, uint16_t height, ILogger* logger = nullptr);
         ~TileMap();
         
@@ -60,6 +64,10 @@ namespace Engine {
 
         // Bounds (30% additional space beyond map size)
         Rect GetBounds() const;
+
+        // Coordinate conversion
+        Point TileToScreen(uint16_t row, uint16_t col) const;
+        Point TileToScreenCenter(uint16_t row, uint16_t col) const;
         
     private:
         void RenderMapTexture(IRenderer* renderer);
