@@ -1,9 +1,9 @@
 #include "GameplayScene.h"
 #include "../../Engine/World/TileMap.h"
 #include "../../Engine/World/Pathfinding.h"
-#include "../../Engine/Graphics/CharacterSprite.h"
-#include "../../Engine/Graphics/CharacterSpriteLoader.h"
-#include "../CharacterConfigs.h"
+#include "../Entities/Character.h"
+#include "../Entities/CharacterFactory.h"
+#include "../Input/GameInputBindings.h"
 #include <cmath>
 
 namespace LegalCrime {
@@ -12,9 +12,10 @@ namespace LegalCrime {
     class GameplaySceneImpl {
     public:
         std::unique_ptr<Engine::TileMap> tileMap;
-        std::unique_ptr<Engine::CharacterSprite> character;
-        std::unique_ptr<Engine::CharacterSpriteLoader> spriteLoader;
+        std::unique_ptr<Entities::Character> character;
+        std::unique_ptr<Entities::CharacterFactory> characterFactory;
         std::unique_ptr<Engine::Pathfinding> pathfinder;
+        Engine::Input::InputManager* inputManager;
 
         // Character tile position
         uint16_t characterRow;
@@ -49,6 +50,7 @@ namespace LegalCrime {
         GameplaySceneImpl()
             : tileMap(nullptr)
             , character(nullptr)
+            , inputManager(nullptr)
             , characterRow(0)
             , characterCol(0)
             , targetRow(0)
@@ -67,15 +69,27 @@ namespace LegalCrime {
 
         void Cleanup() {
             character.reset();
-            spriteLoader.reset();
+            characterFactory.reset();
             pathfinder.reset();
             tileMap.reset();
         }
     };
 
-    GameplayScene::GameplayScene(Engine::ILogger* logger, Engine::IRenderer* renderer)
+    GameplayScene::GameplayScene(
+        Engine::ILogger* logger,
+        Engine::IRenderer* renderer,
+        Engine::Input::InputManager* inputManager,
+        Engine::Resources::ResourceManager* resourceManager)
         : Scene("Gameplay", logger, renderer)
         , m_impl(std::make_unique<GameplaySceneImpl>()) {
+        // Store input manager reference
+        m_impl->inputManager = inputManager;
+
+        // Create character factory
+        m_impl->characterFactory = std::make_unique<Entities::CharacterFactory>(
+            resourceManager,
+            logger
+        );
     }
 
     GameplayScene::~GameplayScene() {
@@ -124,17 +138,8 @@ namespace LegalCrime {
         // Create pathfinding system
         m_impl->pathfinder = std::make_unique<Engine::Pathfinding>();
 
-        // Create character sprite loader
-        m_impl->spriteLoader = std::make_unique<Engine::CharacterSpriteLoader>(m_renderer, m_logger);
-
-        // Register all character configurations
-        m_impl->spriteLoader->RegisterConfig(CharacterConfigs::CreateThugConfig());
-        // Add more character types as needed:
-        // m_impl->spriteLoader->RegisterConfig(CharacterConfigs::CreateCopConfig());
-        // m_impl->spriteLoader->RegisterConfig(CharacterConfigs::CreateCivilianConfig());
-
-        // Create a thug character
-        m_impl->character = m_impl->spriteLoader->CreateCharacter("thug");
+        // Create a thug character using the factory
+        m_impl->character = m_impl->characterFactory->CreateCharacter(Entities::CharacterType::Thug);
 
         if (m_impl->character) {
             // Place character at center of map
@@ -157,14 +162,14 @@ namespace LegalCrime {
             m_impl->character->SetPosition(screenPos.x, screenPos.y);
 
             if (m_logger) {
-                m_logger->Info("Character sprite loaded successfully");
+                m_logger->Info("Character entity created successfully");
                 m_logger->Info("Character placed at tile (" + std::to_string(m_impl->characterRow) + 
                              ", " + std::to_string(m_impl->characterCol) + ") -> screen (" + 
                              std::to_string(screenPos.x) + ", " + std::to_string(screenPos.y) + ")");
             }
         } else {
             if (m_logger) {
-                m_logger->Warning("Failed to create character sprite");
+                m_logger->Warning("Failed to create character entity");
             }
         }
 
@@ -191,105 +196,16 @@ namespace LegalCrime {
     }
 
     void GameplayScene::HandleEvent(const SDL_Event& event) {
-        if (!m_initialized || !m_impl->tileMap) {
+        if (!m_initialized || !m_impl->tileMap || !m_impl->inputManager) {
             return;
         }
 
-        // RTS-style mouse controls
-        if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN) {
-            if (event.button.button == SDL_BUTTON_LEFT) {
-                // Left click - try to select character
-                SelectCharacterAt((int)event.button.x, (int)event.button.y);
-            }
-            else if (event.button.button == SDL_BUTTON_RIGHT) {
-                // Right click - command selected character to move
-                if (m_impl->isSelected) {
-                    CommandMoveToPosition((int)event.button.x, (int)event.button.y);
-                }
-            }
-        }
-
-        // Handle character movement with WASD or arrow keys
-        if (event.type == SDL_EVENT_KEY_DOWN && m_impl->character) {
-            // Only allow movement if character is not currently moving
-            if (!m_impl->isMoving) {
-                uint16_t newRow = m_impl->characterRow;
-                uint16_t newCol = m_impl->characterCol;
-                bool moved = false;
-                GameplaySceneImpl::Direction direction = GameplaySceneImpl::Direction::None;
-
-                switch (event.key.key) {
-                    case SDLK_W:
-                    case SDLK_UP:
-                        // Move north (up in isometric)
-                        if (m_impl->characterRow > 0) {
-                            newRow--;
-                            moved = true;
-                            direction = GameplaySceneImpl::Direction::Up;
-                        }
-                        break;
-                    case SDLK_S:
-                    case SDLK_DOWN:
-                        // Move south (down in isometric)
-                        if (m_impl->characterRow < m_impl->tileMap->GetHeight() - 1) {
-                            newRow++;
-                            moved = true;
-                            direction = GameplaySceneImpl::Direction::Down;
-                        }
-                        break;
-                    case SDLK_A:
-                    case SDLK_LEFT:
-                        // Move west (left in isometric)
-                        if (m_impl->characterCol > 0) {
-                            newCol--;
-                            moved = true;
-                            direction = GameplaySceneImpl::Direction::Left;
-                        }
-                        break;
-                    case SDLK_D:
-                    case SDLK_RIGHT:
-                        // Move east (right in isometric)
-                        if (m_impl->characterCol < m_impl->tileMap->GetWidth() - 1) {
-                            newCol++;
-                            moved = true;
-                            direction = GameplaySceneImpl::Direction::Right;
-                        }
-                        break;
-                }
-
-                if (moved) {
-                    m_impl->currentDirection = direction;
-
-                    // Change animation based on direction
-                    switch (direction) {
-                        case GameplaySceneImpl::Direction::Up:
-                            m_impl->character->SetAnimation("walk_up");
-                            break;
-                        case GameplaySceneImpl::Direction::Down:
-                            m_impl->character->SetAnimation("walk_down");
-                            break;
-                        case GameplaySceneImpl::Direction::Left:
-                            m_impl->character->SetAnimation("walk_left");
-                            break;
-                        case GameplaySceneImpl::Direction::Right:
-                            m_impl->character->SetAnimation("walk_right");
-                            break;
-                        default:
-                            break;
-                    }
-
-                    MoveCharacterToTile(newRow, newCol, 0.3f);
-                }
-            }
-        }
-
-        // Forward events to TileMap for camera panning
-        // Only forward drag events if not clicking on a character
+        // Forward drag events to TileMap for camera panning
+        // Only forward if not clicking on character
         if (event.type == SDL_EVENT_MOUSE_BUTTON_DOWN && event.button.button == SDL_BUTTON_LEFT) {
-            // Check if clicking on character first (including margin)
+            // Check if clicking on character first
             uint16_t clickedRow, clickedCol;
             if (m_impl->tileMap->ScreenToTile((int)event.button.x, (int)event.button.y, clickedRow, clickedCol)) {
-                // Check if clicking on character's tile or right margin
                 bool isOnCharacter = (clickedRow == m_impl->characterRow && clickedCol == m_impl->characterCol);
                 bool isInRightMargin = (clickedRow == m_impl->characterRow && 
                                        clickedCol == m_impl->characterCol + 1);
@@ -305,10 +221,89 @@ namespace LegalCrime {
         }
     }
 
+    void GameplayScene::HandleInputActions() {
+        using namespace InputBindings;
+
+        // Handle selection (left mouse button)
+        if (m_impl->inputManager->WasActionJustPressed(Actions::SELECT)) {
+            Engine::Input::MousePosition mousePos = m_impl->inputManager->GetMousePosition();
+            SelectCharacterAt(mousePos.x, mousePos.y);
+        }
+
+        // Handle command (right mouse button)
+        if (m_impl->inputManager->WasActionJustPressed(Actions::COMMAND)) {
+            if (m_impl->isSelected) {
+                Engine::Input::MousePosition mousePos = m_impl->inputManager->GetMousePosition();
+                CommandMoveToPosition(mousePos.x, mousePos.y);
+            }
+        }
+
+        // Handle keyboard movement (only when character is not moving and not selected)
+        if (m_impl->character && !m_impl->isMoving && !m_impl->isSelected) {
+            uint16_t newRow = m_impl->characterRow;
+            uint16_t newCol = m_impl->characterCol;
+            bool moved = false;
+            GameplaySceneImpl::Direction direction = GameplaySceneImpl::Direction::None;
+
+            if (m_impl->inputManager->WasActionJustPressed(Actions::MOVE_UP)) {
+                if (m_impl->characterRow > 0) {
+                    newRow--;
+                    moved = true;
+                    direction = GameplaySceneImpl::Direction::Up;
+                }
+            } else if (m_impl->inputManager->WasActionJustPressed(Actions::MOVE_DOWN)) {
+                if (m_impl->characterRow < m_impl->tileMap->GetHeight() - 1) {
+                    newRow++;
+                    moved = true;
+                    direction = GameplaySceneImpl::Direction::Down;
+                }
+            } else if (m_impl->inputManager->WasActionJustPressed(Actions::MOVE_LEFT)) {
+                if (m_impl->characterCol > 0) {
+                    newCol--;
+                    moved = true;
+                    direction = GameplaySceneImpl::Direction::Left;
+                }
+            } else if (m_impl->inputManager->WasActionJustPressed(Actions::MOVE_RIGHT)) {
+                if (m_impl->characterCol < m_impl->tileMap->GetWidth() - 1) {
+                    newCol++;
+                    moved = true;
+                    direction = GameplaySceneImpl::Direction::Right;
+                }
+            }
+
+            if (moved) {
+                m_impl->currentDirection = direction;
+
+                // Change animation based on direction
+                switch (direction) {
+                    case GameplaySceneImpl::Direction::Up:
+                        m_impl->character->SetAnimation("walk_up");
+                        break;
+                    case GameplaySceneImpl::Direction::Down:
+                        m_impl->character->SetAnimation("walk_down");
+                        break;
+                    case GameplaySceneImpl::Direction::Left:
+                        m_impl->character->SetAnimation("walk_left");
+                        break;
+                    case GameplaySceneImpl::Direction::Right:
+                        m_impl->character->SetAnimation("walk_right");
+                        break;
+                    default:
+                        break;
+                }
+
+                MoveCharacterToTile(newRow, newCol, 0.3f);
+            }
+        }
+    }
+
     void GameplayScene::Update(float deltaTime) {
-        if (!m_initialized || !m_impl->tileMap) {
+        if (!m_initialized || !m_impl->tileMap || !m_impl->inputManager) {
             return;
         }
+
+        // Handle input actions
+        HandleInputActions();
 
         // Update animated character
         if (m_impl->character) {
@@ -488,9 +483,7 @@ namespace LegalCrime {
 
         // Render character on top of tilemap
         if (m_impl->character) {
-            int x, y;
-            m_impl->character->GetPosition(x, y);
-            m_impl->character->Render(m_renderer, x, y);
+            m_impl->character->Render(m_renderer);
 
             // Render selection indicator if character is selected
             if (m_impl->isSelected) {

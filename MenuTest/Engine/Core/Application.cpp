@@ -69,7 +69,19 @@ namespace Engine {
             m_logger->Warning("Audio engine initialization failed: " + audioResult.error);
             // Continue without audio
         }
-        
+
+        // Create input manager
+        m_inputManager = std::make_unique<Input::InputManager>(m_logger.get());
+        m_inputManager->Initialize();
+
+        // Create resource manager
+        m_resourceManager = std::make_unique<Resources::ResourceManager>(
+            m_renderer.get(),
+            m_audioEngine.get(),
+            m_logger.get()
+        );
+        m_resourceManager->Initialize();
+
         // Create scene manager
         m_sceneManager = std::make_unique<SceneManager>(m_logger.get());
         
@@ -99,6 +111,7 @@ namespace Engine {
         OnShutdown();
 
         m_sceneManager.reset();
+        m_inputManager.reset();
         m_audioEngine.reset();
         m_renderer.reset();
         m_window.reset();
@@ -151,12 +164,23 @@ namespace Engine {
             if (event.type == SDL_EVENT_QUIT) {
                 Quit();
             }
-            
+
+            // Forward event to input manager first
+            if (m_inputManager) {
+                m_inputManager->ProcessEvent(event);
+            }
+
+            // Then to scene manager
             m_sceneManager->HandleEvent(event);
         }
     }
-    
+
     void Application::Update(float deltaTime) {
+        // Update input manager before game logic
+        if (m_inputManager) {
+            m_inputManager->Update();
+        }
+
         m_sceneManager->Update(deltaTime);
         OnUpdate(deltaTime);
     }
