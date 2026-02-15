@@ -631,12 +631,12 @@ TEST_CASE(TileMap_Bounds_GetBoundsMatchesMapSize) {
     TileMap tilemap(10, 10, &logger);
     tilemap.Initialize(1024, 768);
 
-    // Map size for 10x10 is (10+10)*30 = 600 width, (10+10)*15 = 300 height
-    // Bounds are 1.0x (same as map size for ~50% visibility at edges)
+    // Diamond dimensions: (width-1 + height-1) * tileSize
+    // For 10x10: (9+9)*30 = 540 width, (9+9)*15 = 270 height
     Rect bounds = tilemap.GetBounds();
 
-    ASSERT_EQUAL(bounds.w, 600);
-    ASSERT_EQUAL(bounds.h, 300);
+    ASSERT_EQUAL(bounds.w, 540);
+    ASSERT_EQUAL(bounds.h, 270);
     return SimpleTest::TestResult{__FUNCTION__, true, ""};
 }
 
@@ -648,10 +648,10 @@ TEST_CASE(TileMap_Bounds_BoundsCenteredAtWindowCenter) {
     Rect bounds = tilemap.GetBounds();
 
     // Window center is at 512, 384
-    // Bounds width is 600, so x should be 512 - 300 = 212
-    // Bounds height is 300, so y should be 384 - 150 = 234
-    ASSERT_EQUAL(bounds.x, 212);
-    ASSERT_EQUAL(bounds.y, 234);
+    // Bounds width is 540, so x should be 512 - 270 = 242
+    // Bounds height is 270, so y should be 384 - 135 = 249
+    ASSERT_EQUAL(bounds.x, 242);
+    ASSERT_EQUAL(bounds.y, 249);
     return SimpleTest::TestResult{__FUNCTION__, true, ""};
 }
 
@@ -660,11 +660,11 @@ TEST_CASE(TileMap_Bounds_SetOffsetClampsToPositiveXBound) {
     TileMap tilemap(10, 10, &logger);
     tilemap.Initialize(1024, 768);
 
-    // Map size width is 600, half is 300 (max offset)
+    // Diamond half-width = (9+9)*30/2 = 270
     tilemap.SetOffset(500, 0);
 
     Point offset = tilemap.GetOffset();
-    ASSERT_EQUAL(offset.x, 300); // Clamped to max (half of map width)
+    ASSERT_EQUAL(offset.x, 270); // Clamped to max
     return SimpleTest::TestResult{__FUNCTION__, true, ""};
 }
 
@@ -676,7 +676,7 @@ TEST_CASE(TileMap_Bounds_SetOffsetClampsToNegativeXBound) {
     tilemap.SetOffset(-500, 0);
 
     Point offset = tilemap.GetOffset();
-    ASSERT_EQUAL(offset.x, -300); // Clamped to min (half of map width)
+    ASSERT_EQUAL(offset.x, -270); // Clamped to min
     return SimpleTest::TestResult{__FUNCTION__, true, ""};
 }
 
@@ -685,11 +685,11 @@ TEST_CASE(TileMap_Bounds_SetOffsetClampsToPositiveYBound) {
     TileMap tilemap(10, 10, &logger);
     tilemap.Initialize(1024, 768);
 
-    // Map size height is 300, half is 150 (max offset)
+    // Diamond half-height = (9+9)*15/2 = 135
     tilemap.SetOffset(0, 300);
 
     Point offset = tilemap.GetOffset();
-    ASSERT_EQUAL(offset.y, 150); // Clamped to max (half of map height)
+    ASSERT_EQUAL(offset.y, 135); // Clamped to max
     return SimpleTest::TestResult{__FUNCTION__, true, ""};
 }
 
@@ -701,7 +701,7 @@ TEST_CASE(TileMap_Bounds_SetOffsetClampsToNegativeYBound) {
     tilemap.SetOffset(0, -300);
 
     Point offset = tilemap.GetOffset();
-    ASSERT_EQUAL(offset.y, -150); // Clamped to min (half of map height)
+    ASSERT_EQUAL(offset.y, -135); // Clamped to min
     return SimpleTest::TestResult{__FUNCTION__, true, ""};
 }
 
@@ -724,7 +724,7 @@ TEST_CASE(TileMap_Bounds_ArrowKeyClampsAtBoundary) {
     tilemap.Initialize(1024, 768);
 
     // Set to near max boundary
-    tilemap.SetOffset(290, 0);
+    tilemap.SetOffset(260, 0);
 
     SDL_Event event{};
     event.type = SDL_EVENT_KEY_DOWN;
@@ -733,7 +733,7 @@ TEST_CASE(TileMap_Bounds_ArrowKeyClampsAtBoundary) {
     tilemap.HandleEvent(event);
 
     Point offset = tilemap.GetOffset();
-    ASSERT_EQUAL(offset.x, 300); // Clamped to max (290 + 20 = 310, but max is 300)
+    ASSERT_EQUAL(offset.x, 270); // Clamped to max (260 + 20 = 280, but max is 270)
     return SimpleTest::TestResult{__FUNCTION__, true, ""};
 }
 
@@ -752,7 +752,7 @@ TEST_CASE(TileMap_Bounds_MultiplePressesStopAtBoundary) {
     }
 
     Point offset = tilemap.GetOffset();
-    ASSERT_EQUAL(offset.y, 150); // Clamped to max Y
+    ASSERT_EQUAL(offset.y, 135); // Clamped to max Y
     return SimpleTest::TestResult{__FUNCTION__, true, ""};
 }
 
@@ -761,12 +761,11 @@ TEST_CASE(TileMap_Bounds_DifferentMapSizeHasDifferentBounds) {
     TileMap tilemap(20, 20, &logger); // Larger map
     tilemap.Initialize(1024, 768);
 
-    // Map size for 20x20 is (20+20)*30 = 1200 width, (20+20)*15 = 600 height
-    // Bounds are 1.0x (same as map size)
+    // Diamond: (19+19)*30 = 1140, (19+19)*15 = 570
     Rect bounds = tilemap.GetBounds();
 
-    ASSERT_EQUAL(bounds.w, 1200);
-    ASSERT_EQUAL(bounds.h, 600);
+    ASSERT_EQUAL(bounds.w, 1140);
+    ASSERT_EQUAL(bounds.h, 570);
     return SimpleTest::TestResult{__FUNCTION__, true, ""};
 }
 
@@ -775,11 +774,11 @@ TEST_CASE(TileMap_Bounds_LargerMapAllowsMorePanning) {
     TileMap tilemap(20, 20, &logger);
     tilemap.Initialize(1024, 768);
 
-    // Map size width is 1200, half is 600 (max offset)
+    // Diamond half-width = (19+19)*30/2 = 570
     tilemap.SetOffset(800, 0);
 
     Point offset = tilemap.GetOffset();
-    ASSERT_EQUAL(offset.x, 600); // Larger bound than 10x10 map
+    ASSERT_EQUAL(offset.x, 570); // Larger bound than 10x10 map
     return SimpleTest::TestResult{__FUNCTION__, true, ""};
 }
 
@@ -791,12 +790,12 @@ TEST_CASE(TileMap_Bounds_BothAxesClamped) {
     tilemap.SetOffset(500, 500);
 
     Point offset = tilemap.GetOffset();
-    // With diamond bounds: |x|/300 + |y|/150 <= 1
-    // 500/300 + 500/150 = 1.667 + 3.333 = 5.0
-    // Scale factor = 1/5.0 = 0.2
-    // Result: x=100, y=100
-    ASSERT_EQUAL(offset.x, 100);
-    ASSERT_EQUAL(offset.y, 100);
+    // With diamond bounds: |x|/270 + |y|/135 <= 1
+    // 500/270 + 500/135 = 1.852 + 3.704 = 5.556
+    // Scale factor = 1/5.556 = 0.18
+    // Result: x=90, y=90
+    ASSERT_EQUAL(offset.x, 90);
+    ASSERT_EQUAL(offset.y, 90);
     return SimpleTest::TestResult{__FUNCTION__, true, ""};
 }
 
@@ -808,10 +807,10 @@ TEST_CASE(TileMap_Bounds_NegativeBothAxesClamped) {
     tilemap.SetOffset(-500, -500);
 
     Point offset = tilemap.GetOffset();
-    // Same scaling as positive: scale = 0.2
-    // Result: x=-100, y=-100
-    ASSERT_EQUAL(offset.x, -100);
-    ASSERT_EQUAL(offset.y, -100);
+    // Same scaling as positive: scale = 0.18
+    // Result: x=-90, y=-90
+    ASSERT_EQUAL(offset.x, -90);
+    ASSERT_EQUAL(offset.y, -90);
     return SimpleTest::TestResult{__FUNCTION__, true, ""};
 }
 
@@ -833,11 +832,11 @@ TEST_CASE(TileMap_Bounds_ExactlyAtPositiveBoundary) {
     TileMap tilemap(10, 10, &logger);
     tilemap.Initialize(1024, 768);
 
-    // Diamond vertices: (±300, 0) and (0, ±150)
-    tilemap.SetOffset(300, 0);
+    // Diamond vertices: (±270, 0) and (0, ±135)
+    tilemap.SetOffset(270, 0);
 
     Point offset = tilemap.GetOffset();
-    ASSERT_EQUAL(offset.x, 300);
+    ASSERT_EQUAL(offset.x, 270);
     ASSERT_EQUAL(offset.y, 0);
     return SimpleTest::TestResult{__FUNCTION__, true, ""};
 }
@@ -847,11 +846,114 @@ TEST_CASE(TileMap_Bounds_ExactlyAtNegativeBoundary) {
     TileMap tilemap(10, 10, &logger);
     tilemap.Initialize(1024, 768);
 
-    tilemap.SetOffset(-300, 0);
+    tilemap.SetOffset(-270, 0);
 
     Point offset = tilemap.GetOffset();
-    ASSERT_EQUAL(offset.x, -300);
+    ASSERT_EQUAL(offset.x, -270);
     ASSERT_EQUAL(offset.y, 0);
+    return SimpleTest::TestResult{__FUNCTION__, true, ""};
+}
+
+// ============================================================================
+// Non-Square Map Bounds Tests
+// ============================================================================
+
+TEST_CASE(TileMap_Bounds_WideMap_HorizontalBounds) {
+    TestLogger logger;
+    TileMap tilemap(100, 10, &logger); // 100 wide, 10 tall
+    tilemap.Initialize(1024, 768);
+
+    // Diamond width: (99+9)*30 = 3240, half = 1620
+    tilemap.SetOffset(2000, 0);
+
+    Point offset = tilemap.GetOffset();
+    ASSERT_EQUAL(offset.x, 1620); // Clamped to max
+    return SimpleTest::TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(TileMap_Bounds_WideMap_VerticalBounds) {
+    TestLogger logger;
+    TileMap tilemap(100, 10, &logger); // 100 wide, 10 tall
+    tilemap.Initialize(1024, 768);
+
+    // Diamond height: (99+9)*15 = 1620, half = 810
+    tilemap.SetOffset(0, 1000);
+
+    Point offset = tilemap.GetOffset();
+    ASSERT_EQUAL(offset.y, 810); // Clamped to max
+    return SimpleTest::TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(TileMap_Bounds_TallMap_HorizontalBounds) {
+    TestLogger logger;
+    TileMap tilemap(10, 100, &logger); // 10 wide, 100 tall
+    tilemap.Initialize(1024, 768);
+
+    // Diamond width: (9+99)*30 = 3240, half = 1620
+    // SAME as 100×10 because diamond formula is symmetric!
+    tilemap.SetOffset(2000, 0);
+
+    Point offset = tilemap.GetOffset();
+    ASSERT_EQUAL(offset.x, 1620); // Clamped to max
+    return SimpleTest::TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(TileMap_Bounds_TallMap_VerticalBounds) {
+    TestLogger logger;
+    TileMap tilemap(10, 100, &logger); // 10 wide, 100 tall
+    tilemap.Initialize(1024, 768);
+
+    // Diamond height: (9+99)*15 = 1620, half = 810
+    // SAME as 100×10!
+    tilemap.SetOffset(0, 1000);
+
+    Point offset = tilemap.GetOffset();
+    ASSERT_EQUAL(offset.y, 810); // Clamped to max
+    return SimpleTest::TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(TileMap_Bounds_TallMap_DiagonalClamping) {
+    TestLogger logger;
+    TileMap tilemap(10, 100, &logger);
+    tilemap.Initialize(1024, 768);
+
+    // halfWidth = 1620, halfHeight = 810
+    // Try to set (1620, 810) which is on the diamond edge
+    tilemap.SetOffset(1620, 810);
+
+    Point offset = tilemap.GetOffset();
+    // Distance = 1620/1620 + 810/810 = 1 + 1 = 2.0
+    // Scale = 1/2.0 = 0.5
+    // Result: (810, 405)
+    ASSERT_EQUAL(offset.x, 810);
+    ASSERT_EQUAL(offset.y, 405);
+    return SimpleTest::TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(TileMap_Bounds_WideMap_GetBounds) {
+    TestLogger logger;
+    TileMap tilemap(100, 10, &logger);
+    tilemap.Initialize(1024, 768);
+
+    Rect bounds = tilemap.GetBounds();
+
+    // Diamond: (99+9)*30 = 3240, (99+9)*15 = 1620
+    ASSERT_EQUAL(bounds.w, 3240);
+    ASSERT_EQUAL(bounds.h, 1620);
+    return SimpleTest::TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(TileMap_Bounds_TallMap_GetBounds) {
+    TestLogger logger;
+    TileMap tilemap(10, 100, &logger);
+    tilemap.Initialize(1024, 768);
+
+    Rect bounds = tilemap.GetBounds();
+
+    // Diamond: (9+99)*30 = 3240, (9+99)*15 = 1620
+    // SAME as 100×10!
+    ASSERT_EQUAL(bounds.w, 3240);
+    ASSERT_EQUAL(bounds.h, 1620);
     return SimpleTest::TestResult{__FUNCTION__, true, ""};
 }
 

@@ -143,7 +143,9 @@ namespace Engine {
         
         // Render all tiles
         uint16_t firstX = 0;
-        uint16_t firstY = m_mapSizeHeight / 2;
+        // Position firstY so the topmost tile (when j is max, i is 0) starts at Y=0
+        // The topmost Y is: firstY - (width - 1) * tileHeight, so set it to (width - 1) * tileHeight
+        uint16_t firstY = (m_mapWidth - 1) * m_tileHeight;
         
         for (uint16_t i = 0; i < m_mapHeight; i++) {
             for (uint16_t j = 0; j < m_mapWidth; j++) {
@@ -239,9 +241,12 @@ namespace Engine {
     }
 
     Rect TileMap::GetBounds() const {
-        // Bounds are same as map size (ensures ~50% visibility at edges)
-        int boundWidth = m_mapSizeWidth;
-        int boundHeight = m_mapSizeHeight;
+        // Bounds based on actual diamond corner positions
+        float diamondWidth = (m_mapWidth - 1 + m_mapHeight - 1) * m_tileWidth;
+        float diamondHeight = (m_mapWidth - 1 + m_mapHeight - 1) * m_tileHeight;
+
+        int boundWidth = static_cast<int>(diamondWidth);
+        int boundHeight = static_cast<int>(diamondHeight);
 
         // Center the bounds around the window center
         int boundX = -boundWidth / 2 + m_windowCenter.x;
@@ -251,26 +256,37 @@ namespace Engine {
     }
 
     void TileMap::ClampOffsetToBounds() {
-        // Rhombus (diamond) bounds matching isometric tilemap shape
-        // The tilemap forms a diamond with 4 vertices
+        // Rhombus (diamond) bounds based on actual tile corner positions
+        // The isometric diamond has 4 vertices:
+        // - Top: tile (0, width-1)
+        // - Right: tile (0, 0)
+        // - Bottom: tile (height-1, 0)
+        // - Left: tile (height-1, width-1)
 
-        // Calculate the half-dimensions of the map diamond
-        float halfWidth = m_mapSizeWidth / 2.0f;   // Horizontal extent from center
-        float halfHeight = m_mapSizeHeight / 2.0f; // Vertical extent from center
+        // Calculate the actual diamond dimensions from corner tile positions
+        // Horizontal extent: from right corner to left corner
+        // Right is at x=0, Left is at x=(width-1+height-1)*tileWidth
+        float diamondWidth = (m_mapWidth - 1 + m_mapHeight - 1) * m_tileWidth;
 
-        // Limit bounds to ensure at least 50% of tilemap remains visible
-        // Using 1.0x means we can pan to the edge, showing ~50% of map at bounds
-        // Adjust this value: 1.0 = 50% visible, 1.1 = ~40% visible, 1.3 = ~20% visible
-        float boundHalfWidth = halfWidth * 1.0f;
-        float boundHalfHeight = halfHeight * 1.0f;
+        // Vertical extent: from top corner to bottom corner
+        // Top is at y=-(width-1)*tileHeight, Bottom is at y=+(height-1)*tileHeight
+        float diamondHeight = (m_mapWidth - 1 + m_mapHeight - 1) * m_tileHeight;
+
+        // Automatically adjust bounds multiplier based on map aspect ratio
+        // Square maps (1:1) get tighter bounds (1.0x = 50% visible at edges)
+        // Rectangular maps get looser bounds (up to 2.0x = 25% visible at edges)
+        float aspectRatio = static_cast<float>(m_mapWidth > m_mapHeight ? 
+            m_mapWidth : m_mapHeight) / static_cast<float>(m_mapWidth < m_mapHeight ? 
+            m_mapWidth : m_mapHeight);
+
+        // Interpolate multiplier: 1.0x for square (ratio=1), 2.0x for very rectangular (ratio=10+)
+        float boundMultiplier = 1.0f + (std::min(aspectRatio, 10.0f) - 1.0f) / 9.0f;
+
+        float boundHalfWidth = (diamondWidth / 2.0f) * boundMultiplier;
+        float boundHalfHeight = (diamondHeight / 2.0f) * boundMultiplier;
 
         // For a diamond/rhombus, the edge equation is: |x|/w + |y|/h <= 1
         // This works for all 4 edges (top, right, bottom, left)
-        // Diamond vertices in offset space: 
-        //   - Right:  (+boundHalfWidth, 0)
-        //   - Top:    (0, -boundHalfHeight) [negative Y is up]
-        //   - Left:   (-boundHalfWidth, 0)
-        //   - Bottom: (0, +boundHalfHeight)
 
         float normalizedX = std::abs(static_cast<float>(m_offsetX)) / boundHalfWidth;
         float normalizedY = std::abs(static_cast<float>(m_offsetY)) / boundHalfHeight;

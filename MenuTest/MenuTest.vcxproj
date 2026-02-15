@@ -63,6 +63,7 @@
     <ClInclude Include="src\helpers\StringsHelper.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="ADAPTIVE_BOUNDS.md" />
     <None Include="ARCHITECTURE_SUMMARY.md" />
     <None Include="BOUNDS_IMPLEMENTATION.md" />
     <None Include="BUILD_AND_TEST.md" />

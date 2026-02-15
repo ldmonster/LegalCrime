@@ -188,5 +188,6 @@
     <None Include="TESTING.md" />
     <None Include="Tests\.gitignore" />
     <None Include="BOUNDS_IMPLEMENTATION.md" />
+    <None Include="ADAPTIVE_BOUNDS.md" />
   </ItemGroup>
 </Project>
