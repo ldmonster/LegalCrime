@@ -143,9 +143,12 @@ namespace Engine {
         
         // Render all tiles
         uint16_t firstX = 0;
-        // Position firstY so the topmost tile (when j is max, i is 0) starts at Y=0
-        // The topmost Y is: firstY - (width - 1) * tileHeight, so set it to (width - 1) * tileHeight
-        uint16_t firstY = (m_mapWidth - 1) * m_tileHeight;
+        // Position firstY so the topmost point of the topmost tile diamond is at Y=0
+        // The topmost tile (j=width-1, i=0) has tilePos.y = firstY - (width-1)*tileHeight
+        // The TOP of the diamond is at tilePos.y - tileHeight
+        // We want: firstY - (width-1)*tileHeight - tileHeight = 0
+        // Therefore: firstY = width * tileHeight
+        uint16_t firstY = m_mapWidth * m_tileHeight;
         
         for (uint16_t i = 0; i < m_mapHeight; i++) {
             for (uint16_t j = 0; j < m_mapWidth; j++) {
