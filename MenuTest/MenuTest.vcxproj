@@ -54,6 +54,7 @@
     <ClInclude Include="Engine\Scene\Scene.h" />
     <ClInclude Include="Engine\Scene\SceneManager.h" />
     <ClInclude Include="Engine\UI\Button.h" />
+    <ClInclude Include="Engine\World\SimpleTest.h" />
     <ClInclude Include="Engine\World\TileMap.h" />
     <ClInclude Include="Game\LegalCrimeApp.h" />
     <ClInclude Include="Game\Scenes\MainMenuScene.h" />
@@ -70,6 +71,8 @@
     <None Include="COMPILATION_FIXES.md" />
     <None Include="COMPLETE_LEGACY_INVENTORY.md" />
     <None Include="COMPLETE_MIGRATION_ALL_PHASES.md" />
+    <None Include="Engine\World\README.md" />
+    <None Include="Engine\World\TILEMAP_TESTS_README.md" />
     <None Include="FIXES_COMPLETE.md" />
     <None Include="LEGACY_MIGRATION_STATUS.md" />
     <None Include="MIGRATION_CHECKLIST.md" />
@@ -84,7 +87,12 @@
     <None Include="PHASE5_GAMELOOP_COMPLETE.md" />
     <None Include="QUICK_REFERENCE_SCENES.md" />
     <None Include="REFACTORING_PHASE1_COMPLETE.md" />
+    <None Include="run_tests.bat" />
+    <None Include="run_tests_simple.ps1" />
+    <None Include="run_tilemap_tests.ps1" />
     <None Include="SCENE_MIGRATION_COMPLETE.md" />
+    <None Include="TESTING.md" />
+    <None Include="Tests\.gitignore" />
     <None Include="update_project.ps1" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
