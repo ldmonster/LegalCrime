@@ -1,6 +1,8 @@
 #include "LegalCrimeApp.h"
 #include "Scenes/MainMenuScene.h"
 #include "Scenes/GameplayScene.h"
+#include "Input/GameInputBindings.h"
+#include "Resources/GameResourceLoader.h"
 
 namespace LegalCrime {
 
@@ -13,7 +15,18 @@ namespace LegalCrime {
     
     Engine::Result<void> LegalCrimeApp::OnInitialize() {
         GetLogger()->Info("=== Legal Crime Game Initializing ===");
-        
+
+        // Initialize input bindings
+        InputBindings::InitializeBindings(GetInputManager());
+        GetLogger()->Info("Input bindings initialized");
+
+        // Preload essential resources
+        Resources::GameResourceLoader::LoadEssentialResources(GetResourceManager());
+        GetLogger()->Info("Essential resources loaded");
+
+        // Log resource statistics
+        GetResourceManager()->LogResourceStats();
+
         // Set window icon
         if (!GetWindow()->SetIcon("Pics/capone.ico")) {
             GetLogger()->Warning("Failed to set window icon");
@@ -86,7 +99,9 @@ namespace LegalCrime {
                     // Note: ReplaceScene will call Initialize() automatically
                     auto gameplayScene = std::make_unique<GameplayScene>(
                         GetLogger(),
-                        GetRenderer()
+                        GetRenderer(),
+                        GetInputManager(),
+                        GetResourceManager()
                     );
 
                     // Replace menu scene with gameplay scene

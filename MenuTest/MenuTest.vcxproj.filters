@@ -1,179 +1,142 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <Filter Include="Source Files">
-      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
-      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
-    </Filter>
-    <Filter Include="Header Files">
-      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
-      <Extensions>h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
-    </Filter>
-    <Filter Include="Resource Files">
-      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
-      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
-    </Filter>
-    <Filter Include="Header Files\src">
-      <UniqueIdentifier>{e0f0e075-0d88-40fc-b988-88953bc04490}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\src\logger">
-      <UniqueIdentifier>{169ff17b-5a05-44e0-9f2f-9518972d346a}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\src">
-      <UniqueIdentifier>{d6ee661a-73e9-4ac3-9146-9eb127f29056}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\src\logger">
-      <UniqueIdentifier>{a701a128-a17d-43cf-bac2-b5b031a2f35d}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Header Files\src\helpers">
-      <UniqueIdentifier>{b100209f-59e6-4ab3-a26b-7ceb81282df6}</UniqueIdentifier>
-    </Filter>
+    <ClCompile Include="Engine\Audio\AudioEngine.cpp" />
+    <ClCompile Include="Engine\Audio\SoundEffect.cpp" />
+    <ClCompile Include="Engine\Core\Application.cpp" />
+    <ClCompile Include="Engine\Core\Logger\Logger.cpp" />
+    <ClCompile Include="Engine\Graphics\AnimatedSprite.cpp" />
+    <ClCompile Include="Engine\Graphics\Sprite.cpp" />
+    <ClCompile Include="Engine\Graphics\Texture.cpp" />
+    <ClCompile Include="Engine\Platform\Window.cpp" />
+    <ClCompile Include="Engine\Renderer\Renderer.cpp" />
+    <ClCompile Include="Engine\Scene\Scene.cpp" />
+    <ClCompile Include="Engine\Scene\SceneManager.cpp" />
+    <ClCompile Include="Engine\UI\Button.cpp" />
+    <ClCompile Include="Engine\World\TileMap.cpp" />
+    <ClCompile Include="Game\LegalCrimeApp.cpp" />
+    <ClCompile Include="Game\Scenes\GameplayScene.cpp" />
+    <ClCompile Include="Game\Scenes\MainMenuScene.cpp" />
+    <ClCompile Include="main.cpp" />
+    <ClCompile Include="Engine\Graphics\CharacterSpriteLoader.cpp" />
+    <ClCompile Include="Engine\Graphics\CharacterSprite.cpp" />
+    <ClCompile Include="Engine\World\Pathfinding.cpp" />
+    <ClCompile Include="Engine\Input\InputAction.cpp" />
+    <ClCompile Include="Engine\Input\InputAxis.cpp" />
+    <ClCompile Include="Engine\Input\InputManager.cpp" />
+    <ClCompile Include="Engine\Resources\ResourceManager.cpp" />
+    <ClCompile Include="Engine\Resources\TextureManager.cpp" />
+    <ClCompile Include="Engine\Resources\AudioManager.cpp" />
+    <ClCompile Include="Game\Resources\GameResources.cpp" />
+    <ClCompile Include="Game\Resources\GameResourceLoader.cpp" />
+    <ClCompile Include="Engine\Entity\Entity.cpp" />
+    <ClCompile Include="Game\Entities\Character.cpp" />
+    <ClCompile Include="Game\Entities\CharacterFactory.cpp" />
+    <ClCompile Include="Engine\Camera\Camera2D.cpp" />
+    <ClCompile Include="Game\World\Systems\MovementSystem.cpp" />
+    <ClCompile Include="Game\World\Systems\SelectionSystem.cpp" />
+    <ClCompile Include="Game\World\World.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Engine\Audio\AudioEngine.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Engine\Core\Application.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Engine\Core\Logger\Logger.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Engine\Platform\Window.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Engine\Renderer\Renderer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Engine\Scene\Scene.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Engine\Scene\SceneManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Game\LegalCrimeApp.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Game\Scenes\GameplayScene.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Game\Scenes\MainMenuScene.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="main.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Engine\Graphics\Sprite.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Engine\Graphics\Texture.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Engine\UI\Button.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Engine\World\TileMap.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Engine\Audio\SoundEffect.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
+    <ClInclude Include="Engine\Audio\AudioEngine.h" />
+    <ClInclude Include="Engine\Audio\IAudioEngine.h" />
+    <ClInclude Include="Engine\Audio\SoundEffect.h" />
+    <ClInclude Include="Engine\Core\Application.h" />
+    <ClInclude Include="Engine\Core\Logger\ILogger.h" />
+    <ClInclude Include="Engine\Core\Logger\Logger.h" />
+    <ClInclude Include="Engine\Core\Types.h" />
+    <ClInclude Include="Engine\Graphics\AnimatedSprite.h" />
+    <ClInclude Include="Engine\Graphics\Sprite.h" />
+    <ClInclude Include="Engine\Graphics\Texture.h" />
+    <ClInclude Include="Engine\Platform\IWindow.h" />
+    <ClInclude Include="Engine\Platform\Window.h" />
+    <ClInclude Include="Engine\Renderer\IRenderer.h" />
+    <ClInclude Include="Engine\Renderer\Renderer.h" />
+    <ClInclude Include="Engine\Scene\IScene.h" />
+    <ClInclude Include="Engine\Scene\Scene.h" />
+    <ClInclude Include="Engine\Scene\SceneManager.h" />
+    <ClInclude Include="Engine\UI\Button.h" />
+    <ClInclude Include="Engine\World\SimpleTest.h" />
+    <ClInclude Include="Engine\World\TileMap.h" />
+    <ClInclude Include="Game\LegalCrimeApp.h" />
+    <ClInclude Include="Game\Scenes\MainMenuScene.h" />
+    <ClInclude Include="Game\Scenes\GameplayScene.h" />
+    <ClInclude Include="src\helpers\OsHelper.hpp" />
+    <ClInclude Include="src\helpers\StringsHelper.hpp" />
+    <ClInclude Include="Engine\Graphics\CharacterSpriteLoader.h" />
+    <ClInclude Include="Engine\Graphics\CharacterSprite.h" />
+    <ClInclude Include="Engine\Graphics\CharacterSpriteConfig.h" />
+    <ClInclude Include="Game\CharacterConfigs.h" />
+    <ClInclude Include="Engine\World\Pathfinding.h" />
+    <ClInclude Include="Engine\Input\InputTypes.h" />
+    <ClInclude Include="Engine\Input\InputAction.h" />
+    <ClInclude Include="Engine\Input\InputAxis.h" />
+    <ClInclude Include="Engine\Input\InputManager.h" />
+    <ClInclude Include="Game\Input\GameInputBindings.h" />
+    <ClInclude Include="Engine\Resources\Resource.h" />
+    <ClInclude Include="Engine\Resources\AudioManager.h" />
+    <ClInclude Include="Engine\Resources\TextureManager.h" />
+    <ClInclude Include="Engine\Resources\ResourceManager.h" />
+    <ClInclude Include="Game\Resources\ResourcePaths.h" />
+    <ClInclude Include="Game\Resources\GameResources.h" />
+    <ClInclude Include="Game\Resources\GameResourceLoader.h" />
+    <ClInclude Include="Engine\Entity\Transform.h" />
+    <ClInclude Include="Engine\Entity\Entity.h" />
+    <ClInclude Include="Game\Entities\CharacterData.h" />
+    <ClInclude Include="Game\Entities\Character.h" />
+    <ClInclude Include="Game\Entities\CharacterFactory.h" />
+    <ClInclude Include="Engine\Camera\Camera2D.h" />
+    <ClInclude Include="Game\World\Systems\MovementSystem.h" />
+    <ClInclude Include="Game\World\Systems\SelectionSystem.h" />
+    <ClInclude Include="Game\World\World.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\helpers\StringsHelper.hpp">
-      <Filter>Header Files\src\helpers</Filter>
-    </ClInclude>
-    <ClInclude Include="src\helpers\OsHelper.hpp">
-      <Filter>Header Files\src\helpers</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\Audio\AudioEngine.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\Audio\IAudioEngine.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\Core\Application.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\Core\Logger\ILogger.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\Core\Logger\Logger.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\Core\Types.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\Platform\IWindow.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\Platform\Window.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\Renderer\IRenderer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\Renderer\Renderer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\Scene\IScene.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\Scene\Scene.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\Scene\SceneManager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Game\LegalCrimeApp.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Game\Scenes\MainMenuScene.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Game\Scenes\GameplayScene.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\Graphics\Sprite.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\Graphics\Texture.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\UI\Button.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\World\TileMap.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\Audio\SoundEffect.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
+    <None Include="ADAPTIVE_BOUNDS.md" />
     <None Include="ARCHITECTURE_SUMMARY.md" />
+    <None Include="BOUNDS_IMPLEMENTATION.md" />
     <None Include="BUILD_AND_TEST.md" />
     <None Include="BUILD_FIXES_APPLIED.md" />
     <None Include="BUILD_INSTRUCTIONS.md" />
+    <None Include="BUILD_SUCCESS_FINAL.md" />
     <None Include="COMPILATION_FIXES.md" />
+    <None Include="COMPLETE_LEGACY_INVENTORY.md" />
+    <None Include="COMPLETE_MIGRATION_ALL_PHASES.md" />
+    <None Include="Engine\World\README.md" />
+    <None Include="Engine\World\TILEMAP_TESTS_README.md" />
     <None Include="FIXES_COMPLETE.md" />
+    <None Include="LEGACY_MIGRATION_STATUS.md" />
+    <None Include="MIGRATION_CHECKLIST.md" />
+    <None Include="MIGRATION_COMPLETED.md" />
+    <None Include="MIGRATION_COMPLETE_SUMMARY.md" />
     <None Include="MIGRATION_GUIDE_PHASE2.md" />
     <None Include="PHASE2_COMPLETE.md" />
-    <None Include="PHASE3_COMPLETE.md" />
-    <None Include="QUICK_REFERENCE_SCENES.md" />
-    <None Include="REFACTORING_PHASE1_COMPLETE.md" />
-    <None Include="SCENE_MIGRATION_COMPLETE.md" />
-    <None Include="update_project.ps1" />
-    <None Include="BUILD_SUCCESS_FINAL.md" />
-    <None Include="COMPLETE_LEGACY_INVENTORY.md" />
-    <None Include="LEGACY_MIGRATION_STATUS.md" />
-    <None Include="MIGRATION_COMPLETED.md" />
     <None Include="PHASE2_DELETION_SUMMARY.md" />
+    <None Include="PHASE3_COMPLETE.md" />
     <None Include="PHASE3_TILEMAP_COMPLETE.md" />
-    <None Include="MIGRATION_COMPLETE_SUMMARY.md" />
     <None Include="PHASE4_SOUND_COMPLETE.md" />
     <None Include="PHASE5_GAMELOOP_COMPLETE.md" />
-    <None Include="COMPLETE_MIGRATION_ALL_PHASES.md" />
-    <None Include="MIGRATION_CHECKLIST.md" />
+    <None Include="QUICK_REFERENCE_SCENES.md" />
+    <None Include="REFACTORING_PHASE1_COMPLETE.md" />
+    <None Include="run_tests.bat" />
+    <None Include="run_tests_simple.ps1" />
+    <None Include="run_tilemap_tests.ps1" />
+    <None Include="SCENE_MIGRATION_COMPLETE.md" />
+    <None Include="TESTING.md" />
+    <None Include="Tests\.gitignore" />
+    <None Include="update_project.ps1" />
+    <None Include="Engine\Graphics\CHARACTER_SPRITE_SYSTEM.md" />
+    <None Include="RTS_CONTROLS.md" />
+    <None Include="PATHFINDING.md" />
+    <None Include="PROJECT_ANALYSIS_AND_RECOMMENDATIONS.md" />
+    <None Include="INPUT_SYSTEM.md" />
+    <None Include="INPUT_SYSTEM_COMPLETE.md" />
+    <None Include="RESOURCE_SYSTEM.md" />
+    <None Include="RESOURCE_SYSTEM_COMPLETE.md" />
+    <None Include="ENTITY_SYSTEM_COMPLETE.md" />
+    <None Include="ENTITY_SYSTEM.md" />
+    <None Include="PHASE_1_COMPLETE.md" />
+    <None Include="CAMERA_SYSTEM_COMPLETE.md" />
+    <None Include="PHASE_2_PROGRESS.md" />
+    <None Include="CAMERA_PAN_FEATURE.md" />
   </ItemGroup>
 </Project>

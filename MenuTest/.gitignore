@@ -1,0 +1,7 @@
+# Ignore test output directory and compiled files
+Output/
+*.obj
+*.pdb
+*.ilk
+*.exe
+*.dll

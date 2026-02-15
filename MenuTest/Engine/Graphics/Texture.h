@@ -6,31 +6,23 @@
 #include <memory>
 
 namespace Engine {
-    
+
     class IRenderer;
     class ILogger;
-    
-    // Rectangle structure for engine use
-    struct Rect {
-        int x, y;
-        int w, h;
 
-        Rect() : x(0), y(0), w(0), h(0) {}
-        Rect(int x, int y, int w, int h) : x(x), y(y), w(w), h(h) {}
+    // SDL conversion utilities for Rect (extension functions)
+    inline SDL_Rect RectToSDL(const Rect& rect) {
+        return SDL_Rect{rect.x, rect.y, rect.w, rect.h};
+    }
 
-        SDL_Rect ToSDL() const {
-            return SDL_Rect{x, y, w, h};
-        }
+    inline SDL_FRect RectToSDLFloat(const Rect& rect) {
+        return SDL_FRect{(float)rect.x, (float)rect.y, (float)rect.w, (float)rect.h};
+    }
 
-        SDL_FRect ToSDLFloat() const {
-            return SDL_FRect{(float)x, (float)y, (float)w, (float)h};
-        }
+    inline Rect RectFromSDL(const SDL_Rect& rect) {
+        return Rect(rect.x, rect.y, rect.w, rect.h);
+    }
 
-        static Rect FromSDL(const SDL_Rect& rect) {
-            return Rect(rect.x, rect.y, rect.w, rect.h);
-        }
-    };
-    
     // Modern texture class with RAII
     class Texture {
     public:

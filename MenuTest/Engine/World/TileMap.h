@@ -8,29 +8,46 @@
 #include <string>
 
 namespace Engine {
-    
+
     class IRenderer;
     class ILogger;
+    class Camera2D;  // Forward declaration
     
+    // Tile types
+    enum class TileType : uint16_t {
+        Empty = 0,
+        Floor = 1,
+        Wall = 2,
+        Obstacle = 3
+    };
+
     // Represents a single tile in the tilemap
     class Tile {
     public:
-        Tile() : m_id(0) {}
-        explicit Tile(uint16_t id) : m_id(id) {}
-        
+        Tile() : m_id(0), m_walkable(true) {}
+        explicit Tile(uint16_t id) : m_id(id), m_walkable(true) {}
+
         void SetId(uint16_t id) { m_id = id; }
         uint16_t GetId() const { return m_id; }
-        
+
+        void SetWalkable(bool walkable) { m_walkable = walkable; }
+        bool IsWalkable() const { return m_walkable; }
+
         // Render this tile as an isometric diamond
         bool Render(IRenderer* renderer, const Point& topLeft, int tileWidth, int tileHeight) const;
-        
+
     private:
         uint16_t m_id;
+        bool m_walkable;
     };
     
     // Modern tilemap class with proper resource management
     class TileMap {
     public:
+        // Default isometric tile dimensions
+        static constexpr uint16_t DEFAULT_TILE_WIDTH = 50;
+        static constexpr uint16_t DEFAULT_TILE_HEIGHT = 25;  // Half of width for isometric
+
         TileMap(uint16_t width, uint16_t height, ILogger* logger = nullptr);
         ~TileMap();
         
@@ -39,10 +56,10 @@ namespace Engine {
         bool IsInitialized() const { return m_initialized; }
         
         // Rendering
-        void Render(IRenderer* renderer);
-        
-        // Event handling
-        void HandleEvent(const SDL_Event& event);
+        void Render(IRenderer* renderer, Camera2D* camera = nullptr);
+
+        // Event handling (for camera panning if camera provided)
+        void HandleEvent(const SDL_Event& event, Camera2D* camera = nullptr);
         
         // Tile access
         Tile* GetTile(uint16_t row, uint16_t col);
@@ -55,12 +72,21 @@ namespace Engine {
         uint16_t GetTileHeight() const { return m_tileHeight; }
         
         // Camera/viewport offset
-        void SetOffset(int x, int y) { m_offsetX = x; m_offsetY = y; }
+        void SetOffset(int x, int y);
         Point GetOffset() const { return Point(m_offsetX, m_offsetY); }
-        
+
+        // Bounds (30% additional space beyond map size)
+        Rect GetBounds() const;
+
+        // Coordinate conversion (with optional camera for world-space conversion)
+        Point TileToScreen(uint16_t row, uint16_t col, Camera2D* camera = nullptr) const;
+        Point TileToScreenCenter(uint16_t row, uint16_t col, Camera2D* camera = nullptr) const;
+        bool ScreenToTile(int screenX, int screenY, uint16_t& outRow, uint16_t& outCol, Camera2D* camera = nullptr) const;
+
     private:
         void RenderMapTexture(IRenderer* renderer);
         void RegenerateMapTexture(IRenderer* renderer);
+        void ClampOffsetToBounds();
         
         ILogger* m_logger;
         

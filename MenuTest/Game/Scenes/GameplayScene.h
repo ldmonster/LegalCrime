@@ -6,6 +6,16 @@
 #include <SDL3/SDL.h>
 #include <memory>
 
+// Forward declarations
+namespace Engine {
+    namespace Input {
+        class InputManager;
+    }
+    namespace Resources {
+        class ResourceManager;
+    }
+}
+
 namespace LegalCrime {
 
     // Forward declaration for implementation
@@ -14,7 +24,11 @@ namespace LegalCrime {
     // Gameplay scene
     class GameplayScene : public Engine::Scene {
     public:
-        GameplayScene(Engine::ILogger* logger, Engine::IRenderer* renderer);
+        GameplayScene(
+            Engine::ILogger* logger,
+            Engine::IRenderer* renderer,
+            Engine::Input::InputManager* inputManager,
+            Engine::Resources::ResourceManager* resourceManager);
         ~GameplayScene() override;
 
         Engine::Result<void> Initialize() override;
@@ -24,7 +38,17 @@ namespace LegalCrime {
         void Update(float deltaTime) override;
         void Render() override;
 
+        // Character movement
+        void MoveCharacterToTile(uint16_t row, uint16_t col, float duration = 0.3f);
+
+        // RTS-style commands
+        void SelectCharacterAt(int screenX, int screenY);
+        void CommandMoveToPosition(int screenX, int screenY);
+
     private:
         std::unique_ptr<GameplaySceneImpl> m_impl;
+
+        // Input handling
+        void HandleInputActions();
     };
 }
