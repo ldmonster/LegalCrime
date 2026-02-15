@@ -82,7 +82,8 @@ namespace Input {
         // Check if any bound mouse button is pressed
         bool isDown = false;
         for (MouseButton button : m_boundMouseButtons) {
-            if (mouseState & SDL_BUTTON_MASK(static_cast<int>(button))) {
+            uint32_t buttonMask = SDL_BUTTON_MASK(static_cast<int>(button));
+            if (mouseState & buttonMask) {
                 isDown = true;
                 break;
             }

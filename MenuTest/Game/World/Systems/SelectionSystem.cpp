@@ -58,8 +58,18 @@ namespace World {
 
         // Handle selection (left mouse button)
         if (inputManager->WasActionJustPressed(Actions::SELECT)) {
+            if (m_logger) {
+                m_logger->Debug("SELECT action detected at mouse position (" + 
+                              std::to_string(mousePos.x) + ", " + std::to_string(mousePos.y) + ")");
+            }
+
             uint16_t clickedRow, clickedCol;
             if (tileMap->ScreenToTile(mousePos.x, mousePos.y, clickedRow, clickedCol, camera)) {
+                if (m_logger) {
+                    m_logger->Debug("Clicked on tile (" + std::to_string(clickedRow) + ", " + 
+                                  std::to_string(clickedCol) + ")");
+                }
+
                 // Check if there's a character at this tile
                 Entities::Character* character = world->GetCharacterAtTile(clickedRow, clickedCol);
 

@@ -45,6 +45,14 @@ namespace Input {
                 m_mouseWheelDelta = static_cast<int>(event.wheel.y);
                 break;
 
+            case SDL_EVENT_MOUSE_BUTTON_DOWN:
+            case SDL_EVENT_MOUSE_BUTTON_UP:
+                // Mouse button state will be picked up by SDL_GetMouseState in Update()
+                // Just update position to ensure it's current
+                m_mousePosition.x = static_cast<int>(event.button.x);
+                m_mousePosition.y = static_cast<int>(event.button.y);
+                break;
+
             default:
                 break;
         }
@@ -56,13 +64,26 @@ namespace Input {
             return;
         }
 
+        // Reset previous frame's "just pressed/released" states at the START of the new frame
+        // This ensures PRESSED and JUST_RELEASED states persist for the entire frame
+        ResetFrameState();
+
         // Update keyboard state
         m_keyboardState = SDL_GetKeyboardState(nullptr);
 
         // Update mouse state
         float mouseX, mouseY;
+        uint32_t previousMouseState = m_mouseButtonState;
         m_mouseButtonState = SDL_GetMouseState(&mouseX, &mouseY);
-        
+
+        // Debug: Log mouse button state changes
+        if (m_logger && m_mouseButtonState != previousMouseState) {
+            bool leftPressed = (m_mouseButtonState & SDL_BUTTON_MASK(SDL_BUTTON_LEFT)) != 0;
+            m_logger->Debug("Mouse button state changed. Left button: " + 
+                          std::string(leftPressed ? "PRESSED" : "RELEASED") +
+                          " (state: " + std::to_string(m_mouseButtonState) + ")");
+        }
+
         // Calculate mouse delta
         m_mouseDelta.dx = m_mousePosition.x - m_previousMousePosition.x;
         m_mouseDelta.dy = m_mousePosition.y - m_previousMousePosition.y;
@@ -71,9 +92,6 @@ namespace Input {
         // Update all actions and axes
         UpdateActions();
         UpdateAxes();
-
-        // Reset per-frame state at the end
-        ResetFrameState();
     }
 
     InputAction* InputManager::CreateAction(const std::string& name) {
@@ -216,14 +234,24 @@ namespace Input {
     }
 
     void InputManager::UpdateActions() {
-        // Update previous keyboard state
-        if (m_keyboardState) {
-            for (auto& pair : m_actions) {
-                // Store previous state for edge detection
-                for (auto& action : m_actions) {
-                    // Actions will update themselves based on current input
-                    action.second->UpdateFromKeyboard(m_keyboardState, nullptr);
-                    action.second->UpdateFromMouse(m_mouseButtonState, nullptr);
+        // Update all actions from current input state
+        for (auto& pair : m_actions) {
+            // Actions will update themselves based on current input
+            pair.second->UpdateFromKeyboard(m_keyboardState, nullptr);
+            pair.second->UpdateFromMouse(m_mouseButtonState, nullptr);
+
+            // Debug logging for SELECT action
+            if (m_logger && pair.first == "Select") {
+                auto state = pair.second->GetState();
+                if (state != InputState::Released) {
+                    std::string stateStr;
+                    switch(state) {
+                        case InputState::Pressed: stateStr = "PRESSED"; break;
+                        case InputState::Held: stateStr = "HELD"; break;
+                        case InputState::JustReleased: stateStr = "JUST_RELEASED"; break;
+                        default: stateStr = "RELEASED"; break;
+                    }
+                    m_logger->Debug("SELECT action state: " + stateStr);
                 }
             }
         }
