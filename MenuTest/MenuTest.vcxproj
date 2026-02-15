@@ -116,6 +116,7 @@
     <None Include="BUILD_FIXES_APPLIED.md" />
     <None Include="BUILD_INSTRUCTIONS.md" />
     <None Include="BUILD_SUCCESS_FINAL.md" />
+    <None Include="CAMERA_PAN_FEATURE.md" />
     <None Include="CAMERA_SYSTEM_COMPLETE.md" />
     <None Include="COMPILATION_FIXES.md" />
     <None Include="COMPLETE_LEGACY_INVENTORY.md" />
