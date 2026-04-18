@@ -1,4 +1,5 @@
 #include "Camera2D.h"
+#include "../Core/Constants.h"
 #include <cmath>
 #include <algorithm>
 
@@ -10,13 +11,13 @@ namespace Engine {
         , m_viewportWidth(viewportWidth)
         , m_viewportHeight(viewportHeight)
         , m_zoom(1.0f)
-        , m_minZoom(0.1f)
-        , m_maxZoom(5.0f)
+        , m_minZoom(Constants::Camera::MIN_ZOOM)
+        , m_maxZoom(Constants::Camera::MAX_ZOOM)
         , m_hasBounds(false)
         , m_bounds(0, 0, 0, 0)
         , m_isFollowing(false)
         , m_followTarget(0, 0)
-        , m_followSmoothness(0.1f)
+        , m_followSmoothness(Constants::Camera::DEFAULT_FOLLOW_SMOOTHNESS)
         , m_isPanning(false)
         , m_panStartMousePos(0, 0)
         , m_panStartCameraPos(0, 0)
@@ -110,7 +111,7 @@ namespace Engine {
 
     void Camera2D::Follow(const Point& target, float smoothness) {
         m_followTarget = target;
-        m_followSmoothness = std::clamp(smoothness, 0.01f, 1.0f);
+        m_followSmoothness = std::clamp(smoothness, Constants::Camera::MIN_FOLLOW_SMOOTHNESS, Constants::Camera::MAX_FOLLOW_SMOOTHNESS);
         m_isFollowing = true;
     }
 
@@ -241,8 +242,8 @@ namespace Engine {
         float intensity = m_shakeIntensity * t;  // Decay over time
 
         // Use sine waves for smooth shake
-        int offsetX = static_cast<int>(std::sin(m_shakeTimeRemaining * 50.0f + m_shakeSeed) * intensity);
-        int offsetY = static_cast<int>(std::cos(m_shakeTimeRemaining * 45.0f + m_shakeSeed) * intensity);
+        int offsetX = static_cast<int>(std::sin(m_shakeTimeRemaining * Constants::Camera::SHAKE_FREQUENCY_X + m_shakeSeed) * intensity);
+        int offsetY = static_cast<int>(std::cos(m_shakeTimeRemaining * Constants::Camera::SHAKE_FREQUENCY_Y + m_shakeSeed) * intensity);
 
         return Point(offsetX, offsetY);
     }

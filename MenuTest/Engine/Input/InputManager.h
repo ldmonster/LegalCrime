@@ -61,10 +61,16 @@ namespace Input {
         MouseDelta GetMouseDelta() const { return m_mouseDelta; }
         int GetMouseWheelDelta() const { return m_mouseWheelDelta; }
 
+        // Mouse state snapshot for UI (no SDL dependency)
+        MouseState GetMouseState() const;
+
         // Keyboard modifiers
         bool IsShiftHeld() const;
         bool IsCtrlHeld() const;
         bool IsAltHeld() const;
+
+        // Gamepad
+        bool HasGamepad() const { return m_gamepad != nullptr; }
 
         // Enable/disable input
         void SetEnabled(bool enabled) { m_enabled = enabled; }
@@ -94,9 +100,13 @@ namespace Input {
         // Keyboard state tracking for edge detection
         std::unordered_map<SDL_Keycode, bool> m_previousKeyState;
 
+        // Gamepad
+        SDL_Gamepad* m_gamepad;
+
         void UpdateActions();
         void UpdateAxes();
         void ResetFrameState();
+        void UpdateGamepadConnection();
     };
 
 } // namespace Input

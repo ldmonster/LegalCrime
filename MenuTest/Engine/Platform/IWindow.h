@@ -21,13 +21,15 @@ namespace Engine {
         WindowMode mode;
         bool resizable;
         bool vSync;
+        bool highDPI;
         
         WindowConfig()
             : title("Game Window")
             , resolution(800, 600)
             , mode(WindowMode::Windowed)
             , resizable(false)
-            , vSync(false) {}
+            , vSync(false)
+            , highDPI(true) {}
     };
     
     // Abstract window interface
@@ -41,6 +43,7 @@ namespace Engine {
         virtual SDL_Window* GetNativeWindow() const = 0;
         virtual Resolution GetResolution() const = 0;
         virtual const std::string& GetTitle() const = 0;
+        virtual DisplayScale GetDisplayScale() const = 0;
         
         virtual bool SetIcon(const std::string& iconPath) = 0;
         virtual bool SetTitle(const std::string& title) = 0;

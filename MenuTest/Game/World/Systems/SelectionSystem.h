@@ -1,8 +1,9 @@
 #pragma once
 
 #include "../../../Engine/Core/Types.h"
-#include <memory>
+#include <array>
 #include <optional>
+#include <vector>
 
 namespace Engine {
     class ILogger;
@@ -20,12 +21,13 @@ namespace Entities {
 namespace World {
     class World;
 
-    /// <summary>
-    /// SelectionSystem handles entity selection through mouse input.
-    /// Manages selection state, highlighting, and selection queries.
-    /// </summary>
+    /// Multi-unit selection system with box select, shift-click, and control groups.
+    /// Supports selection of up to MAX_SELECTION units.
     class SelectionSystem {
     public:
+        static constexpr size_t MAX_SELECTION = 200;
+        static constexpr int NUM_GROUPS = 10; // ctrl+0..9
+
         SelectionSystem(Engine::ILogger* logger = nullptr);
         ~SelectionSystem();
 
@@ -37,20 +39,35 @@ namespace World {
             Engine::Camera2D* camera
         );
 
-        // Selection queries
-        Entities::Character* GetSelectedCharacter() { return m_selectedCharacter; }
-        const Entities::Character* GetSelectedCharacter() const { return m_selectedCharacter; }
-        bool HasSelection() const { return m_selectedCharacter != nullptr; }
+        // --- Multi-selection queries ---
+        const std::vector<Entities::Character*>& GetSelectedCharacters() const { return m_selected; }
+        bool HasSelection() const { return !m_selected.empty(); }
+        size_t GetSelectionCount() const { return m_selected.size(); }
 
-        // Selection control
+        // Legacy single-selection convenience (returns first selected or nullptr)
+        Entities::Character* GetSelectedCharacter();
+        const Entities::Character* GetSelectedCharacter() const;
+
+        // --- Selection control ---
         void SelectCharacter(Entities::Character* character);
+        void AddToSelection(Entities::Character* character);
+        void RemoveFromSelection(Entities::Character* character);
+        void SetSelection(const std::vector<Entities::Character*>& characters);
         void ClearSelection();
 
-        // Get the currently hovered tile (for UI feedback)
+        // --- Box selection ---
+        bool IsBoxSelecting() const { return m_boxSelecting; }
+        Engine::Rect GetBoxSelectRect() const;
+
+        // --- Control groups (ctrl+0..9) ---
+        void SaveGroup(int groupIndex);
+        void RecallGroup(int groupIndex);
+
+        // --- Hover ---
         bool GetHoveredTile(uint16_t& outRow, uint16_t& outCol) const;
         std::optional<Engine::TilePosition> GetHoveredTilePosition() const;
 
-        // Utility - get character at screen position
+        // Utility
         Entities::Character* GetCharacterAtScreenPosition(
             World* world,
             int screenX,
@@ -60,10 +77,25 @@ namespace World {
         );
 
     private:
-        Engine::ILogger* m_logger;
-        Entities::Character* m_selectedCharacter;
+        void HandleBoxSelect(World* world, Engine::Input::InputManager* input,
+                             Engine::TileMap* tileMap, Engine::Camera2D* camera);
+        void HandleControlGroups(Engine::Input::InputManager* input);
+        bool IsSelected(Entities::Character* character) const;
 
-        // Hover state (for UI feedback)
+        Engine::ILogger* m_logger;
+
+        // Multi-selection
+        std::vector<Entities::Character*> m_selected;
+
+        // Box selection state
+        bool m_boxSelecting;
+        Engine::Point m_boxStart;
+        Engine::Point m_boxEnd;
+
+        // Control groups
+        std::array<std::vector<Entities::Character*>, NUM_GROUPS> m_groups;
+
+        // Hover state
         bool m_hasHoveredTile;
         Engine::TilePosition m_hoveredTile;
     };

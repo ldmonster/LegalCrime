@@ -5,6 +5,7 @@
 #include "../../Engine/Core/Logger/ILogger.h"
 #include "../../Engine/Renderer/IRenderer.h"
 #include "../../Engine/Audio/ISoundPlayer.h"
+#include "../../Engine/Input/InputTypes.h"
 #include <SDL3/SDL.h>
 #include <memory>
 

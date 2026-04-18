@@ -81,6 +81,18 @@ namespace SimpleTest {
             return SimpleTest::TestResult{__FUNCTION__, false, "Pointer is not null"}; \
         }
 
+    #define ASSERT_STRING_EQUAL(actual, expected) \
+        if (std::string(actual) != std::string(expected)) { \
+            return SimpleTest::TestResult{__FUNCTION__, false, \
+                "Expected \"" + std::string(expected) + "\", got \"" + std::string(actual) + "\""}; \
+        }
+
+    #define ASSERT_FLOAT_NEAR(actual, expected, tolerance) \
+        if (std::abs((actual) - (expected)) > (tolerance)) { \
+            return SimpleTest::TestResult{__FUNCTION__, false, \
+                "Expected ~" + std::to_string(expected) + ", got " + std::to_string(actual)}; \
+        }
+
     #define TEST_CASE(name) \
         SimpleTest::TestResult name##_impl(); \
         namespace { static struct name##_register { \

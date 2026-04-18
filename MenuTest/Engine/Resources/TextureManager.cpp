@@ -5,7 +5,8 @@ namespace Resources {
 
     TextureManager::TextureManager(IRenderer* renderer, ILogger* logger)
         : m_renderer(renderer)
-        , m_logger(logger) {
+        , m_logger(logger)
+        , m_maxCacheSize(DEFAULT_MAX_CACHE) {
         if (m_logger) {
             m_logger->Info("TextureManager initialized");
         }
@@ -22,6 +23,7 @@ namespace Resources {
         // Check if already loaded
         auto it = m_textures.find(name);
         if (it != m_textures.end()) {
+            TouchLRU(name);
             if (m_logger) {
                 m_logger->Debug("Texture '" + name + "' found in cache");
             }
@@ -45,11 +47,18 @@ namespace Resources {
         auto textureResource = std::make_shared<TextureResource>(name, path, texture);
         m_textures[name] = textureResource;
 
+        // Add to LRU (front = most recent)
+        m_lruOrder.push_front(name);
+        m_lruMap[name] = m_lruOrder.begin();
+
         if (m_logger) {
             m_logger->Info("Texture loaded successfully: " + name + 
                          " (" + std::to_string(texture->GetWidth()) + "x" + 
                          std::to_string(texture->GetHeight()) + ")");
         }
+
+        // Evict if cache exceeds limit
+        EvictIfNeeded();
 
         return texture;
     }
@@ -57,6 +66,7 @@ namespace Resources {
     std::shared_ptr<Texture> TextureManager::GetTexture(const std::string& name) {
         auto it = m_textures.find(name);
         if (it != m_textures.end()) {
+            TouchLRU(name);
             return it->second->GetTexture();
         }
         
@@ -77,6 +87,15 @@ namespace Resources {
                 m_logger->Info("Unloading texture: " + name);
             }
             m_textures.erase(it);
+
+            // Remove from LRU
+            auto lruIt = m_lruMap.find(name);
+            if (lruIt != m_lruMap.end()) {
+                m_lruOrder.erase(lruIt->second);
+                m_lruMap.erase(lruIt);
+            }
+
+            m_pinned.erase(name);
         }
     }
 
@@ -85,6 +104,9 @@ namespace Resources {
             m_logger->Info("Unloading all textures (" + std::to_string(m_textures.size()) + ")");
         }
         m_textures.clear();
+        m_lruOrder.clear();
+        m_lruMap.clear();
+        m_pinned.clear();
     }
 
     size_t TextureManager::GetTotalMemoryUsage() const {
@@ -110,6 +132,49 @@ namespace Resources {
         if (m_logger) {
             m_logger->Info("Preloaded " + std::to_string(successCount) + "/" + 
                          std::to_string(textures.size()) + " textures successfully");
+        }
+    }
+
+    void TextureManager::Pin(const std::string& name) {
+        if (m_textures.find(name) != m_textures.end()) {
+            m_pinned.insert(name);
+        }
+    }
+
+    void TextureManager::Unpin(const std::string& name) {
+        m_pinned.erase(name);
+    }
+
+    void TextureManager::TouchLRU(const std::string& name) {
+        auto it = m_lruMap.find(name);
+        if (it != m_lruMap.end()) {
+            m_lruOrder.erase(it->second);
+            m_lruOrder.push_front(name);
+            it->second = m_lruOrder.begin();
+        }
+    }
+
+    void TextureManager::EvictIfNeeded() {
+        while (GetTotalMemoryUsage() > m_maxCacheSize && m_textures.size() > 1) {
+            // Evict from the back (least recently used)
+            bool evicted = false;
+            for (auto it = m_lruOrder.rbegin(); it != m_lruOrder.rend(); ++it) {
+                if (m_pinned.find(*it) == m_pinned.end()) {
+                    if (m_logger) {
+                        m_logger->Info("LRU evicting texture: " + *it);
+                    }
+                    std::string toEvict = *it;
+                    m_textures.erase(toEvict);
+                    auto mapIt = m_lruMap.find(toEvict);
+                    if (mapIt != m_lruMap.end()) {
+                        m_lruOrder.erase(mapIt->second);
+                        m_lruMap.erase(mapIt);
+                    }
+                    evicted = true;
+                    break;
+                }
+            }
+            if (!evicted) break; // all remaining are pinned
         }
     }
 

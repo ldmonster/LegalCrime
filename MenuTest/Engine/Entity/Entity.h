@@ -4,6 +4,7 @@
 #include "../Core/Types.h"
 #include <string>
 #include <memory>
+#include <atomic>
 
 namespace Engine {
 
@@ -58,7 +59,7 @@ namespace Engine {
         ILogger* m_logger;
 
     private:
-        static uint32_t s_nextId;
+        static std::atomic<uint32_t> s_nextId;
     };
 
 } // namespace Engine

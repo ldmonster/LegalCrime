@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../Core/Types.h"
 #include <string>
 #include <memory>
 
@@ -13,7 +14,7 @@ namespace Engine {
         virtual ~ISoundPlayer() = default;
 
         virtual std::shared_ptr<SoundEffect> LoadSoundEffect(const std::string& path) = 0;
-        virtual bool PlaySoundEffect(const std::shared_ptr<SoundEffect>& sound, int loops = 0) = 0;
+        virtual Result<void> PlaySoundEffect(const std::shared_ptr<SoundEffect>& sound, int loops = 0) = 0;
     };
 
 } // namespace Engine

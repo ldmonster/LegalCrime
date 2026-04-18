@@ -37,6 +37,16 @@ namespace Engine {
         
         Resolution(uint32 w = 800, uint32 h = 600) : width(w), height(h) {}
     };
+
+    /// Display scale factor for High-DPI support.
+    /// Logical coordinates (game units) are multiplied by scale to get physical pixels.
+    struct DisplayScale {
+        float horizontal;
+        float vertical;
+
+        DisplayScale(float h = 1.0f, float v = 1.0f) : horizontal(h), vertical(v) {}
+        bool IsHighDPI() const { return horizontal > 1.0f || vertical > 1.0f; }
+    };
     
     struct Color {
         uint8 r, g, b, a;

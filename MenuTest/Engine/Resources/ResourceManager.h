@@ -52,7 +52,7 @@ namespace Resources {
         }
 
         // Music
-        bool RegisterMusic(const std::string& name, const std::string& path) {
+        Result<void> RegisterMusic(const std::string& name, const std::string& path) {
             return m_audioManager->RegisterMusic(name, path);
         }
 

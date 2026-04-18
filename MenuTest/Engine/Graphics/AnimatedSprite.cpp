@@ -10,17 +10,8 @@ namespace Engine {
         , m_currentAnimation(-1)
         , m_currentFrame(0)
         , m_frameTime(0.0f)
-        , m_x(0)
-        , m_y(0)
         , m_scale(1.0f)
-        , m_flip(SDL_FLIP_NONE)
-        , m_isMoving(false)
-        , m_startX(0)
-        , m_startY(0)
-        , m_targetX(0)
-        , m_targetY(0)
-        , m_moveTime(0.0f)
-        , m_moveDuration(0.3f) {
+        , m_flip(SDL_FLIP_NONE) {
     }
     
     AnimatedSprite::~AnimatedSprite() {
@@ -64,24 +55,6 @@ namespace Engine {
     }
     
     void AnimatedSprite::Update(float deltaTime) {
-        // Update smooth movement interpolation
-        if (m_isMoving) {
-            m_moveTime += deltaTime;
-
-            if (m_moveTime >= m_moveDuration) {
-                // Movement complete
-                m_x = m_targetX;
-                m_y = m_targetY;
-                m_isMoving = false;
-                m_moveTime = 0.0f;
-            } else {
-                // Interpolate position (linear interpolation)
-                float t = m_moveTime / m_moveDuration;
-                m_x = static_cast<int>(m_startX + (m_targetX - m_startX) * t);
-                m_y = static_cast<int>(m_startY + (m_targetY - m_startY) * t);
-            }
-        }
-
         if (m_currentAnimation < 0 || m_currentAnimation >= static_cast<int>(m_animations.size())) {
             return;
         }
@@ -153,27 +126,6 @@ namespace Engine {
         return "";
     }
 
-    void AnimatedSprite::MoveTo(int x, int y, float duration) {
-        if (m_x == x && m_y == y) {
-            // Already at target position
-            return;
-        }
-
-        m_startX = m_x;
-        m_startY = m_y;
-        m_targetX = x;
-        m_targetY = y;
-        m_moveTime = 0.0f;
-        m_moveDuration = duration > 0.0f ? duration : 0.3f;
-        m_isMoving = true;
-
-        if (m_logger) {
-            m_logger->Debug("Moving sprite from (" + std::to_string(m_startX) + ", " + 
-                          std::to_string(m_startY) + ") to (" + std::to_string(m_targetX) + 
-                          ", " + std::to_string(m_targetY) + ") over " + 
-                          std::to_string(m_moveDuration) + " seconds");
-        }
-    }
     
     // Helper function to create grid-based animation
     Animation CreateGridAnimation(

@@ -38,7 +38,7 @@ namespace Input {
         // Internal update methods (called by InputManager)
         void UpdateFromKeyboard(const bool* keyState, const SDL_Event* event);  // SDL3 uses bool*
         void UpdateFromMouse(uint32_t mouseState, const SDL_Event* event);
-        void UpdateFromGamepad(/* gamepad state */);
+        void UpdateFromGamepad(SDL_Gamepad* gamepad);
         void ResetFrameState(); // Called at end of frame
 
     private:

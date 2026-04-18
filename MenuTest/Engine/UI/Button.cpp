@@ -9,6 +9,7 @@ namespace Engine {
             , m_state(ButtonState::Normal)
             , m_enabled(true)
             , m_wasHovered(false)
+            , m_wasPressed(false)
             , m_normalSprite(nullptr)
             , m_hoveredSprite(nullptr)
             , m_pressedSprite(nullptr)
@@ -18,59 +19,42 @@ namespace Engine {
             , m_onPress(nullptr) {
         }
         
-        void Button::HandleEvent(const SDL_Event& event) {
+        void Button::HandleInput(const Input::MouseState& mouse) {
             if (!m_enabled) {
                 m_state = ButtonState::Disabled;
                 return;
             }
             
-            if (event.type == SDL_EVENT_MOUSE_MOTION ||
-                event.type == SDL_EVENT_MOUSE_BUTTON_DOWN ||
-                event.type == SDL_EVENT_MOUSE_BUTTON_UP) {
-                
-                float x, y;
-                SDL_GetMouseState(&x, &y);
-                
-                bool isInside = IsPointInside(x, y);
-                bool mouseDown = (SDL_GetMouseState(nullptr, nullptr) & SDL_BUTTON_LMASK) != 0;
-                
-                ButtonState oldState = m_state;
-                
-                if (!isInside) {
-                    m_state = ButtonState::Normal;
-                    m_wasHovered = false;
-                } else {
-                    if (mouseDown) {
-                        m_state = ButtonState::Pressed;
-                        
-                        // Trigger press callback
-                        if (oldState != ButtonState::Pressed && m_onPress) {
-                            m_onPress();
-                        }
-                    } else {
-                        m_state = ButtonState::Hovered;
-                        
-                        // Trigger hover callback (only once when entering)
-                        if (!m_wasHovered && m_onHover) {
-                            m_onHover();
-                            
-                            // Play hover sound
-                            // TODO: Integrate with AudioEngine for sound effects
-                            // For now, keeping compatibility with old system
-                        }
-                        m_wasHovered = true;
-                        
-                        // If we were pressed and released mouse inside button, trigger click
-                        if (oldState == ButtonState::Pressed && 
-                            event.type == SDL_EVENT_MOUSE_BUTTON_UP) {
-                            if (m_onClick) {
-                                m_onClick();
-                            }
-                            
-                            // Play click sound
-                            // TODO: Same as hover sound
-                        }
+            bool isInside = IsPointInside(mouse.x, mouse.y);
+            ButtonState oldState = m_state;
+            
+            if (!isInside) {
+                m_state = ButtonState::Normal;
+                m_wasHovered = false;
+                m_wasPressed = false;
+            } else {
+                if (mouse.leftDown) {
+                    m_state = ButtonState::Pressed;
+                    
+                    // Trigger press callback on transition
+                    if (!m_wasPressed && m_onPress) {
+                        m_onPress();
                     }
+                    m_wasPressed = true;
+                } else {
+                    m_state = ButtonState::Hovered;
+                    
+                    // Trigger hover callback (only once when entering)
+                    if (!m_wasHovered && m_onHover) {
+                        m_onHover();
+                    }
+                    m_wasHovered = true;
+                    
+                    // If we were pressed and released mouse inside button, trigger click
+                    if (m_wasPressed && m_onClick) {
+                        m_onClick();
+                    }
+                    m_wasPressed = false;
                 }
             }
         }

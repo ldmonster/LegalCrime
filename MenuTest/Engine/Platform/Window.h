@@ -17,6 +17,7 @@ namespace Engine {
         SDL_Window* GetNativeWindow() const override { return m_window; }
         Resolution GetResolution() const override { return m_resolution; }
         const std::string& GetTitle() const override { return m_title; }
+        DisplayScale GetDisplayScale() const override { return m_displayScale; }
         
         bool SetIcon(const std::string& iconPath) override;
         bool SetTitle(const std::string& title) override;
@@ -28,6 +29,7 @@ namespace Engine {
         ILogger* m_logger;
         SDL_Window* m_window;
         Resolution m_resolution;
+        DisplayScale m_displayScale;
         std::string m_title;
         WindowMode m_mode;
         bool m_initialized;

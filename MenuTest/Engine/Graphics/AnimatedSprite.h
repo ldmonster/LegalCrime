@@ -30,8 +30,57 @@ namespace Engine {
         Animation(const std::string& n, bool l = true) 
             : name(n), loop(l) {}
     };
+
+    // Smooth movement interpolation utility.
+    // Owned by entities that need position interpolation (e.g., Character).
+    // Writes interpolated position to the provided Transform (single source of truth).
+    struct SmoothMovement {
+        bool isMoving = false;
+        int startX = 0, startY = 0;
+        int targetX = 0, targetY = 0;
+        float moveTime = 0.0f;
+        float moveDuration = 0.3f;
+
+        void Start(int fromX, int fromY, int toX, int toY, float duration = 0.3f) {
+            if (fromX == toX && fromY == toY) return;
+            startX = fromX;
+            startY = fromY;
+            targetX = toX;
+            targetY = toY;
+            moveTime = 0.0f;
+            moveDuration = duration > 0.0f ? duration : 0.3f;
+            isMoving = true;
+        }
+
+        // Returns true while still moving. Updates outX/outY with interpolated position.
+        bool Update(float deltaTime, int& outX, int& outY) {
+            if (!isMoving) return false;
+            moveTime += deltaTime;
+            if (moveTime >= moveDuration) {
+                outX = targetX;
+                outY = targetY;
+                isMoving = false;
+                moveTime = 0.0f;
+                return false; // movement finished
+            }
+            float t = moveTime / moveDuration;
+            outX = static_cast<int>(startX + (targetX - startX) * t);
+            outY = static_cast<int>(startY + (targetY - startY) * t);
+            return true; // still moving
+        }
+
+        void Stop(int& outX, int& outY) {
+            outX = targetX;
+            outY = targetY;
+            isMoving = false;
+            moveTime = 0.0f;
+        }
+
+        float GetProgress() const { return isMoving ? (moveTime / moveDuration) : 1.0f; }
+    };
     
-    // Animated sprite class for rendering animated characters
+    // Animated sprite class — handles animation frames only.
+    // Does NOT own position. Position is provided at render time by the owning entity's Transform.
     class AnimatedSprite {
     public:
         AnimatedSprite(std::shared_ptr<Texture> texture, ILogger* logger = nullptr);
@@ -42,19 +91,9 @@ namespace Engine {
         void SetAnimation(const std::string& name);
         void Update(float deltaTime);
         
-        // Rendering
+        // Rendering — position supplied by caller (from Transform)
         void Render(IRenderer* renderer, int x, int y);
         void Render(IRenderer* renderer, const Rect& destRect);
-        
-        // Position and properties
-        void SetPosition(int x, int y) { m_x = x; m_y = y; m_targetX = x; m_targetY = y; m_isMoving = false; }
-        void GetPosition(int& x, int& y) const { x = m_x; y = m_y; }
-
-        // Smooth movement
-        void MoveTo(int x, int y, float duration = 0.3f);
-        bool IsMoving() const { return m_isMoving; }
-        void StopMovement() { m_isMoving = false; m_x = m_targetX; m_y = m_targetY; }
-        float GetMoveProgress() const { return m_isMoving ? (m_moveTime / m_moveDuration) : 1.0f; }
 
         void SetScale(float scale) { m_scale = scale; }
         float GetScale() const { return m_scale; }
@@ -77,17 +116,9 @@ namespace Engine {
         int m_currentFrame;
         float m_frameTime;
         
-        // Position and scale
-        int m_x, m_y;
+        // Scale and flip
         float m_scale;
         SDL_FlipMode m_flip;
-
-        // Smooth movement
-        bool m_isMoving;
-        int m_startX, m_startY;
-        int m_targetX, m_targetY;
-        float m_moveTime;
-        float m_moveDuration;
     };
     
     // Helper function to create a grid-based sprite sheet animation

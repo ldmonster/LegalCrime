@@ -3,7 +3,7 @@
 
 namespace Engine {
 
-    uint32_t Entity::s_nextId = 1;
+    std::atomic<uint32_t> Entity::s_nextId{1};
 
     Entity::Entity(const std::string& name, ILogger* logger)
         : m_id(s_nextId++)

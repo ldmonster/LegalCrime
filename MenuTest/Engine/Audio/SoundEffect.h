@@ -28,7 +28,7 @@ namespace Engine {
         SoundEffect& operator=(SoundEffect&& other) noexcept;
         
         // Play the sound effect
-        bool Play(int loops = 0);
+        Result<void> Play(int loops = 0);
         
         // Get the underlying SDL audio handle
         MIX_Audio* GetHandle() const { return m_audio; }

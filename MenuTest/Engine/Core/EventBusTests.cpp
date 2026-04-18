@@ -1,6 +1,8 @@
 #include "../Core/EventBus.h"
 #include "../Core/Events.h"
 #include "../../Tests/SimpleTest.h"
+#include <thread>
+#include <atomic>
 
 #define PASS return SimpleTest::TestResult{__FUNCTION__, true, ""}
 
@@ -96,5 +98,63 @@ TEST_CASE(EventBus_SceneTransitionEvent) {
 
     bus.Publish(Engine::SceneTransitionEvent{ "MainMenu" });
     ASSERT_TRUE(target == "MainMenu");
+    PASS;
+}
+
+// ========== Thread Safety Tests ==========
+
+TEST_CASE(EventBus_ConcurrentPublish_NoDataRace) {
+    Engine::EventBus bus;
+    std::atomic<int> callCount{0};
+
+    bus.Subscribe<Engine::CharacterMovedEvent>([&](const Engine::CharacterMovedEvent&) {
+        callCount.fetch_add(1, std::memory_order_relaxed);
+    });
+
+    constexpr int ITERATIONS = 100;
+    auto publisher = [&]() {
+        for (int i = 0; i < ITERATIONS; ++i) {
+            bus.Publish(Engine::CharacterMovedEvent{ 1, {0,0}, {1,1} });
+        }
+    };
+
+    std::thread t1(publisher);
+    std::thread t2(publisher);
+    t1.join();
+    t2.join();
+
+    ASSERT_EQUAL(callCount.load(), ITERATIONS * 2);
+    PASS;
+}
+
+TEST_CASE(EventBus_ConcurrentSubscribeAndPublish) {
+    Engine::EventBus bus;
+    std::atomic<int> callCount{0};
+
+    // Pre-subscribe one handler
+    bus.Subscribe<Engine::CharacterSelectedEvent>([&](const Engine::CharacterSelectedEvent&) {
+        callCount.fetch_add(1, std::memory_order_relaxed);
+    });
+
+    // One thread publishes, another subscribes
+    std::thread publisher([&]() {
+        for (int i = 0; i < 50; ++i) {
+            bus.Publish(Engine::CharacterSelectedEvent{ static_cast<uint32_t>(i) });
+        }
+    });
+
+    std::thread subscriber([&]() {
+        for (int i = 0; i < 10; ++i) {
+            bus.Subscribe<Engine::CharacterSelectedEvent>([&](const Engine::CharacterSelectedEvent&) {
+                callCount.fetch_add(1, std::memory_order_relaxed);
+            });
+        }
+    });
+
+    publisher.join();
+    subscriber.join();
+
+    // At least the pre-subscribed handler should have been called
+    ASSERT_TRUE(callCount.load() >= 50);
     PASS;
 }

@@ -28,12 +28,6 @@ namespace Resources {
 
         std::shared_ptr<SoundEffect> GetSound() const { return m_sound; }
 
-    protected:
-        void Unload() override {
-            m_sound.reset();
-            Resource::Unload();
-        }
-
     private:
         std::shared_ptr<SoundEffect> m_sound;
     };
@@ -63,7 +57,7 @@ namespace Resources {
         void UnloadSound(const std::string& name);
 
         // Music (path-based since it's streamed)
-        bool RegisterMusic(const std::string& name, const std::string& path);
+        Result<void> RegisterMusic(const std::string& name, const std::string& path);
         const std::string& GetMusicPath(const std::string& name);
         void UnloadMusic(const std::string& name);
 

@@ -7,6 +7,8 @@
 #include <memory>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
+#include <list>
 
 namespace Engine {
 namespace Resources {
@@ -28,21 +30,19 @@ namespace Resources {
 
         std::shared_ptr<Texture> GetTexture() const { return m_texture; }
 
-    protected:
-        void Unload() override {
-            m_texture.reset();
-            Resource::Unload();
-        }
-
     private:
         std::shared_ptr<Texture> m_texture;
     };
 
     /// <summary>
-    /// Manages texture resources with caching and ref-counting.
+    /// Manages texture resources with LRU caching.
+    /// When cache exceeds maxCacheSize, least-recently-used textures are evicted
+    /// (unless pinned via PreloadHint).
     /// </summary>
     class TextureManager {
     public:
+        static constexpr size_t DEFAULT_MAX_CACHE = 256 * 1024 * 1024; // 256 MB
+
         TextureManager(IRenderer* renderer, ILogger* logger = nullptr);
         ~TextureManager();
 
@@ -68,10 +68,30 @@ namespace Resources {
         // Preload multiple textures
         void PreloadTextures(const std::vector<std::pair<std::string, std::string>>& textures);
 
+        // Cache size limit
+        void SetMaxCacheSize(size_t bytes) { m_maxCacheSize = bytes; }
+        size_t GetMaxCacheSize() const { return m_maxCacheSize; }
+
+        // Pin a texture so it won't be evicted by LRU
+        void Pin(const std::string& name);
+        void Unpin(const std::string& name);
+
     private:
+        void TouchLRU(const std::string& name);
+        void EvictIfNeeded();
+
         IRenderer* m_renderer;
         ILogger* m_logger;
         std::unordered_map<std::string, std::shared_ptr<TextureResource>> m_textures;
+
+        // LRU order: front = most recently used, back = least recently used
+        std::list<std::string> m_lruOrder;
+        std::unordered_map<std::string, std::list<std::string>::iterator> m_lruMap;
+
+        // Pinned textures (exempt from eviction)
+        std::unordered_set<std::string> m_pinned;
+
+        size_t m_maxCacheSize;
     };
 
 } // namespace Resources

@@ -103,8 +103,30 @@ namespace Input {
         m_wasDown = isDown;
     }
 
-    void InputAction::UpdateFromGamepad(/* gamepad state */) {
-        // TODO: Implement gamepad support
+    void InputAction::UpdateFromGamepad(SDL_Gamepad* gamepad) {
+        if (!gamepad || m_boundGamepadButtons.empty()) return;
+
+        bool isDown = false;
+        for (GamepadButton button : m_boundGamepadButtons) {
+            SDL_GamepadButton sdlButton = static_cast<SDL_GamepadButton>(button);
+            if (SDL_GetGamepadButton(gamepad, sdlButton)) {
+                isDown = true;
+                break;
+            }
+        }
+
+        // Only update state from gamepad if it provides a stronger signal
+        // (don't override keyboard "held" with gamepad "released")
+        if (isDown && !m_wasDown) {
+            m_state = InputState::Pressed;
+            m_wasDown = true;
+        } else if (isDown && m_wasDown) {
+            m_state = InputState::Held;
+        } else if (!isDown && m_wasDown && m_state != InputState::Held && m_state != InputState::Pressed) {
+            // Only release if keyboard isn't holding it
+            m_state = InputState::JustReleased;
+            m_wasDown = false;
+        }
     }
 
     void InputAction::ResetFrameState() {

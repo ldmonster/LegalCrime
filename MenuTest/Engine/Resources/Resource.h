@@ -30,8 +30,8 @@ namespace Resources {
             , m_sizeInBytes(0) {
         }
 
-        // Override in derived classes
-        virtual void Unload() { m_isLoaded = false; }
+        // Resource cleanup is handled by RAII (destructor in derived classes).
+        // No separate Unload() needed — destroying the resource object releases it.
 
         std::string m_name;
         std::string m_path;

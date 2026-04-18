@@ -8,7 +8,8 @@
 
 namespace Engine {
 
-    Pathfinding::Pathfinding() {
+    Pathfinding::Pathfinding()
+        : m_nodePool(DEFAULT_POOL_CAPACITY) {
     }
 
     Pathfinding::~Pathfinding() {
@@ -58,12 +59,19 @@ namespace Engine {
             return a->fCost > b->fCost; // Min-heap: lower fCost has higher priority
         };
 
+        // Ensure pool is large enough for this map and reset it
+        size_t maxNodes = static_cast<size_t>(mapWidth) * mapHeight;
+        m_nodePool.Reserve(maxNodes);
+        m_nodePool.Reset();
+
         NodeMap allNodes;
         NodeSet closedSet;
         std::priority_queue<Node*, std::vector<Node*>, decltype(nodeComparator)> openSet(nodeComparator);
 
-        // Create start node
-        Node* startNode = new Node(start);
+        // Create start node from pool
+        Node* startNode = m_nodePool.Acquire();
+        if (!startNode) return m_lastPath;
+        startNode->position = start;
         startNode->gCost = 0;
         startNode->hCost = CalculateHeuristic(start, goal, options.allowDiagonal);
         startNode->fCost = startNode->gCost + startNode->hCost;
@@ -128,7 +136,9 @@ namespace Engine {
                 if (it != allNodes.end()) {
                     neighborNode = it->second;
                 } else {
-                    neighborNode = new Node(neighborPos);
+                    neighborNode = m_nodePool.Acquire();
+                    if (!neighborNode) break; // pool exhausted
+                    neighborNode->position = neighborPos;
                     neighborNode->hCost = CalculateHeuristic(neighborPos, goal, options.allowDiagonal);
                     allNodes[neighborPos] = neighborNode;
                 }
@@ -153,10 +163,7 @@ namespace Engine {
 
         m_lastStats.nodesExplored = nodesExplored;
 
-        // Clean up allocated nodes
-        for (auto& pair : allNodes) {
-            delete pair.second;
-        }
+        // No cleanup needed — pool owns memory and resets on next call
 
         auto endTime = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime);
@@ -279,6 +286,55 @@ namespace Engine {
 
     int Pathfinding::PositionToIndex(const TilePosition& pos, uint16_t mapWidth) const {
         return pos.row * mapWidth + pos.col;
+    }
+
+    Path Pathfinding::SmoothPath(
+        const Path& path,
+        uint16_t mapWidth,
+        uint16_t mapHeight,
+        const IsWalkableFunc& isWalkable) {
+
+        if (path.size() <= 2) return path;
+
+        Path smoothed;
+        smoothed.push_back(path.front());
+
+        size_t current = 0;
+        while (current < path.size() - 1) {
+            // Try to skip ahead as far as possible
+            size_t farthest = current + 1;
+            for (size_t candidate = path.size() - 1; candidate > current + 1; --candidate) {
+                // Bresenham line-of-sight check between current and candidate
+                int r0 = path[current].row, c0 = path[current].col;
+                int r1 = path[candidate].row, c1 = path[candidate].col;
+                int dr = std::abs(r1 - r0), dc = std::abs(c1 - c0);
+                int sr = (r0 < r1) ? 1 : -1;
+                int sc = (c0 < c1) ? 1 : -1;
+                int err = dr - dc;
+                int r = r0, c = c0;
+                bool clear = true;
+
+                while (r != r1 || c != c1) {
+                    if (r < 0 || r >= mapHeight || c < 0 || c >= mapWidth ||
+                        !isWalkable(TilePosition(static_cast<uint16_t>(r), static_cast<uint16_t>(c)))) {
+                        clear = false;
+                        break;
+                    }
+                    int e2 = 2 * err;
+                    if (e2 > -dc) { err -= dc; r += sr; }
+                    if (e2 < dr) { err += dr; c += sc; }
+                }
+
+                if (clear) {
+                    farthest = candidate;
+                    break;
+                }
+            }
+            smoothed.push_back(path[farthest]);
+            current = farthest;
+        }
+
+        return smoothed;
     }
 
 } // namespace Engine

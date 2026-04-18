@@ -12,6 +12,7 @@ namespace Engine {
     /// <summary>
     /// Represents a character sprite with animations loaded from configuration.
     /// Wraps AnimatedSprite and provides a higher-level interface for character management.
+    /// Does NOT own position — position is provided at render time by the owning entity's Transform.
     /// </summary>
     class CharacterSprite {
     public:
@@ -32,12 +33,8 @@ namespace Engine {
         // Update animation (call each frame)
         void Update(float deltaTime);
 
-        // Render the character at the specified position
+        // Render the character at the specified position (from Transform)
         void Render(IRenderer* renderer, int x, int y);
-
-        // Position management
-        void SetPosition(int x, int y);
-        void GetPosition(int& x, int& y) const;
 
         // Scale management
         void SetScale(float scale);
@@ -53,8 +50,6 @@ namespace Engine {
         std::string m_characterType;
         std::unique_ptr<AnimatedSprite> m_sprite;
         float m_scale;
-        int m_x;
-        int m_y;
         ILogger* m_logger;
     };
 

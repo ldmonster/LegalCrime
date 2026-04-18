@@ -76,13 +76,15 @@ namespace Engine {
         return std::shared_ptr<SoundEffect>(new SoundEffect(audio, mixer, path));
     }
     
-    bool SoundEffect::Play(int loops) {
+    Result<void> SoundEffect::Play(int loops) {
         if (!m_audio || !m_mixer) {
-            return false;
+            return Result<void>::Failure("Sound effect not loaded");
         }
 
         // Play sound effect on the mixer
-        bool result = MIX_PlayAudio(m_mixer, m_audio);
-        return result;
+        if (!MIX_PlayAudio(m_mixer, m_audio)) {
+            return Result<void>::Failure("Failed to play sound effect");
+        }
+        return Result<void>::Success();
     }
 }

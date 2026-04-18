@@ -8,7 +8,8 @@ namespace Input {
         , m_enabled(true)
         , m_keyboardState(nullptr)
         , m_mouseButtonState(0)
-        , m_mouseWheelDelta(0) {
+        , m_mouseWheelDelta(0)
+        , m_gamepad(nullptr) {
     }
 
     InputManager::~InputManager() {
@@ -22,9 +23,17 @@ namespace Input {
 
         // Get initial keyboard state
         m_keyboardState = SDL_GetKeyboardState(nullptr);
+
+        // Try to open the first available gamepad
+        UpdateGamepadConnection();
     }
 
     void InputManager::Shutdown() {
+        if (m_gamepad) {
+            SDL_CloseGamepad(m_gamepad);
+            m_gamepad = nullptr;
+        }
+
         ClearAll();
         
         if (m_logger) {
@@ -53,6 +62,11 @@ namespace Input {
                 m_mousePosition.y = static_cast<int>(event.button.y);
                 break;
 
+            case SDL_EVENT_GAMEPAD_ADDED:
+            case SDL_EVENT_GAMEPAD_REMOVED:
+                UpdateGamepadConnection();
+                break;
+
             default:
                 break;
         }
@@ -68,24 +82,7 @@ namespace Input {
 
         // Update mouse state
         float mouseX, mouseY;
-        uint32_t previousMouseState = m_mouseButtonState;
         m_mouseButtonState = SDL_GetMouseState(&mouseX, &mouseY);
-
-        // Debug: Log mouse button state changes
-        if (m_logger && m_mouseButtonState != previousMouseState) {
-            bool leftPressed = (m_mouseButtonState & SDL_BUTTON_MASK(SDL_BUTTON_LEFT)) != 0;
-            bool middlePressed = (m_mouseButtonState & SDL_BUTTON_MASK(SDL_BUTTON_MIDDLE)) != 0;
-            bool rightPressed = (m_mouseButtonState & SDL_BUTTON_MASK(SDL_BUTTON_RIGHT)) != 0;
-
-            std::string buttonInfo = "Buttons: ";
-            if (leftPressed) buttonInfo += "LEFT ";
-            if (middlePressed) buttonInfo += "MIDDLE ";
-            if (rightPressed) buttonInfo += "RIGHT ";
-            if (!leftPressed && !middlePressed && !rightPressed) buttonInfo += "NONE";
-
-            m_logger->Debug("Mouse state changed: " + buttonInfo + 
-                          " (raw state: " + std::to_string(m_mouseButtonState) + ")");
-        }
 
         // Calculate mouse delta
         m_mouseDelta.dx = m_mousePosition.x - m_previousMousePosition.x;
@@ -238,6 +235,16 @@ namespace Input {
         return (modState & SDL_KMOD_ALT) != 0;
     }
 
+    MouseState InputManager::GetMouseState() const {
+        return MouseState(
+            static_cast<float>(m_mousePosition.x),
+            static_cast<float>(m_mousePosition.y),
+            (m_mouseButtonState & SDL_BUTTON_MASK(SDL_BUTTON_LEFT)) != 0,
+            (m_mouseButtonState & SDL_BUTTON_MASK(SDL_BUTTON_RIGHT)) != 0,
+            (m_mouseButtonState & SDL_BUTTON_MASK(SDL_BUTTON_MIDDLE)) != 0
+        );
+    }
+
     void InputManager::ClearAll() {
         m_actions.clear();
         m_axes.clear();
@@ -247,24 +254,9 @@ namespace Input {
     void InputManager::UpdateActions() {
         // Update all actions from current input state
         for (auto& pair : m_actions) {
-            // Actions will update themselves based on current input
             pair.second->UpdateFromKeyboard(m_keyboardState, nullptr);
             pair.second->UpdateFromMouse(m_mouseButtonState, nullptr);
-
-            // Debug logging for SELECT action
-            if (m_logger && pair.first == "Select") {
-                auto state = pair.second->GetState();
-                if (state != InputState::Released) {
-                    std::string stateStr;
-                    switch(state) {
-                        case InputState::Pressed: stateStr = "PRESSED"; break;
-                        case InputState::Held: stateStr = "HELD"; break;
-                        case InputState::JustReleased: stateStr = "JUST_RELEASED"; break;
-                        default: stateStr = "RELEASED"; break;
-                    }
-                    m_logger->Debug("SELECT action state: " + stateStr);
-                }
-            }
+            pair.second->UpdateFromGamepad(m_gamepad);
         }
     }
 
@@ -272,6 +264,7 @@ namespace Input {
         for (auto& pair : m_axes) {
             InputAxis* axis = pair.second.get();
             axis->UpdateFromKeyboard(m_keyboardState);
+            axis->UpdateFromGamepad(m_gamepad);
             // Mouse delta is updated per-axis if bound
         }
     }
@@ -288,6 +281,30 @@ namespace Input {
         // Reset axis frame states
         for (auto& pair : m_axes) {
             pair.second->ResetFrameState();
+        }
+    }
+
+    void InputManager::UpdateGamepadConnection() {
+        // Close existing gamepad
+        if (m_gamepad) {
+            SDL_CloseGamepad(m_gamepad);
+            m_gamepad = nullptr;
+        }
+
+        // Find and open the first available gamepad
+        int count = 0;
+        SDL_JoystickID* joysticks = SDL_GetGamepads(&count);
+        if (joysticks && count > 0) {
+            m_gamepad = SDL_OpenGamepad(joysticks[0]);
+            if (m_gamepad && m_logger) {
+                const char* name = SDL_GetGamepadName(m_gamepad);
+                m_logger->Info("Gamepad connected: " + std::string(name ? name : "Unknown"));
+            }
+        }
+        SDL_free(joysticks);
+
+        if (!m_gamepad && m_logger) {
+            m_logger->Debug("No gamepad connected");
         }
     }
 

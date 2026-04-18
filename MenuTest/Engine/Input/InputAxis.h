@@ -37,7 +37,7 @@ namespace Input {
         // Internal update methods
         void UpdateFromKeyboard(const bool* keyState);  // SDL3 uses bool*
         void UpdateFromMouse(int mouseDelta);
-        void UpdateFromGamepad(/* gamepad state */);
+        void UpdateFromGamepad(SDL_Gamepad* gamepad);
         void ResetFrameState();
 
     private:

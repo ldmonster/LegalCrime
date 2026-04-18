@@ -29,16 +29,10 @@ namespace Entities {
         std::string name;
         Engine::CharacterSpriteConfig spriteConfig;
         
-        // Gameplay attributes (for future use)
-        float moveSpeed;
-        int health;
-        
         CharacterData()
             : type(CharacterType::Thug)
             , name("Unknown")
-            , spriteConfig()
-            , moveSpeed(100.0f)
-            , health(100) {
+            , spriteConfig() {
         }
     };
 

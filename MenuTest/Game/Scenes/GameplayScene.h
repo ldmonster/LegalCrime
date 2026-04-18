@@ -3,6 +3,7 @@
 #include "../../Engine/Scene/Scene.h"
 #include "../../Engine/Core/Logger/ILogger.h"
 #include "../../Engine/Renderer/IRenderer.h"
+#include "../GameConstants.h"
 #include <SDL3/SDL.h>
 #include <memory>
 
@@ -29,6 +30,7 @@ namespace LegalCrime {
         class World;
         class MovementSystem;
         class SelectionSystem;
+        class CommandSystem;
     }
 
     // Gameplay scene
@@ -49,8 +51,8 @@ namespace LegalCrime {
         void Render() override;
 
         // Character movement
-        void MoveCharacterToTile(const Engine::TilePosition& target, float duration = 0.3f);
-        void MoveCharacterToTile(uint16_t row, uint16_t col, float duration = 0.3f);
+        void MoveCharacterToTile(const Engine::TilePosition& target, float duration = Constants::Movement::DEFAULT_MOVE_DURATION);
+        void MoveCharacterToTile(uint16_t row, uint16_t col, float duration = Constants::Movement::DEFAULT_MOVE_DURATION);
 
         // RTS-style commands
         void SelectCharacterAt(int screenX, int screenY);
@@ -64,6 +66,7 @@ namespace LegalCrime {
         std::unique_ptr<World::World> m_world;
         std::unique_ptr<World::MovementSystem> m_movementSystem;
         std::unique_ptr<World::SelectionSystem> m_selectionSystem;
+        std::unique_ptr<World::CommandSystem> m_commandSystem;
         Engine::Input::InputManager* m_inputManager;
 
         // Raw pointer to character for convenience (owned by World)

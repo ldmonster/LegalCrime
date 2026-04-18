@@ -10,8 +10,6 @@ namespace Engine {
         : m_characterType(characterType)
         , m_sprite(nullptr)
         , m_scale(defaultScale)
-        , m_x(0)
-        , m_y(0)
         , m_logger(logger) {
 
         if (texture) {
@@ -76,16 +74,6 @@ namespace Engine {
         if (m_sprite) {
             m_sprite->Render(renderer, x, y);
         }
-    }
-
-    void CharacterSprite::SetPosition(int x, int y) {
-        m_x = x;
-        m_y = y;
-    }
-
-    void CharacterSprite::GetPosition(int& x, int& y) const {
-        x = m_x;
-        y = m_y;
     }
 
     void CharacterSprite::SetScale(float scale) {

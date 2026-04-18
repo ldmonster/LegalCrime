@@ -92,3 +92,41 @@ TEST_CASE(Pathfinding_DiagonalMovement) {
     ASSERT_TRUE(path.size() <= 4);
     PASS;
 }
+
+// ========== Path Smoothing Tests ==========
+
+TEST_CASE(Pathfinding_SmoothPath_ShortPath_Unchanged) {
+    Engine::Path path = {{0,0}, {0,1}};
+    Engine::Path smoothed = Engine::Pathfinding::SmoothPath(path, 10, 10, AllWalkable);
+    ASSERT_EQUAL(smoothed.size(), (size_t)2);
+    PASS;
+}
+
+TEST_CASE(Pathfinding_SmoothPath_StraightLine_Reduced) {
+    // Straight line of 5 tiles should be reduced to start + end
+    Engine::Path path = {{0,0}, {0,1}, {0,2}, {0,3}, {0,4}};
+    Engine::Path smoothed = Engine::Pathfinding::SmoothPath(path, 10, 10, AllWalkable);
+    ASSERT_TRUE(smoothed.size() <= 2);
+    ASSERT_TRUE(smoothed.front() == Engine::TilePosition(0,0));
+    ASSERT_TRUE(smoothed.back() == Engine::TilePosition(0,4));
+    PASS;
+}
+
+TEST_CASE(Pathfinding_SmoothPath_WithWall_KeepsCorner) {
+    // Path goes around a wall — smoothing should keep the corner waypoint
+    Engine::Pathfinding pf;
+    Engine::Pathfinding::Options opts;
+    opts.allowDiagonal = false;
+
+    Engine::Path path = pf.FindPath({2, 2}, {2, 4}, 10, 10, WallAtCol3, opts);
+    ASSERT_FALSE(path.empty());
+
+    Engine::Path smoothed = Engine::Pathfinding::SmoothPath(path, 10, 10, WallAtCol3);
+    ASSERT_TRUE(smoothed.front() == path.front());
+    ASSERT_TRUE(smoothed.back() == path.back());
+    // Smoothed path should still be valid (no wall tiles)
+    for (const auto& tile : smoothed) {
+        ASSERT_TRUE(WallAtCol3(tile));
+    }
+    PASS;
+}

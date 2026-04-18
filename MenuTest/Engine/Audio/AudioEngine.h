@@ -1,6 +1,7 @@
 #pragma once
 
 #include "IAudioEngine.h"
+#include "MusicPlayer.h"
 #include "SoundEffect.h"
 #include "../Core/Logger/ILogger.h"
 #include <SDL3_mixer/SDL_mixer.h>
@@ -10,6 +11,9 @@
 
 namespace Engine {
 
+    /// AudioEngine — owns SDL_mixer lifecycle and delegates to focused subsystems.
+    /// Music playback → MusicPlayer (SRP).
+    /// Sound effects → played directly via SoundEffect::Play().
     class AudioEngine : public IAudioEngine {
     public:
         explicit AudioEngine(ILogger* logger);
@@ -18,12 +22,12 @@ namespace Engine {
         Result<void> Initialize() override;
         void Shutdown() override;
 
-        // Music playback
-        bool LoadMusicFromDirectory(const std::string& directory) override;
-        bool PlayMusic() override;
-        bool StopMusic() override;
-        bool PauseMusic() override;
-        bool ResumeMusic() override;
+        // Music playback (delegates to MusicPlayer)
+        Result<void> LoadMusicFromDirectory(const std::string& directory) override;
+        Result<void> PlayMusic() override;
+        Result<void> StopMusic() override;
+        Result<void> PauseMusic() override;
+        Result<void> ResumeMusic() override;
 
         void NextTrack() override;
         void PreviousTrack() override;
@@ -31,7 +35,7 @@ namespace Engine {
 
         // Sound effects
         std::shared_ptr<SoundEffect> LoadSoundEffect(const std::string& path) override;
-        bool PlaySoundEffect(const std::shared_ptr<SoundEffect>& sound, int loops = 0) override;
+        Result<void> PlaySoundEffect(const std::shared_ptr<SoundEffect>& sound, int loops = 0) override;
 
         // Volume control
         void SetVolume(float volume) override;
@@ -40,24 +44,15 @@ namespace Engine {
         bool IsPlaying() const override;
         bool IsInitialized() const override { return m_initialized; }
 
+        // Access focused subsystems
+        MusicPlayer* GetMusicPlayer() { return m_musicPlayer.get(); }
+
     private:
         ILogger* m_logger;
-
         MIX_Mixer* m_mixer;
-        MIX_Track* m_track;
-        MIX_Audio* m_currentAudio;
-        SDL_IOStream* m_currentFile;
-
-        std::vector<std::string> m_musicPaths;
-        size_t m_currentTrackIndex;
-
         float m_volume;
         bool m_initialized;
 
-        bool LoadAndPlayTrack(size_t index);
-        void CleanupCurrentTrack();
-
-        // Static callback for track completion
-        static void OnTrackStopped(void* userdata, MIX_Track* track);
+        std::unique_ptr<MusicPlayer> m_musicPlayer;
     };
 }

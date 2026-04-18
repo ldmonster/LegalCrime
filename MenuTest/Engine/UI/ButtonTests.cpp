@@ -2,6 +2,7 @@
 #include "Button.h"
 
 using namespace Engine::UI;
+using namespace Engine::Input;
 using namespace SimpleTest;
 
 // ============================================================================
@@ -116,5 +117,132 @@ TEST_CASE(Button_RenderWithNullRenderer_NoCrash) {
 
     // Should not crash
     ASSERT_TRUE(true);
+    return TestResult{__FUNCTION__, true, ""};
+}
+
+// ============================================================================
+// HandleInput Tests (DIP-compliant mouse state injection)
+// ============================================================================
+
+TEST_CASE(Button_HandleInput_MouseOutside_StateNormal) {
+    Button btn;
+    btn.SetBounds(Engine::Rect(10, 10, 100, 50));
+
+    MouseState mouse(200, 200, false);
+    btn.HandleInput(mouse);
+
+    ASSERT_EQUAL(static_cast<int>(btn.GetState()), static_cast<int>(ButtonState::Normal));
+    return TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(Button_HandleInput_MouseInside_StateHovered) {
+    Button btn;
+    btn.SetBounds(Engine::Rect(10, 10, 100, 50));
+
+    MouseState mouse(50, 30, false);
+    btn.HandleInput(mouse);
+
+    ASSERT_EQUAL(static_cast<int>(btn.GetState()), static_cast<int>(ButtonState::Hovered));
+    return TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(Button_HandleInput_MouseInsideLeftDown_StatePressed) {
+    Button btn;
+    btn.SetBounds(Engine::Rect(10, 10, 100, 50));
+
+    MouseState mouse(50, 30, true);
+    btn.HandleInput(mouse);
+
+    ASSERT_EQUAL(static_cast<int>(btn.GetState()), static_cast<int>(ButtonState::Pressed));
+    return TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(Button_HandleInput_ClickDetection) {
+    Button btn;
+    btn.SetBounds(Engine::Rect(10, 10, 100, 50));
+
+    bool clicked = false;
+    btn.SetOnClick([&clicked]() { clicked = true; });
+
+    // Press inside
+    MouseState mouseDown(50, 30, true);
+    btn.HandleInput(mouseDown);
+    ASSERT_FALSE(clicked);
+
+    // Release inside → should trigger click
+    MouseState mouseUp(50, 30, false);
+    btn.HandleInput(mouseUp);
+    ASSERT_TRUE(clicked);
+
+    return TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(Button_HandleInput_ClickNotFiredOnMoveOutWhilePressed) {
+    Button btn;
+    btn.SetBounds(Engine::Rect(10, 10, 100, 50));
+
+    bool clicked = false;
+    btn.SetOnClick([&clicked]() { clicked = true; });
+
+    // Press inside
+    MouseState mouseDown(50, 30, true);
+    btn.HandleInput(mouseDown);
+
+    // Move outside while still pressed
+    MouseState mouseOutDown(200, 200, true);
+    btn.HandleInput(mouseOutDown);
+
+    // Release outside
+    MouseState mouseOutUp(200, 200, false);
+    btn.HandleInput(mouseOutUp);
+
+    ASSERT_FALSE(clicked);
+    return TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(Button_HandleInput_Disabled_StaysDisabled) {
+    Button btn;
+    btn.SetBounds(Engine::Rect(10, 10, 100, 50));
+    btn.SetEnabled(false);
+
+    MouseState mouse(50, 30, true);
+    btn.HandleInput(mouse);
+
+    ASSERT_EQUAL(static_cast<int>(btn.GetState()), static_cast<int>(ButtonState::Disabled));
+    return TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(Button_HandleInput_HoverCallback_OnlyOnce) {
+    Button btn;
+    btn.SetBounds(Engine::Rect(10, 10, 100, 50));
+
+    int hoverCount = 0;
+    btn.SetOnHover([&hoverCount]() { hoverCount++; });
+
+    MouseState mouse(50, 30, false);
+    btn.HandleInput(mouse);
+    btn.HandleInput(mouse);
+    btn.HandleInput(mouse);
+
+    ASSERT_EQUAL(hoverCount, 1);
+    return TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(Button_HandleInput_PressCallback_OnTransition) {
+    Button btn;
+    btn.SetBounds(Engine::Rect(10, 10, 100, 50));
+
+    int pressCount = 0;
+    btn.SetOnPress([&pressCount]() { pressCount++; });
+
+    // First press
+    MouseState mouseDown(50, 30, true);
+    btn.HandleInput(mouseDown);
+    ASSERT_EQUAL(pressCount, 1);
+
+    // Held — should not fire again
+    btn.HandleInput(mouseDown);
+    ASSERT_EQUAL(pressCount, 1);
+
     return TestResult{__FUNCTION__, true, ""};
 }

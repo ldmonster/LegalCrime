@@ -81,13 +81,13 @@ namespace Resources {
         }
     }
 
-    bool AudioManager::RegisterMusic(const std::string& name, const std::string& path) {
+    Result<void> AudioManager::RegisterMusic(const std::string& name, const std::string& path) {
         // Check if already registered
         if (m_music.find(name) != m_music.end()) {
             if (m_logger) {
                 m_logger->Debug("Music '" + name + "' already registered");
             }
-            return true;
+            return Result<void>::Success();
         }
 
         if (m_logger) {
@@ -96,7 +96,7 @@ namespace Resources {
 
         auto musicResource = std::make_shared<MusicResource>(name, path);
         m_music[name] = musicResource;
-        return true;
+        return Result<void>::Success();
     }
 
     const std::string& AudioManager::GetMusicPath(const std::string& name) {

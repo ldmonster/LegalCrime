@@ -71,8 +71,19 @@ namespace Input {
         m_value = ApplySettings(value);
     }
 
-    void InputAxis::UpdateFromGamepad(/* gamepad state */) {
-        // TODO: Implement gamepad support
+    void InputAxis::UpdateFromGamepad(SDL_Gamepad* gamepad) {
+        if (!m_hasGamepadBinding || !gamepad) {
+            return;
+        }
+
+        SDL_GamepadAxis sdlAxis = static_cast<SDL_GamepadAxis>(m_gamepadAxis);
+        int16_t rawAxisValue = SDL_GetGamepadAxis(gamepad, sdlAxis);
+
+        // Normalize from int16 range [-32768, 32767] to [-1, 1]
+        float value = static_cast<float>(rawAxisValue) / 32767.0f;
+
+        m_rawValue = value;
+        m_value = ApplySettings(value);
     }
 
     void InputAxis::ResetFrameState() {

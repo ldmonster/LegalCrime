@@ -8,6 +8,7 @@ namespace Engine {
         : m_logger(logger)
         , m_window(nullptr)
         , m_resolution(800, 600)
+        , m_displayScale(1.0f, 1.0f)
         , m_title("Game Window")
         , m_mode(WindowMode::Windowed)
         , m_initialized(false) {
@@ -44,10 +45,19 @@ namespace Engine {
             return Result<void>::Failure(error);
         }
         
+        // Query display scale for High-DPI support
+        float scale = SDL_GetWindowDisplayScale(m_window);
+        if (scale > 0.0f) {
+            m_displayScale = DisplayScale(scale, scale);
+        }
+        
         m_initialized = true;
         
         if (m_logger) {
             m_logger->Debug("Window initialized successfully: " + m_title);
+            if (m_displayScale.IsHighDPI()) {
+                m_logger->Info("High-DPI display detected, scale: " + std::to_string(m_displayScale.horizontal));
+            }
         }
         
         return Result<void>::Success();
@@ -132,6 +142,10 @@ namespace Engine {
         
         if (config.resizable) {
             flags |= SDL_WINDOW_RESIZABLE;
+        }
+        
+        if (config.highDPI) {
+            flags |= SDL_WINDOW_HIGH_PIXEL_DENSITY;
         }
         
         return flags;

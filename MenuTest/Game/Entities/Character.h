@@ -14,7 +14,8 @@ namespace Entities {
 
     /// <summary>
     /// Game character entity with sprite rendering and movement.
-    /// Combines entity transform with animated sprite rendering.
+    /// Transform is the single source of truth for position.
+    /// SmoothMovement handles interpolation and writes to Transform.
     /// </summary>
     class Character : public Engine::Entity {
     public:
@@ -41,7 +42,7 @@ namespace Entities {
         void SetDirection(Direction dir);
         Direction GetDirection() const { return m_direction; }
 
-        // Movement
+        // Movement — uses SmoothMovement and writes to Transform (single source of truth)
         void MoveTo(int x, int y, float duration = 0.3f);
         void MoveTo(const Engine::Point& pos, float duration = 0.3f);
         bool IsMoving() const;
@@ -67,6 +68,7 @@ namespace Entities {
         CharacterData m_data;
         Direction m_direction;
         std::unique_ptr<Engine::AnimatedSprite> m_sprite;
+        Engine::SmoothMovement m_movement;
         Engine::IRenderer* m_cachedRenderer;  // For parameterless Render()
 
         // Tile position

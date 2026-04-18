@@ -3,13 +3,15 @@
 #include "../../Engine/Graphics/Sprite.h"
 #include "../../Engine/UI/Button.h"
 #include "../../Engine/Audio/SoundEffect.h"
+#include "../GameConstants.h"
+#include "../../Engine/Core/Constants.h"
 
 namespace LegalCrime {
 
     MainMenuScene::MainMenuScene(Engine::ILogger* logger, Engine::IRenderer* renderer, Engine::ISoundPlayer* audio)
         : Scene("MainMenu", logger, renderer)
         , m_audio(audio)
-        , m_backgroundRect(0, 0, 800, 600)
+        , m_backgroundRect(0, 0, Engine::Constants::Window::DEFAULT_WIDTH, Engine::Constants::Window::DEFAULT_HEIGHT)
         , m_shouldQuit(false)
         , m_shouldStartGame(false) {
     }
@@ -69,17 +71,18 @@ namespace LegalCrime {
         }
 
         // Button layout constants
+        using MC = LegalCrime::Constants::MainMenu;
         int xButton = 0;
         int yButton = 0;
-        int widthButton = 566;
-        int heightButton = 84;
-        int yHitOffset = 504;
+        int widthButton = MC::BUTTON_WIDTH;
+        int heightButton = MC::BUTTON_HEIGHT;
+        int yHitOffset = MC::BUTTON_HIT_Y_OFFSET;
 
-        int xRenderButton = 257;
-        int yRenderButton = 152;
-        int widthRenderButton = 283;
-        int heightRenderButton = 42;
-        int offsetRenderButton = 26;
+        int xRenderButton = MC::BUTTON_RENDER_X;
+        int yRenderButton = MC::BUTTON_RENDER_Y;
+        int widthRenderButton = MC::BUTTON_RENDER_WIDTH;
+        int heightRenderButton = MC::BUTTON_RENDER_HEIGHT;
+        int offsetRenderButton = MC::BUTTON_RENDER_Y_OFFSET;
 
         // NEW: Create buttons using Engine::UI::Button
         for (int i = 0; i < MainMenuScene::OverallButtons; i++) {
@@ -100,7 +103,7 @@ namespace LegalCrime {
             );
 
             if (i == MainMenuScene::ExitButton) {
-                yRenderButton -= 2;
+                yRenderButton -= MC::EXIT_BUTTON_Y_ADJUST;
             }
 
             // Set button bounds
@@ -188,10 +191,25 @@ namespace LegalCrime {
             return;
         }
 
-        // NEW: Just pass event to buttons - they handle themselves!
-        for (int i = 0; i < MainMenuScene::OverallButtons; i++) {
-            if (m_buttons[i]) {
-                m_buttons[i]->HandleEvent(event);
+        // Only process mouse events
+        if (event.type == SDL_EVENT_MOUSE_MOTION ||
+            event.type == SDL_EVENT_MOUSE_BUTTON_DOWN ||
+            event.type == SDL_EVENT_MOUSE_BUTTON_UP) {
+
+            // Build MouseState snapshot from SDL event (DIP: Button doesn't touch SDL)
+            float mx, my;
+            uint32_t buttons = SDL_GetMouseState(&mx, &my);
+            Engine::Input::MouseState mouse(
+                mx, my,
+                (buttons & SDL_BUTTON_LMASK) != 0,
+                (buttons & SDL_BUTTON_RMASK) != 0,
+                (buttons & SDL_BUTTON_MMASK) != 0
+            );
+
+            for (int i = 0; i < MainMenuScene::OverallButtons; i++) {
+                if (m_buttons[i]) {
+                    m_buttons[i]->HandleInput(mouse);
+                }
             }
         }
     }

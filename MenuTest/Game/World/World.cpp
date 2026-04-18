@@ -8,9 +8,10 @@
 namespace LegalCrime {
 namespace World {
 
-    World::World(Engine::ILogger* logger)
+    World::World(uint16_t worldWidth, uint16_t worldHeight, uint16_t cellSize, Engine::ILogger* logger)
         : m_logger(logger)
-        , m_tileMap(nullptr) {
+        , m_tileMap(nullptr)
+        , m_spatialGrid(worldWidth, worldHeight, cellSize) {
         
         if (m_logger) {
             m_logger->Debug("World created");
@@ -33,8 +34,10 @@ namespace World {
             return;
         }
         
+        Engine::Entity* raw = entity.get();
         m_entities.push_back(std::move(entity));
         RebuildEntityList();
+        m_spatialGrid.Insert(raw);
         
         if (m_logger) {
             m_logger->Debug("Entity added to world. Total entities: " + 
@@ -47,6 +50,8 @@ namespace World {
             return;
         }
         
+        m_spatialGrid.Remove(entity);
+
         auto it = std::find_if(m_entities.begin(), m_entities.end(),
             [entity](const std::unique_ptr<Engine::Entity>& e) {
                 return e.get() == entity;
@@ -64,6 +69,7 @@ namespace World {
     }
 
     void World::ClearEntities() {
+        m_spatialGrid.Clear();
         m_entities.clear();
         m_entityList.clear();
         m_occupancy.clear();
@@ -141,21 +147,11 @@ namespace World {
     }
 
     std::vector<Engine::Entity*> World::GetEntitiesInRadius(const Engine::Point& center, float radius) {
-        std::vector<Engine::Entity*> result;
-        float radiusSq = radius * radius;
-        
-        for (auto& entity : m_entities) {
-            const Engine::Transform& transform = entity->GetTransform();
-            float dx = static_cast<float>(transform.position.x - center.x);
-            float dy = static_cast<float>(transform.position.y - center.y);
-            float distSq = dx * dx + dy * dy;
-            
-            if (distSq <= radiusSq) {
-                result.push_back(entity.get());
-            }
-        }
-        
-        return result;
+        return m_spatialGrid.QueryRadius(center, radius);
+    }
+
+    std::vector<Engine::Entity*> World::GetEntitiesInRect(const Engine::Rect& rect) {
+        return m_spatialGrid.QueryRect(rect);
     }
 
     void World::RebuildEntityList() {

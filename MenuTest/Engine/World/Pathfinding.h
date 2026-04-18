@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../Core/Types.h"
+#include "../Core/ObjectPool.h"
 #include <vector>
 #include <functional>
 #include <cstdint>
@@ -85,6 +86,15 @@ namespace Engine {
 
         const Stats& GetLastStats() const { return m_lastStats; }
 
+        /// Remove unnecessary waypoints from a path.
+        /// Uses line-of-sight checks: if start can "see" waypoint N+2, skip N+1.
+        static Path SmoothPath(
+            const Path& path,
+            uint16_t mapWidth,
+            uint16_t mapHeight,
+            const IsWalkableFunc& isWalkable
+        );
+
     private:
         // Internal node structure for A*
         struct Node {
@@ -97,6 +107,10 @@ namespace Engine {
             Node() : position(0, 0), gCost(0), hCost(0), fCost(0), parent(nullptr) {}
             Node(const TilePosition& pos) : position(pos), gCost(0), hCost(0), fCost(0), parent(nullptr) {}
         };
+
+        // Pre-allocated node pool — reset per FindPath call, no per-node heap allocations.
+        static constexpr size_t DEFAULT_POOL_CAPACITY = 4096;
+        ObjectPool<Node> m_nodePool;
 
         // Calculate heuristic (Manhattan or Euclidean distance)
         float CalculateHeuristic(const TilePosition& a, const TilePosition& b, bool allowDiagonal) const;

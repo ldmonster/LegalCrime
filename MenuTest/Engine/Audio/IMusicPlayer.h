@@ -10,11 +10,11 @@ namespace Engine {
     public:
         virtual ~IMusicPlayer() = default;
 
-        virtual bool LoadMusicFromDirectory(const std::string& directory) = 0;
-        virtual bool PlayMusic() = 0;
-        virtual bool StopMusic() = 0;
-        virtual bool PauseMusic() = 0;
-        virtual bool ResumeMusic() = 0;
+        virtual Result<void> LoadMusicFromDirectory(const std::string& directory) = 0;
+        virtual Result<void> PlayMusic() = 0;
+        virtual Result<void> StopMusic() = 0;
+        virtual Result<void> PauseMusic() = 0;
+        virtual Result<void> ResumeMusic() = 0;
 
         virtual void NextTrack() = 0;
         virtual void PreviousTrack() = 0;

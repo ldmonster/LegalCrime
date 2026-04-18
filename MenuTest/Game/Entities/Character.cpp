@@ -15,6 +15,7 @@ namespace Entities {
         , m_data()
         , m_direction(Direction::Down)
         , m_sprite(nullptr)
+        , m_movement()
         , m_cachedRenderer(nullptr)
         , m_tilePosition() {
 
@@ -80,19 +81,16 @@ namespace Entities {
     }
 
     void Character::Update(float deltaTime) {
-        if (m_sprite) {
-            // Sync sprite position with entity transform
-            m_sprite->SetPosition(m_transform.position.x, m_transform.position.y);
-            
-            // Update sprite animation
-            m_sprite->Update(deltaTime);
+        // SmoothMovement interpolates and writes to Transform (single source of truth)
+        if (m_movement.isMoving) {
+            int x, y;
+            m_movement.Update(deltaTime, x, y);
+            m_transform.SetPosition(x, y);
+        }
 
-            // If sprite is moving, sync transform back
-            if (m_sprite->IsMoving()) {
-                int x, y;
-                m_sprite->GetPosition(x, y);
-                m_transform.SetPosition(x, y);
-            }
+        // Update sprite animation
+        if (m_sprite) {
+            m_sprite->Update(deltaTime);
         }
     }
 
@@ -141,11 +139,7 @@ namespace Entities {
     }
 
     void Character::MoveTo(int x, int y, float duration) {
-        if (m_sprite) {
-            m_sprite->MoveTo(x, y, duration);
-        }
-
-        // Movement will be synced in Update()
+        m_movement.Start(m_transform.position.x, m_transform.position.y, x, y, duration);
     }
 
     void Character::MoveTo(const Engine::Point& pos, float duration) {
@@ -153,18 +147,13 @@ namespace Entities {
     }
 
     bool Character::IsMoving() const {
-        return m_sprite ? m_sprite->IsMoving() : false;
+        return m_movement.isMoving;
     }
 
     void Character::StopMovement() {
-        if (m_sprite) {
-            m_sprite->StopMovement();
-
-            // Sync position back to transform
-            int x, y;
-            m_sprite->GetPosition(x, y);
-            m_transform.SetPosition(x, y);
-        }
+        int x, y;
+        m_movement.Stop(x, y);
+        m_transform.SetPosition(x, y);
     }
 
     void Character::SetTilePosition(const Engine::TilePosition& pos) {

@@ -5,10 +5,12 @@
 #include <unordered_map>
 #include <typeindex>
 #include <memory>
+#include <shared_mutex>
 
 namespace Engine {
 
     /// Lightweight type-safe publish/subscribe event bus.
+    /// Thread-safe: uses shared_mutex (readers-writer lock) for handler maps.
     /// Usage:
     ///   EventBus bus;
     ///   bus.Subscribe<MyEvent>([](const MyEvent& e) { ... });
@@ -21,7 +23,8 @@ namespace Engine {
         /// Subscribe to events of type TEvent. Returns a subscription ID.
         template<typename TEvent>
         size_t Subscribe(Handler<TEvent> handler) {
-            auto& handlers = GetHandlers<TEvent>();
+            std::unique_lock lock(m_mutex);
+            auto& handlers = GetHandlersLocked<TEvent>();
             size_t id = m_nextId++;
             handlers.push_back({ id, std::move(handler) });
             return id;
@@ -30,7 +33,8 @@ namespace Engine {
         /// Unsubscribe by subscription ID.
         template<typename TEvent>
         void Unsubscribe(size_t subscriptionId) {
-            auto& handlers = GetHandlers<TEvent>();
+            std::unique_lock lock(m_mutex);
+            auto& handlers = GetHandlersLocked<TEvent>();
             handlers.erase(
                 std::remove_if(handlers.begin(), handlers.end(),
                     [subscriptionId](const Subscription<TEvent>& s) {
@@ -43,7 +47,11 @@ namespace Engine {
         /// Publish an event to all subscribers.
         template<typename TEvent>
         void Publish(const TEvent& event) {
-            auto& handlers = GetHandlers<TEvent>();
+            std::shared_lock lock(m_mutex);
+            auto key = std::type_index(typeid(TEvent));
+            auto it = m_handlers.find(key);
+            if (it == m_handlers.end()) return;
+            auto& handlers = static_cast<HandlerListImpl<TEvent>*>(it->second.get())->subscriptions;
             for (auto& sub : handlers) {
                 sub.handler(event);
             }
@@ -51,6 +59,7 @@ namespace Engine {
 
         /// Remove all subscriptions.
         void Clear() {
+            std::unique_lock lock(m_mutex);
             m_handlers.clear();
         }
 
@@ -59,11 +68,6 @@ namespace Engine {
         struct Subscription {
             size_t id;
             Handler<TEvent> handler;
-        };
-
-        template<typename TEvent>
-        struct HandlerList {
-            std::vector<Subscription<TEvent>> subscriptions;
         };
 
         struct IHandlerListBase {
@@ -75,8 +79,9 @@ namespace Engine {
             std::vector<Subscription<TEvent>> subscriptions;
         };
 
+        /// Must be called with m_mutex held (unique or shared).
         template<typename TEvent>
-        std::vector<Subscription<TEvent>>& GetHandlers() {
+        std::vector<Subscription<TEvent>>& GetHandlersLocked() {
             auto key = std::type_index(typeid(TEvent));
             auto it = m_handlers.find(key);
             if (it == m_handlers.end()) {
@@ -89,6 +94,7 @@ namespace Engine {
         }
 
         std::unordered_map<std::type_index, std::unique_ptr<IHandlerListBase>> m_handlers;
+        mutable std::shared_mutex m_mutex;
         size_t m_nextId = 0;
     };
 

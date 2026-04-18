@@ -1,39 +1,32 @@
 #include "AudioEngine.h"
 #include <SDL3/SDL.h>
-#include <filesystem>
 #include <algorithm>
-#include <random>
-#include <cctype>
 
 namespace Engine {
-    
+
     AudioEngine::AudioEngine(ILogger* logger)
         : m_logger(logger)
         , m_mixer(nullptr)
-        , m_track(nullptr)
-        , m_currentAudio(nullptr)
-        , m_currentFile(nullptr)
-        , m_currentTrackIndex(0)
         , m_volume(1.0f)
         , m_initialized(false) {
     }
-    
+
     AudioEngine::~AudioEngine() {
         Shutdown();
     }
-    
+
     Result<void> AudioEngine::Initialize() {
         if (m_initialized) {
             return Result<void>::Failure("Audio engine already initialized");
         }
-        
+
         if (!MIX_Init()) {
             std::string error = "SDL_mixer could not initialize! SDL Error: ";
             error += SDL_GetError();
             if (m_logger) m_logger->Error(error);
             return Result<void>::Failure(error);
         }
-        
+
         m_mixer = MIX_CreateMixerDevice(SDL_AUDIO_DEVICE_DEFAULT_PLAYBACK, nullptr);
         if (!m_mixer) {
             std::string error = "Failed to create mixer device! SDL Error: ";
@@ -42,19 +35,9 @@ namespace Engine {
             MIX_Quit();
             return Result<void>::Failure(error);
         }
-        
-        m_track = MIX_CreateTrack(m_mixer);
-        if (!m_track) {
-            std::string error = "Failed to create audio track! SDL Error: ";
-            error += SDL_GetError();
-            if (m_logger) m_logger->Error(error);
-            MIX_DestroyMixer(m_mixer);
-            MIX_Quit();
-            return Result<void>::Failure(error);
-        }
 
-        // TODO: Set callback for when track finishes (needs SDL3_mixer API verification)
-        // MIX_SetTrackFinishedCallback(m_track, OnTrackStopped, this);
+        // Create focused subsystem for music playback (SRP)
+        m_musicPlayer = std::make_unique<MusicPlayer>(m_mixer, m_logger);
 
         m_initialized = true;
 
@@ -64,218 +47,55 @@ namespace Engine {
 
         return Result<void>::Success();
     }
-    
+
     void AudioEngine::Shutdown() {
-        StopMusic();
-        CleanupCurrentTrack();
-        
-        if (m_track) {
-            MIX_DestroyTrack(m_track);
-            m_track = nullptr;
-        }
-        
+        m_musicPlayer.reset();
+
         if (m_mixer) {
             MIX_DestroyMixer(m_mixer);
             m_mixer = nullptr;
         }
-        
+
         MIX_Quit();
-        
-        m_musicPaths.clear();
         m_initialized = false;
-        
+
         if (m_logger) {
             m_logger->Debug("Audio engine shutdown");
         }
     }
-    
-    bool AudioEngine::LoadMusicFromDirectory(const std::string& directory) {
-        if (!m_initialized) {
-            if (m_logger) m_logger->Warning("Cannot load music: Audio engine not initialized");
-            return false;
-        }
-        
-        m_musicPaths.clear();
-        
-        try {
-            namespace fs = std::filesystem;
-            
-            if (!fs::exists(directory) || !fs::is_directory(directory)) {
-                if (m_logger) {
-                    m_logger->Warning("Music directory does not exist: " + directory);
-                }
-                return false;
-            }
-            
-            for (const auto& entry : fs::directory_iterator(directory)) {
-                if (entry.is_regular_file()) {
-                    std::string ext = entry.path().extension().string();
-                    std::transform(ext.begin(), ext.end(), ext.begin(), ::tolower);
-                    
-                    if (ext == ".mp3" || ext == ".wav" || ext == ".ogg" || ext == ".flac") {
-                        m_musicPaths.push_back(entry.path().string());
-                    }
-                }
-            }
-            
-            if (m_logger) {
-                m_logger->Info("Loaded " + std::to_string(m_musicPaths.size()) + " music files from: " + directory);
-            }
-            
-            return !m_musicPaths.empty();
-            
-        } catch (const std::exception& e) {
-            if (m_logger) {
-                m_logger->Error("Error loading music directory: " + std::string(e.what()));
-            }
-            return false;
-        }
+
+    // Music delegation
+    Result<void> AudioEngine::LoadMusicFromDirectory(const std::string& directory) {
+        if (!m_musicPlayer) return Result<void>::Failure("Music player not initialized");
+        return m_musicPlayer->LoadMusicFromDirectory(directory);
     }
-    
-    bool AudioEngine::PlayMusic() {
-        if (!m_initialized || m_musicPaths.empty()) {
-            return false;
-        }
-        
-        return LoadAndPlayTrack(m_currentTrackIndex);
+    Result<void> AudioEngine::PlayMusic() {
+        if (!m_musicPlayer) return Result<void>::Failure("Music player not initialized");
+        return m_musicPlayer->PlayMusic();
     }
-    
-    bool AudioEngine::StopMusic() {
-        if (!m_initialized || !m_track) {
-            return false;
-        }
-        
-        MIX_StopTrack(m_track, 0);
-        CleanupCurrentTrack();
-        return true;
+    Result<void> AudioEngine::StopMusic() {
+        if (!m_musicPlayer) return Result<void>::Failure("Music player not initialized");
+        return m_musicPlayer->StopMusic();
     }
-    
-    bool AudioEngine::PauseMusic() {
-        if (!m_initialized || !m_track) {
-            return false;
-        }
-        
-        MIX_PauseTrack(m_track);
-        return true;
+    Result<void> AudioEngine::PauseMusic() {
+        if (!m_musicPlayer) return Result<void>::Failure("Music player not initialized");
+        return m_musicPlayer->PauseMusic();
     }
-    
-    bool AudioEngine::ResumeMusic() {
-        if (!m_initialized || !m_track) {
-            return false;
-        }
-        
-        MIX_ResumeTrack(m_track);
-        return true;
+    Result<void> AudioEngine::ResumeMusic() {
+        if (!m_musicPlayer) return Result<void>::Failure("Music player not initialized");
+        return m_musicPlayer->ResumeMusic();
     }
-    
-    void AudioEngine::NextTrack() {
-        if (m_musicPaths.empty()) return;
-        
-        StopMusic();
-        m_currentTrackIndex = (m_currentTrackIndex + 1) % m_musicPaths.size();
-        PlayMusic();
-    }
-    
-    void AudioEngine::PreviousTrack() {
-        if (m_musicPaths.empty()) return;
-        
-        StopMusic();
-        m_currentTrackIndex = (m_currentTrackIndex == 0) 
-            ? m_musicPaths.size() - 1 
-            : m_currentTrackIndex - 1;
-        PlayMusic();
-    }
-    
-    void AudioEngine::RandomTrack() {
-        if (m_musicPaths.empty()) return;
-        
-        StopMusic();
-        
-        std::random_device rd;
-        std::mt19937 gen(rd());
-        std::uniform_int_distribution<> dis(0, static_cast<int>(m_musicPaths.size() - 1));
-        
-        m_currentTrackIndex = dis(gen);
-        PlayMusic();
-    }
-    
+    void AudioEngine::NextTrack() { if (m_musicPlayer) m_musicPlayer->NextTrack(); }
+    void AudioEngine::PreviousTrack() { if (m_musicPlayer) m_musicPlayer->PreviousTrack(); }
+    void AudioEngine::RandomTrack() { if (m_musicPlayer) m_musicPlayer->RandomTrack(); }
+    bool AudioEngine::IsPlaying() const { return m_musicPlayer ? m_musicPlayer->IsPlaying() : false; }
+
+    // Volume
     void AudioEngine::SetVolume(float volume) {
         m_volume = std::max(0.0f, std::min(1.0f, volume));
-
-        // Volume is tracked and will be applied when SDL3_mixer
-        // volume API is confirmed for this build configuration.
-        // Current playback uses the stored m_volume value.
-    }
-    
-    bool AudioEngine::IsPlaying() const {
-        if (!m_initialized || !m_track) {
-            return false;
-        }
-        
-        return MIX_TrackPlaying(m_track) != 0;
-    }
-    
-    bool AudioEngine::LoadAndPlayTrack(size_t index) {
-        if (index >= m_musicPaths.size()) {
-            return false;
-        }
-        
-        CleanupCurrentTrack();
-        
-        const std::string& path = m_musicPaths[index];
-        
-        m_currentFile = SDL_IOFromFile(path.c_str(), "rb");
-        if (!m_currentFile) {
-            if (m_logger) {
-                std::string error = "Failed to load music file: " + path + " - " + SDL_GetError();
-                m_logger->Error(error);
-            }
-            return false;
-        }
-        
-        m_currentAudio = MIX_LoadAudio_IO(m_mixer, m_currentFile, true, false);
-        if (!m_currentAudio) {
-            if (m_logger) {
-                std::string error = "Failed to decode music: " + path + " - " + SDL_GetError();
-                m_logger->Error(error);
-            }
-            SDL_CloseIO(m_currentFile);
-            m_currentFile = nullptr;
-            return false;
-        }
-        
-        MIX_SetTrackAudio(m_track, m_currentAudio);
-        
-        if (!MIX_TrackPlaying(m_track)) {
-            MIX_PlayTrack(m_track, 0);
-        }
-        
-        if (m_logger) {
-            m_logger->Debug("Playing music: " + path);
-        }
-        
-        return true;
-    }
-    
-    void AudioEngine::CleanupCurrentTrack() {
-        if (m_currentAudio) {
-            MIX_DestroyAudio(m_currentAudio);
-            m_currentAudio = nullptr;
-        }
-        
-        if (m_currentFile) {
-            SDL_CloseIO(m_currentFile);
-            m_currentFile = nullptr;
-        }
-    }
-    
-    void AudioEngine::OnTrackStopped(void* userdata, MIX_Track* track) {
-        AudioEngine* engine = static_cast<AudioEngine*>(userdata);
-        if (engine) {
-            engine->NextTrack();
-        }
     }
 
+    // Sound effects
     std::shared_ptr<SoundEffect> AudioEngine::LoadSoundEffect(const std::string& path) {
         if (!m_initialized) {
             if (m_logger) {
@@ -283,25 +103,16 @@ namespace Engine {
             }
             return nullptr;
         }
-
         return SoundEffect::LoadFromFile(path, m_mixer, m_logger);
     }
 
-    bool AudioEngine::PlaySoundEffect(const std::shared_ptr<SoundEffect>& sound, int loops) {
+    Result<void> AudioEngine::PlaySoundEffect(const std::shared_ptr<SoundEffect>& sound, int loops) {
         if (!m_initialized) {
-            if (m_logger) {
-                m_logger->Error("Cannot play sound effect: AudioEngine not initialized");
-            }
-            return false;
+            return Result<void>::Failure("AudioEngine not initialized");
         }
-
         if (!sound || !sound->IsValid()) {
-            if (m_logger) {
-                m_logger->Warning("Attempted to play invalid sound effect");
-            }
-            return false;
+            return Result<void>::Failure("Invalid sound effect");
         }
-
         return sound->Play(loops);
     }
 }

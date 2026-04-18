@@ -2,6 +2,7 @@
 
 #include "../../Engine/Core/Types.h"
 #include "../../Engine/Entity/Entity.h"
+#include "../../Engine/World/SpatialGrid.h"
 #include "../Entities/Character.h"
 #include <vector>
 #include <memory>
@@ -21,7 +22,7 @@ namespace World {
     /// </summary>
     class World {
     public:
-        World(Engine::ILogger* logger = nullptr);
+        World(uint16_t worldWidth, uint16_t worldHeight, uint16_t cellSize = 64, Engine::ILogger* logger = nullptr);
         ~World();
 
         // Entity management
@@ -52,8 +53,12 @@ namespace World {
         // Update all entities
         void Update(float deltaTime);
 
-        // Spatial queries (future: spatial hash/grid)
+        // Spatial queries (uses SpatialGrid for O(k) lookups)
         std::vector<Engine::Entity*> GetEntitiesInRadius(const Engine::Point& center, float radius);
+        std::vector<Engine::Entity*> GetEntitiesInRect(const Engine::Rect& rect);
+
+        // Access the spatial grid directly (for advanced usage)
+        Engine::SpatialGrid& GetSpatialGrid() { return m_spatialGrid; }
 
     private:
         Engine::ILogger* m_logger;
@@ -64,6 +69,9 @@ namespace World {
 
         // TileMap (not owned by World - owned by scene)
         Engine::TileMap* m_tileMap;
+
+        // Spatial grid for fast proximity queries
+        Engine::SpatialGrid m_spatialGrid;
 
         // Tile occupancy map for O(1) lookups
         std::unordered_map<Engine::TilePosition, Entities::Character*, Engine::TilePosition::Hash> m_occupancy;

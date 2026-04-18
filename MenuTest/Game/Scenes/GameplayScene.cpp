@@ -7,6 +7,8 @@
 #include "../World/World.h"
 #include "../World/Systems/MovementSystem.h"
 #include "../World/Systems/SelectionSystem.h"
+#include "../World/Systems/CommandSystem.h"
+#include "../World/Commands/MoveCommand.h"
 #include "../Input/GameInputBindings.h"
 #include <cmath>
 
@@ -91,13 +93,16 @@ namespace LegalCrime {
         }
 
         // Create World and Systems
-        m_world = std::make_unique<World::World>(m_logger);
+        uint16_t worldPixelW = m_tileMap->GetMapSizeWidth();
+        uint16_t worldPixelH = m_tileMap->GetMapSizeHeight();
+        m_world = std::make_unique<World::World>(worldPixelW, worldPixelH, 64, m_logger);
         m_world->SetTileMap(m_tileMap.get());
 
         m_movementSystem = std::make_unique<World::MovementSystem>(m_logger);
         m_movementSystem->Initialize(m_tileMap.get());
 
         m_selectionSystem = std::make_unique<World::SelectionSystem>(m_logger);
+        m_commandSystem = std::make_unique<World::CommandSystem>(m_logger);
 
         // Create a thug character using the factory
         auto characterUnique = m_characterFactory->CreateCharacter(Entities::CharacterType::Thug);
@@ -122,8 +127,8 @@ namespace LegalCrime {
 
             // Offset character position to appear centered on tile
             // Subtract half the sprite size to center it
-            int spriteWidth = static_cast<int>(50 * characterUnique->GetScale());
-            int spriteHeight = static_cast<int>(50 * characterUnique->GetScale());
+            int spriteWidth = static_cast<int>(50 * m_character->GetScale());
+            int spriteHeight = static_cast<int>(50 * m_character->GetScale());
             screenPos.x -= spriteWidth / 2;
             screenPos.y -= spriteHeight / 2;
 
@@ -164,6 +169,7 @@ namespace LegalCrime {
         }
 
         m_character = nullptr;
+        m_commandSystem.reset();
         m_selectionSystem.reset();
         m_movementSystem.reset();
         m_world.reset();
@@ -273,6 +279,10 @@ namespace LegalCrime {
             m_movementSystem->Update(m_world.get(), deltaTime);
         }
 
+        if (m_commandSystem) {
+            m_commandSystem->Update(m_world.get(), m_movementSystem.get(), deltaTime);
+        }
+
         if (m_selectionSystem) {
             m_selectionSystem->Update(
                 m_world.get(),
@@ -330,10 +340,11 @@ namespace LegalCrime {
             }
         }
 
-        // Render selection indicator if character is selected
+        // Render selection indicator for all selected characters
         if (m_selectionSystem && m_selectionSystem->HasSelection()) {
-            Entities::Character* selectedChar = m_selectionSystem->GetSelectedCharacter();
-            if (selectedChar) {
+            for (auto* selectedChar : m_selectionSystem->GetSelectedCharacters()) {
+                if (!selectedChar) continue;
+
                 // Get character center position on screen
                 Engine::Point tileCenter = m_tileMap->TileToScreenCenter(
                     selectedChar->GetTilePosition().row,
@@ -355,6 +366,20 @@ namespace LegalCrime {
                 }
 
                 m_renderer->DrawLines(points, segments + 1);
+            }
+
+            // Draw box selection rectangle
+            if (m_selectionSystem->IsBoxSelecting()) {
+                Engine::Rect box = m_selectionSystem->GetBoxSelectRect();
+                m_renderer->SetDrawColor(0, 255, 0, 128);
+                Engine::Point boxPoints[5] = {
+                    {box.x, box.y},
+                    {box.x + box.w, box.y},
+                    {box.x + box.w, box.y + box.h},
+                    {box.x, box.y + box.h},
+                    {box.x, box.y}
+                };
+                m_renderer->DrawLines(boxPoints, 5);
             }
         }
     }
@@ -403,29 +428,17 @@ namespace LegalCrime {
     }
 
     void GameplayScene::CommandMoveToPosition(int screenX, int screenY) {
-        if (!m_initialized || !m_tileMap || !m_movementSystem || !m_selectionSystem) {
+        if (!m_initialized || !m_tileMap || !m_commandSystem || !m_selectionSystem) {
             return;
         }
 
-        Entities::Character* selectedChar = m_selectionSystem->GetSelectedCharacter();
-        if (!selectedChar) {
-            return;
-        }
+        if (!m_selectionSystem->HasSelection()) return;
 
         // Convert screen coordinates to tile
         uint16_t targetRow, targetCol;
         if (!m_tileMap->ScreenToTile(screenX, screenY, targetRow, targetCol, m_camera.get())) {
             if (m_logger) {
                 m_logger->Warning("Right-click outside map bounds");
-            }
-            return;
-        }
-
-        // Don't move if clicking on the exact same tile the character is on
-        Engine::TilePosition targetPos(targetRow, targetCol);
-        if (targetPos == selectedChar->GetTilePosition()) {
-            if (m_logger) {
-                m_logger->Debug("Right-clicked on character's current tile - no movement");
             }
             return;
         }
@@ -440,7 +453,19 @@ namespace LegalCrime {
             return;
         }
 
-        // Use MovementSystem to handle pathfinding and movement
-        m_movementSystem->MoveCharacterToTile(selectedChar, targetPos);
+        Engine::TilePosition targetPos(targetRow, targetCol);
+
+        // Issue move command to all selected characters
+        for (auto* character : m_selectionSystem->GetSelectedCharacters()) {
+            if (!character) continue;
+            if (targetPos == character->GetTilePosition()) continue;
+
+            World::MoveCommand cmd(targetPos);
+            if (m_inputManager && m_inputManager->IsShiftHeld()) {
+                m_commandSystem->QueueCommand(character->GetId(), cmd);
+            } else {
+                m_commandSystem->IssueCommand(character->GetId(), cmd);
+            }
+        }
     }
 }

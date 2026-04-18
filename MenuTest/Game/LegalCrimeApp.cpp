@@ -3,6 +3,7 @@
 #include "Scenes/GameplayScene.h"
 #include "Input/GameInputBindings.h"
 #include "Resources/GameResourceLoader.h"
+#include "Engine/Core/FileSystem.h"
 
 namespace LegalCrime {
 
@@ -28,17 +29,20 @@ namespace LegalCrime {
         GetResourceManager()->LogResourceStats();
 
         // Set window icon (use PNG for cross-platform compatibility)
-        if (!GetWindow()->SetIcon("Pics/capone.png")) {
+        if (!GetWindow()->SetIcon(Engine::FileSystem::ResolveAssetPath("Pics/capone.png"))) {
             GetLogger()->Warning("Failed to set window icon");
         }
 
         // Load music
         if (GetAudioEngine()->IsInitialized()) {
-            if (!GetAudioEngine()->LoadMusicFromDirectory("./Music/")) {
-                GetLogger()->Warning("Failed to load music from ./Music/ directory");
+            auto loadResult = GetAudioEngine()->LoadMusicFromDirectory(Engine::FileSystem::ResolveAssetPath("Music/"));
+            if (!loadResult) {
+                GetLogger()->Warning("Failed to load music directory: " + loadResult.error);
             } else {
-                GetAudioEngine()->PlayMusic();
-                GetLogger()->Info("Background music started");
+                auto playResult = GetAudioEngine()->PlayMusic();
+                if (playResult) {
+                    GetLogger()->Info("Background music started");
+                }
             }
         }
         

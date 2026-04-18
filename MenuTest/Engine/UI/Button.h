@@ -2,7 +2,7 @@
 
 #include "../Graphics/Sprite.h"
 #include "../Graphics/Texture.h"
-#include <SDL3/SDL.h>
+#include "../Input/InputTypes.h"
 #include <functional>
 #include <memory>
 
@@ -20,7 +20,8 @@ namespace Engine {
             Disabled
         };
         
-        // Modern UI Button with event callbacks
+        // Modern UI Button with event callbacks.
+        // Accepts MouseState (no direct SDL dependency — DIP compliant).
         class Button {
         public:
             Button();
@@ -46,8 +47,8 @@ namespace Engine {
             void SetOnHover(std::function<void()> callback) { m_onHover = callback; }
             void SetOnPress(std::function<void()> callback) { m_onPress = callback; }
             
-            // Input handling
-            void HandleEvent(const SDL_Event& event);
+            // Input handling — accepts MouseState snapshot (injected, not queried from SDL)
+            void HandleInput(const Input::MouseState& mouse);
             
             // Rendering
             void Render(IRenderer* renderer);
@@ -60,6 +61,7 @@ namespace Engine {
             ButtonState m_state;
             bool m_enabled;
             bool m_wasHovered;
+            bool m_wasPressed;
             
             std::shared_ptr<Sprite> m_normalSprite;
             std::shared_ptr<Sprite> m_hoveredSprite;
@@ -69,8 +71,6 @@ namespace Engine {
             std::function<void()> m_onClick;
             std::function<void()> m_onHover;
             std::function<void()> m_onPress;
-            
-            void UpdateState(float mouseX, float mouseY, bool mouseDown);
         };
     }
 }

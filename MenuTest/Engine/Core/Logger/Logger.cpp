@@ -1,9 +1,9 @@
 #include "Logger.h"
 #include <iostream>
 #include <sstream>
-#include <iomanip>
 #include <chrono>
 #include <ctime>
+#include <cstring>
 
 namespace Engine {
     
@@ -24,12 +24,18 @@ namespace Engine {
     }
     
     void Logger::Log(LogLevel level, const std::string& message) {
-        std::lock_guard<std::mutex> lock(m_mutex);
-        
         if (level < m_minLevel) {
             return;
         }
-        
+
+#ifdef NDEBUG
+        // In release builds, skip Trace and Debug entirely (no lock, no work)
+        if (level <= LogLevel::Debug) {
+            return;
+        }
+#endif
+
+        std::lock_guard<std::mutex> lock(m_mutex);
         OutputMessage(level, message);
     }
     
@@ -69,20 +75,19 @@ namespace Engine {
         auto time = std::chrono::system_clock::to_time_t(now);
         
         std::tm timeStruct = {};
-        // Use portable localtime with platform-specific thread-safe variants
 #if defined(_MSC_VER) || defined(_WIN32)
         localtime_s(&timeStruct, &time);
 #elif defined(__unix__) || defined(__APPLE__)
         localtime_r(&time, &timeStruct);
 #else
-        // Fallback: standard C localtime (not thread-safe, but widely portable)
         std::tm* tmp = std::localtime(&time);
         if (tmp) timeStruct = *tmp;
 #endif
-        
-        std::ostringstream ss;
-        ss << std::put_time(&timeStruct, "%Y-%m-%d %H:%M:%S");
-        return ss.str();
+
+        // Thread-local buffer avoids heap allocation per log call
+        thread_local char buf[20]; // "YYYY-MM-DD HH:MM:SS"
+        std::strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S", &timeStruct);
+        return std::string(buf);
     }
     
     void Logger::OutputMessage(LogLevel level, const std::string& message) {
