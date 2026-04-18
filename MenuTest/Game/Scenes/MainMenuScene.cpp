@@ -6,81 +6,12 @@
 
 namespace LegalCrime {
 
-    // Private implementation using NEW engine components
-    class MainMenuSceneImpl {
-    public:
-        enum MainPageButtons {
-            MultiplayerButton,
-            SingleplayerButton,
-            SettingsButton,
-            CreditsButton,
-            CultureButton,
-            ExitButton,
-            OverallButtons
-        };
-
-        Engine::IRenderer* renderer;
-        Engine::IAudioEngine* audio;
-
-        // NEW: Using Engine::SoundEffect instead of MainMenu_Sound
-        std::shared_ptr<Engine::SoundEffect> hoverSound;
-        std::shared_ptr<Engine::SoundEffect> clickSound;
-
-        // NEW: Using Engine::Texture (shared_ptr for resource sharing)
-        std::shared_ptr<Engine::Texture> backgroundTexture;
-        std::shared_ptr<Engine::Texture> buttonsTexture;
-
-        // NEW: Using Engine::Sprite
-        std::shared_ptr<Engine::Sprite> backgroundSprite;
-
-        // NEW: Using Engine::UI::Button
-        std::unique_ptr<Engine::UI::Button> buttons[OverallButtons];
-
-        Engine::Rect backgroundRect;
-
-        bool shouldQuit;
-        bool shouldStartGame;
-
-        MainMenuSceneImpl()
-            : renderer(nullptr)
-            , audio(nullptr)
-            , hoverSound(nullptr)
-            , clickSound(nullptr)
-            , backgroundTexture(nullptr)
-            , buttonsTexture(nullptr)
-            , backgroundSprite(nullptr)
-            , backgroundRect(0, 0, 800, 600)
-            , shouldQuit(false)
-            , shouldStartGame(false) {
-
-            for (int i = 0; i < OverallButtons; i++) {
-                buttons[i] = nullptr;
-            }
-        }
-
-        ~MainMenuSceneImpl() {
-            Cleanup();
-        }
-
-        void Cleanup() {
-            // NEW: Smart pointers clean themselves up!
-            for (int i = 0; i < OverallButtons; i++) {
-                buttons[i].reset();
-            }
-
-            backgroundSprite.reset();
-            backgroundTexture.reset();
-            buttonsTexture.reset();
-            hoverSound.reset();
-            clickSound.reset();
-        }
-    };
-
-    MainMenuScene::MainMenuScene(Engine::ILogger* logger, Engine::IRenderer* renderer, Engine::IAudioEngine* audio)
+    MainMenuScene::MainMenuScene(Engine::ILogger* logger, Engine::IRenderer* renderer, Engine::ISoundPlayer* audio)
         : Scene("MainMenu", logger, renderer)
-        , m_impl(std::make_unique<MainMenuSceneImpl>()) {
-        m_impl->renderer = renderer;
-        m_impl->audio = audio;
+        , m_audio(audio)
+        , m_backgroundRect(0, 0, 800, 600)
+        , m_shouldQuit(false)
+        , m_shouldStartGame(false) {
     }
 
     MainMenuScene::~MainMenuScene() {
@@ -92,7 +23,7 @@ namespace LegalCrime {
             return Engine::Result<void>::Failure("MainMenuScene already initialized");
         }
 
-        if (!m_impl->renderer) {
+        if (!m_renderer) {
             return Engine::Result<void>::Failure("Renderer is null");
         }
 
@@ -101,38 +32,38 @@ namespace LegalCrime {
         }
 
         // NEW: Load textures using Engine::Texture
-        m_impl->backgroundTexture = Engine::Texture::LoadFromFile(
-            m_impl->renderer,
+        m_backgroundTexture = Engine::Texture::LoadFromFile(
+            m_renderer,
             "./Pics/main_menu.png",
             m_logger
         );
 
-        if (!m_impl->backgroundTexture) {
+        if (!m_backgroundTexture) {
             return Engine::Result<void>::Failure("Failed to load background texture");
         }
 
-        m_impl->buttonsTexture = Engine::Texture::LoadFromFile(
-            m_impl->renderer,
+        m_buttonsTexture = Engine::Texture::LoadFromFile(
+            m_renderer,
             "./Pics/main_menu_buttons.png",
             m_logger
         );
 
-        if (!m_impl->buttonsTexture) {
+        if (!m_buttonsTexture) {
             return Engine::Result<void>::Failure("Failed to load buttons texture");
         }
 
         // NEW: Create background sprite
-        m_impl->backgroundSprite = std::make_shared<Engine::Sprite>(m_impl->backgroundTexture);
+        m_backgroundSprite = std::make_shared<Engine::Sprite>(m_backgroundTexture);
 
         // NEW: Load sound effects using Engine::AudioEngine
-        if (m_impl->audio) {
-            m_impl->hoverSound = m_impl->audio->LoadSoundEffect("Sound/OverButton.wav");
-            m_impl->clickSound = m_impl->audio->LoadSoundEffect("Sound/ButtonClick.wav");
+        if (m_audio) {
+            m_hoverSound = m_audio->LoadSoundEffect("Sound/OverButton.wav");
+            m_clickSound = m_audio->LoadSoundEffect("Sound/ButtonClick.wav");
 
-            if (!m_impl->hoverSound) {
+            if (!m_hoverSound) {
                 m_logger->Warning("Failed to load hover sound effect");
             }
-            if (!m_impl->clickSound) {
+            if (!m_clickSound) {
                 m_logger->Warning("Failed to load click sound effect");
             }
         }
@@ -151,24 +82,24 @@ namespace LegalCrime {
         int offsetRenderButton = 26;
 
         // NEW: Create buttons using Engine::UI::Button
-        for (int i = 0; i < MainMenuSceneImpl::OverallButtons; i++) {
+        for (int i = 0; i < MainMenuScene::OverallButtons; i++) {
             auto button = std::make_unique<Engine::UI::Button>();
 
             // Create sprites for hover state
             Engine::Rect sourceRectHover(xButton, yButton, widthButton, heightButton);
             auto hoverSprite = std::make_shared<Engine::Sprite>(
-                m_impl->buttonsTexture,
+                m_buttonsTexture,
                 sourceRectHover
             );
 
             // Create sprites for pressed state
             Engine::Rect sourceRectPressed(xButton, yButton + yHitOffset, widthButton, heightButton);
             auto pressedSprite = std::make_shared<Engine::Sprite>(
-                m_impl->buttonsTexture,
+                m_buttonsTexture,
                 sourceRectPressed
             );
 
-            if (i == MainMenuSceneImpl::ExitButton) {
+            if (i == MainMenuScene::ExitButton) {
                 yRenderButton -= 2;
             }
 
@@ -182,28 +113,28 @@ namespace LegalCrime {
 
             // NEW: Set up sound effect callbacks
             button->SetOnHover([this]() {
-                if (m_impl->audio && m_impl->hoverSound) {
-                    m_impl->audio->PlaySoundEffect(m_impl->hoverSound);
+                if (m_audio && m_hoverSound) {
+                    m_audio->PlaySoundEffect(m_hoverSound);
                 }
             });
 
             // NEW: Set up click callbacks using lambdas
-            if (i == MainMenuSceneImpl::SingleplayerButton) {
+            if (i == MainMenuScene::SingleplayerButton) {
                 button->SetOnClick([this]() {
-                    if (m_impl->audio && m_impl->clickSound) {
-                        m_impl->audio->PlaySoundEffect(m_impl->clickSound);
+                    if (m_audio && m_clickSound) {
+                        m_audio->PlaySoundEffect(m_clickSound);
                     }
-                    m_impl->shouldStartGame = true;
+                    m_shouldStartGame = true;
                     if (m_logger) {
                         m_logger->Info("Single player clicked");
                     }
                 });
-            } else if (i == MainMenuSceneImpl::ExitButton) {
+            } else if (i == MainMenuScene::ExitButton) {
                 button->SetOnClick([this]() {
-                    if (m_impl->audio && m_impl->clickSound) {
-                        m_impl->audio->PlaySoundEffect(m_impl->clickSound);
+                    if (m_audio && m_clickSound) {
+                        m_audio->PlaySoundEffect(m_clickSound);
                     }
-                    m_impl->shouldQuit = true;
+                    m_shouldQuit = true;
                     if (m_logger) {
                         m_logger->Info("Exit clicked");
                     }
@@ -211,13 +142,13 @@ namespace LegalCrime {
             } else {
                 // Default click handler for other buttons
                 button->SetOnClick([this]() {
-                    if (m_impl->audio && m_impl->clickSound) {
-                        m_impl->audio->PlaySoundEffect(m_impl->clickSound);
+                    if (m_audio && m_clickSound) {
+                        m_audio->PlaySoundEffect(m_clickSound);
                     }
                 });
             }
 
-            m_impl->buttons[i] = std::move(button);
+            m_buttons[i] = std::move(button);
 
             yButton += heightButton;
             yRenderButton += heightRenderButton + offsetRenderButton;
@@ -241,7 +172,14 @@ namespace LegalCrime {
             m_logger->Info("Shutting down Main Menu Scene");
         }
 
-        m_impl->Cleanup();
+        for (int i = 0; i < OverallButtons; i++) {
+            m_buttons[i].reset();
+        }
+        m_backgroundSprite.reset();
+        m_backgroundTexture.reset();
+        m_buttonsTexture.reset();
+        m_hoverSound.reset();
+        m_clickSound.reset();
         m_initialized = false;
     }
 
@@ -251,9 +189,9 @@ namespace LegalCrime {
         }
 
         // NEW: Just pass event to buttons - they handle themselves!
-        for (int i = 0; i < MainMenuSceneImpl::OverallButtons; i++) {
-            if (m_impl->buttons[i]) {
-                m_impl->buttons[i]->HandleEvent(event, m_impl->audio);
+        for (int i = 0; i < MainMenuScene::OverallButtons; i++) {
+            if (m_buttons[i]) {
+                m_buttons[i]->HandleEvent(event);
             }
         }
     }
@@ -263,28 +201,28 @@ namespace LegalCrime {
     }
 
     void MainMenuScene::Render() {
-        if (!m_initialized || !m_impl->renderer) {
+        if (!m_initialized || !m_renderer) {
             return;
         }
 
         // NEW: Render using Engine::Sprite
-        if (m_impl->backgroundSprite) {
-            m_impl->backgroundSprite->Render(m_impl->renderer, m_impl->backgroundRect);
+        if (m_backgroundSprite) {
+            m_backgroundSprite->Render(m_renderer, m_backgroundRect);
         }
 
         // NEW: Render buttons using Engine::UI::Button
-        for (int i = 0; i < MainMenuSceneImpl::OverallButtons; i++) {
-            if (m_impl->buttons[i]) {
-                m_impl->buttons[i]->Render(m_impl->renderer);
+        for (int i = 0; i < MainMenuScene::OverallButtons; i++) {
+            if (m_buttons[i]) {
+                m_buttons[i]->Render(m_renderer);
             }
         }
     }
 
     bool MainMenuScene::ShouldQuit() const {
-        return m_impl->shouldQuit;
+        return m_shouldQuit;
     }
 
     bool MainMenuScene::ShouldStartGame() const {
-        return m_impl->shouldStartGame;
+        return m_shouldStartGame;
     }
 }

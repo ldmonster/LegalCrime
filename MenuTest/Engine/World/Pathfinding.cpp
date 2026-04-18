@@ -8,13 +8,6 @@
 
 namespace Engine {
 
-    // Hash function for TilePosition (for unordered_map/set)
-    struct TilePositionHash {
-        std::size_t operator()(const TilePosition& pos) const {
-            return std::hash<uint32_t>()(static_cast<uint32_t>(pos.row) << 16 | pos.col);
-        }
-    };
-
     Pathfinding::Pathfinding() {
     }
 
@@ -45,7 +38,7 @@ namespace Engine {
         }
 
         // Check if start and goal are walkable
-        if (!isWalkable(start.row, start.col) || !isWalkable(goal.row, goal.col)) {
+        if (!isWalkable(start) || !isWalkable(goal)) {
             return m_lastPath;
         }
 
@@ -57,8 +50,8 @@ namespace Engine {
         }
 
         // A* algorithm
-        using NodeMap = std::unordered_map<TilePosition, Node*, TilePositionHash>;
-        using NodeSet = std::unordered_set<TilePosition, TilePositionHash>;
+        using NodeMap = std::unordered_map<TilePosition, Node*, TilePosition::Hash>;
+        using NodeSet = std::unordered_set<TilePosition, TilePosition::Hash>;
 
         // Comparison for priority queue (min-heap based on fCost)
         auto nodeComparator = [](const Node* a, const Node* b) {
@@ -242,7 +235,7 @@ namespace Engine {
             TilePosition neighborPos(static_cast<uint16_t>(newRow), static_cast<uint16_t>(newCol));
 
             // Check if walkable
-            if (!isWalkable(neighborPos.row, neighborPos.col)) {
+            if (!isWalkable(neighborPos)) {
                 continue;
             }
 
@@ -254,8 +247,8 @@ namespace Engine {
                 int adjacentRow2 = static_cast<int>(pos.row);
                 int adjacentCol2 = static_cast<int>(pos.col) + dir.colOffset;
 
-                bool adjacent1Walkable = isWalkable(static_cast<uint16_t>(adjacentRow1), static_cast<uint16_t>(adjacentCol1));
-                bool adjacent2Walkable = isWalkable(static_cast<uint16_t>(adjacentRow2), static_cast<uint16_t>(adjacentCol2));
+                bool adjacent1Walkable = isWalkable(TilePosition(static_cast<uint16_t>(adjacentRow1), static_cast<uint16_t>(adjacentCol1)));
+                bool adjacent2Walkable = isWalkable(TilePosition(static_cast<uint16_t>(adjacentRow2), static_cast<uint16_t>(adjacentCol2)));
 
                 // Only allow diagonal if at least one adjacent tile is walkable
                 if (!adjacent1Walkable && !adjacent2Walkable) {

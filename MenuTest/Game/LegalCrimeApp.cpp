@@ -27,8 +27,8 @@ namespace LegalCrime {
         // Log resource statistics
         GetResourceManager()->LogResourceStats();
 
-        // Set window icon
-        if (!GetWindow()->SetIcon("Pics/capone.ico")) {
+        // Set window icon (use PNG for cross-platform compatibility)
+        if (!GetWindow()->SetIcon("Pics/capone.png")) {
             GetLogger()->Warning("Failed to set window icon");
         }
 

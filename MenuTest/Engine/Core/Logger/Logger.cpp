@@ -68,11 +68,16 @@ namespace Engine {
         auto now = std::chrono::system_clock::now();
         auto time = std::chrono::system_clock::to_time_t(now);
         
-        std::tm timeStruct;
-#ifdef _WIN32
+        std::tm timeStruct = {};
+        // Use portable localtime with platform-specific thread-safe variants
+#if defined(_MSC_VER) || defined(_WIN32)
         localtime_s(&timeStruct, &time);
-#else
+#elif defined(__unix__) || defined(__APPLE__)
         localtime_r(&time, &timeStruct);
+#else
+        // Fallback: standard C localtime (not thread-safe, but widely portable)
+        std::tm* tmp = std::localtime(&time);
+        if (tmp) timeStruct = *tmp;
 #endif
         
         std::ostringstream ss;

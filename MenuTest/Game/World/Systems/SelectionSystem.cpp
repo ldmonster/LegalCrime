@@ -16,8 +16,7 @@ namespace World {
         : m_logger(logger)
         , m_selectedCharacter(nullptr)
         , m_hasHoveredTile(false)
-        , m_hoveredRow(0)
-        , m_hoveredCol(0) {
+        , m_hoveredTile() {
         
         if (m_logger) {
             m_logger->Debug("SelectionSystem created");
@@ -52,8 +51,7 @@ namespace World {
         );
 
         if (m_hasHoveredTile) {
-            m_hoveredRow = hoveredRow;
-            m_hoveredCol = hoveredCol;
+            m_hoveredTile = Engine::TilePosition(hoveredRow, hoveredCol);
         }
 
         // Handle selection (left mouse button)
@@ -110,11 +108,18 @@ namespace World {
 
     bool SelectionSystem::GetHoveredTile(uint16_t& outRow, uint16_t& outCol) const {
         if (m_hasHoveredTile) {
-            outRow = m_hoveredRow;
-            outCol = m_hoveredCol;
+            outRow = m_hoveredTile.row;
+            outCol = m_hoveredTile.col;
             return true;
         }
         return false;
+    }
+
+    std::optional<Engine::TilePosition> SelectionSystem::GetHoveredTilePosition() const {
+        if (m_hasHoveredTile) {
+            return m_hoveredTile;
+        }
+        return std::nullopt;
     }
 
     Entities::Character* SelectionSystem::GetCharacterAtScreenPosition(

@@ -9,7 +9,6 @@
 namespace Engine {
     
     class IRenderer;
-    class IAudioEngine;
     
     namespace UI {
         
@@ -47,12 +46,8 @@ namespace Engine {
             void SetOnHover(std::function<void()> callback) { m_onHover = callback; }
             void SetOnPress(std::function<void()> callback) { m_onPress = callback; }
             
-            // Sound effects (optional)
-            void SetHoverSound(void* sound) { m_hoverSound = sound; }
-            void SetClickSound(void* sound) { m_clickSound = sound; }
-            
             // Input handling
-            void HandleEvent(const SDL_Event& event, IAudioEngine* audio = nullptr);
+            void HandleEvent(const SDL_Event& event);
             
             // Rendering
             void Render(IRenderer* renderer);
@@ -74,9 +69,6 @@ namespace Engine {
             std::function<void()> m_onClick;
             std::function<void()> m_onHover;
             std::function<void()> m_onPress;
-            
-            void* m_hoverSound;  // MIX_Audio* - void* to avoid header dependency
-            void* m_clickSound;
             
             void UpdateState(float mouseX, float mouseY, bool mouseDown);
         };

@@ -16,8 +16,7 @@ namespace Entities {
         , m_direction(Direction::Down)
         , m_sprite(nullptr)
         , m_cachedRenderer(nullptr)
-        , m_tileRow(0)
-        , m_tileCol(0) {
+        , m_tilePosition() {
 
         m_data.type = type;
         m_data.name = CharacterDataUtils::CharacterTypeToString(type);
@@ -168,9 +167,12 @@ namespace Entities {
         }
     }
 
+    void Character::SetTilePosition(const Engine::TilePosition& pos) {
+        m_tilePosition = pos;
+    }
+
     void Character::SetTilePosition(uint16_t row, uint16_t col) {
-        m_tileRow = row;
-        m_tileCol = col;
+        m_tilePosition = Engine::TilePosition(row, col);
     }
 
 } // namespace Entities

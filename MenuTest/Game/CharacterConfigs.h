@@ -1,144 +1,110 @@
 #pragma once
 
 #include "../Engine/Graphics/CharacterSpriteConfig.h"
+#include "../Engine/Core/Types.h"
 
 namespace LegalCrime {
 
-    /// <summary>
-    /// Predefined character sprite configurations for the game.
-    /// Add new character types here to make them available throughout the game.
-    /// </summary>
+    /// Table-driven character sprite configurations.
+    /// Add new character types by adding a new entry to the tables below.
     class CharacterConfigs {
-    private:
-        // Thug sprite sheet constants
-        static constexpr uint16_t THUG_SPRITE_WIDTH = 50;
-        static constexpr uint16_t THUG_SPRITE_HEIGHT = 50;
-        static constexpr uint16_t THUG_SPRITE_COLUMNS = 6;
-        static constexpr uint16_t THUG_SPRITE_ROWS = 6;
-
     public:
-        /// <summary>
-        /// Creates the configuration for the Thug character sprite.
-        /// Sprite sheet: Pics/Thug_Frames.png (6 columns x 4 rows, 50x50 per frame)
-        /// </summary>
+        /// Walk animation frame ranges per direction (Down, Right, Up, Left).
+        struct WalkFrameTable {
+            uint16_t startFrames[4];
+            uint16_t endFrames[4];
+        };
+
+        /// Full character sprite definition.
+        struct CharacterDef {
+            const char* type;
+            const char* spritePath;
+            float defaultScale;
+            uint16_t frameWidth;
+            uint16_t frameHeight;
+            uint16_t sheetColumns;
+            uint16_t sheetRows;
+            WalkFrameTable walk;
+            uint16_t idleStart;
+            uint16_t idleEnd;
+            float walkFrameDuration;
+            float idleFrameDuration;
+        };
+
+        static Engine::CharacterSpriteConfig BuildConfig(const CharacterDef& def) {
+            Engine::CharacterSpriteConfig config;
+            config.characterType = def.type;
+            config.spriteSheetPath = def.spritePath;
+            config.defaultScale = def.defaultScale;
+            config.defaultAnimation = "idle";
+
+            // Walk animations for each direction
+            constexpr Engine::Direction dirs[] = {
+                Engine::Direction::Down, Engine::Direction::Right,
+                Engine::Direction::Up,   Engine::Direction::Left
+            };
+
+            for (int i = 0; i < 4; ++i) {
+                config.animations.push_back(Engine::AnimationConfig(
+                    Engine::DirectionUtil::ToAnimationName(dirs[i]),
+                    def.frameWidth, def.frameHeight,
+                    def.sheetColumns, def.sheetRows,
+                    def.walk.startFrames[i], def.walk.endFrames[i],
+                    def.walkFrameDuration, true
+                ));
+            }
+
+            // Idle animation
+            config.animations.push_back(Engine::AnimationConfig(
+                "idle",
+                def.frameWidth, def.frameHeight,
+                def.sheetColumns, def.sheetRows,
+                def.idleStart, def.idleEnd,
+                def.idleFrameDuration, true
+            ));
+
+            return config;
+        }
+
+        // ---- Character definitions (data table) ----
+
+        static constexpr CharacterDef THUG_DEF = {
+            "thug", "Pics/Thug_Frames.png", 2.0f,
+            50, 50, 6, 6,
+            { {0, 7, 13, 19}, {6, 12, 18, 24} },  // walk start/end per direction
+            25, 36,    // idle frames
+            0.1f, 0.2f // walk/idle frame duration
+        };
+
+        static constexpr CharacterDef COP_DEF = {
+            "cop", "Pics/Cop_Frames.png", 2.0f,
+            64, 64, 8, 4,
+            { {0, 0, 0, 0}, {3, 3, 3, 3} },  // placeholder
+            0, 3,
+            0.1f, 0.15f
+        };
+
+        static constexpr CharacterDef CIVILIAN_DEF = {
+            "civilian", "Pics/Civilian_Frames.png", 2.0f,
+            64, 64, 8, 4,
+            { {0, 0, 0, 0}, {3, 3, 3, 3} },  // placeholder
+            0, 3,
+            0.1f, 0.15f
+        };
+
+        // ---- Factory methods (backward compatible) ----
+
         static Engine::CharacterSpriteConfig CreateThugConfig() {
-            Engine::CharacterSpriteConfig config;
-            config.characterType = "thug";
-            config.spriteSheetPath = "Pics/Thug_Frames.png";
-            config.defaultScale = 2.0f;
-            config.defaultAnimation = "idle";
-
-            // Walk down animation (frames 0-6)
-            config.animations.push_back(Engine::AnimationConfig(
-                "walk_down",
-                THUG_SPRITE_WIDTH,
-                THUG_SPRITE_HEIGHT,
-                THUG_SPRITE_COLUMNS,
-                THUG_SPRITE_ROWS,
-                0,           // start frame
-                6,           // end frame
-                0.1f,
-                true
-            ));
-
-            // Walk right animation (frames 7-12)
-            config.animations.push_back(Engine::AnimationConfig(
-                "walk_right",
-                THUG_SPRITE_WIDTH,
-                THUG_SPRITE_HEIGHT,
-                THUG_SPRITE_COLUMNS,
-                THUG_SPRITE_ROWS,
-                7,           // start frame
-                12,          // end frame
-                0.1f,
-                true
-            ));
-
-            // Walk up animation (frames 13-18)
-            config.animations.push_back(Engine::AnimationConfig(
-                "walk_up",
-                THUG_SPRITE_WIDTH,
-                THUG_SPRITE_HEIGHT,
-                THUG_SPRITE_COLUMNS,
-                THUG_SPRITE_ROWS,
-                13,          // start frame
-                18,          // end frame
-                0.1f,
-                true
-            ));
-
-            // Walk left animation (frames 19-24)
-            config.animations.push_back(Engine::AnimationConfig(
-                "walk_left",
-                THUG_SPRITE_WIDTH,
-                THUG_SPRITE_HEIGHT,
-                THUG_SPRITE_COLUMNS,
-                THUG_SPRITE_ROWS,
-                19,          // start frame
-                24,          // end frame
-                0.1f,
-                true
-            ));
-
-            // Idle animation (frames 0-2)
-            config.animations.push_back(Engine::AnimationConfig(
-                "idle",
-                THUG_SPRITE_WIDTH,
-                THUG_SPRITE_HEIGHT,
-                THUG_SPRITE_COLUMNS,
-                THUG_SPRITE_ROWS,
-                25,           // start frame
-                36,           // end frame
-                0.2f,        // frame duration
-                true         // loop
-            ));
-
-            return config;
+            return BuildConfig(THUG_DEF);
         }
 
-        /// <summary>
-        /// Example: Create configuration for a Cop character.
-        /// Modify this template for your actual cop sprite sheet.
-        /// </summary>
         static Engine::CharacterSpriteConfig CreateCopConfig() {
-            Engine::CharacterSpriteConfig config;
-            config.characterType = "cop";
-            config.spriteSheetPath = "Pics/Cop_Frames.png";  // Update with actual path
-            config.defaultScale = 2.0f;
-            config.defaultAnimation = "idle";
-
-            // TODO: Add animations specific to cop sprite sheet
-            // Example template:
-            config.animations.push_back(Engine::AnimationConfig(
-                "idle",
-                64, 64,      // Adjust frame size
-                8, 4,        // Adjust columns/rows
-                0, 3,        // Adjust frame range
-                0.15f,
-                true
-            ));
-
-            return config;
+            return BuildConfig(COP_DEF);
         }
 
-        /// <summary>
-        /// Example: Create configuration for a Civilian character.
-        /// Modify this template for your actual civilian sprite sheet.
-        /// </summary>
         static Engine::CharacterSpriteConfig CreateCivilianConfig() {
-            Engine::CharacterSpriteConfig config;
-            config.characterType = "civilian";
-            config.spriteSheetPath = "Pics/Civilian_Frames.png";  // Update with actual path
-            config.defaultScale = 2.0f;
-            config.defaultAnimation = "idle";
-
-            // TODO: Add animations specific to civilian sprite sheet
-            // Copy the pattern from CreateThugConfig() and adjust for your sprite sheet
-
-            return config;
+            return BuildConfig(CIVILIAN_DEF);
         }
-
-        // Add more character configuration methods here as you add new character types
     };
 
 } // namespace LegalCrime

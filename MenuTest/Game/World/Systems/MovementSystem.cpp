@@ -47,24 +47,25 @@ namespace World {
         }
 
         // Update all moving characters
-        for (auto& state : m_movingCharacters) {
+        std::vector<uint32_t> completed;
+        for (auto& [id, state] : m_movingCharacters) {
             if (state.isMoving && state.character) {
                 UpdateCharacterMovement(state, deltaTime);
+            }
+            if (!state.isMoving) {
+                completed.push_back(id);
             }
         }
 
         // Remove completed movements
-        m_movingCharacters.erase(
-            std::remove_if(m_movingCharacters.begin(), m_movingCharacters.end(),
-                [](const MovementState& state) { return !state.isMoving; }),
-            m_movingCharacters.end()
-        );
+        for (uint32_t id : completed) {
+            m_movingCharacters.erase(id);
+        }
     }
 
     bool MovementSystem::MoveCharacterToTile(
         Entities::Character* character,
-        uint16_t targetRow,
-        uint16_t targetCol,
+        const Engine::TilePosition& target,
         float duration) {
 
         if (!character || !m_pathfinder || !m_tileMap) {
@@ -74,19 +75,18 @@ namespace World {
             return false;
         }
 
-        uint16_t currentRow = character->GetTileRow();
-        uint16_t currentCol = character->GetTileCol();
+        Engine::TilePosition current = character->GetTilePosition();
 
         // Create walkability callback that queries the tilemap
-        auto isWalkable = [this](uint16_t row, uint16_t col) -> bool {
-            const Engine::Tile* tile = m_tileMap->GetTile(row, col);
+        auto isWalkable = [this](const Engine::TilePosition& pos) -> bool {
+            const Engine::Tile* tile = m_tileMap->GetTile(pos.row, pos.col);
             return tile && tile->IsWalkable();
         };
 
         // Find path using correct API
         Engine::Path path = m_pathfinder->FindPath(
-            Engine::TilePosition(currentRow, currentCol),
-            Engine::TilePosition(targetRow, targetCol),
+            current,
+            target,
             m_tileMap->GetWidth(),
             m_tileMap->GetHeight(),
             isWalkable
@@ -95,13 +95,21 @@ namespace World {
         if (path.empty()) {
             if (m_logger) {
                 m_logger->Warning("MovementSystem::MoveCharacterToTile - No path found from (" +
-                                std::to_string(currentRow) + "," + std::to_string(currentCol) + ") to (" +
-                                std::to_string(targetRow) + "," + std::to_string(targetCol) + ")");
+                                std::to_string(current.row) + "," + std::to_string(current.col) + ") to (" +
+                                std::to_string(target.row) + "," + std::to_string(target.col) + ")");
             }
             return false;
         }
 
         return MoveCharacterAlongPath(character, path, duration);
+    }
+
+    bool MovementSystem::MoveCharacterToTile(
+        Entities::Character* character,
+        uint16_t targetRow,
+        uint16_t targetCol,
+        float duration) {
+        return MoveCharacterToTile(character, Engine::TilePosition(targetRow, targetCol), duration);
     }
 
     bool MovementSystem::MoveCharacterAlongPath(
@@ -128,17 +136,11 @@ namespace World {
         // Start movement to first tile in path
         if (!path.empty()) {
             const Engine::TilePosition& firstTile = path[0];
-            state->targetRow = firstTile.row;
-            state->targetCol = firstTile.col;
+            state->target = firstTile;
 
             // Update animation based on direction
-            UpdateCharacterAnimation(
-                character,
-                character->GetTileRow(),
-                character->GetTileCol(),
-                firstTile.row,
-                firstTile.col
-            );
+            Engine::TilePosition from = character->GetTilePosition();
+            UpdateCharacterAnimation(character, from.row, from.col, firstTile.row, firstTile.col);
         }
 
         if (m_logger) {
@@ -180,36 +182,28 @@ namespace World {
             return nullptr;
         }
 
-        // Check if state already exists
-        for (auto& state : m_movingCharacters) {
-            if (state.character == character) {
-                return &state;
-            }
+        uint32_t id = character->GetId();
+        auto it = m_movingCharacters.find(id);
+        if (it != m_movingCharacters.end()) {
+            return &it->second;
         }
 
         // Create new state
-        MovementState newState;
+        MovementState& newState = m_movingCharacters[id];
         newState.character = character;
-        m_movingCharacters.push_back(newState);
-        return &m_movingCharacters.back();
+        return &newState;
     }
 
     MovementSystem::MovementState* MovementSystem::GetMovementState(const Entities::Character* character) {
-        for (auto& state : m_movingCharacters) {
-            if (state.character == character) {
-                return &state;
-            }
-        }
-        return nullptr;
+        if (!character) return nullptr;
+        auto it = m_movingCharacters.find(character->GetId());
+        return (it != m_movingCharacters.end()) ? &it->second : nullptr;
     }
 
     const MovementSystem::MovementState* MovementSystem::GetMovementState(const Entities::Character* character) const {
-        for (const auto& state : m_movingCharacters) {
-            if (state.character == character) {
-                return &state;
-            }
-        }
-        return nullptr;
+        if (!character) return nullptr;
+        auto it = m_movingCharacters.find(character->GetId());
+        return (it != m_movingCharacters.end()) ? &it->second : nullptr;
     }
 
     void MovementSystem::UpdateCharacterMovement(MovementState& state, float deltaTime) {
@@ -222,7 +216,7 @@ namespace World {
         if (state.moveTime >= state.moveDuration) {
             // Movement to current tile complete
             state.moveTime = 0.0f;
-            state.character->SetTilePosition(state.targetRow, state.targetCol);
+            state.character->SetTilePosition(state.target);
 
             // Check if there's more path to follow
             if (!state.currentPath.empty() && state.currentPathIndex < state.currentPath.size() - 1) {
@@ -230,14 +224,11 @@ namespace World {
                 state.currentPathIndex++;
                 const Engine::TilePosition& nextTile = state.currentPath[state.currentPathIndex];
 
-                uint16_t currentRow = state.character->GetTileRow();
-                uint16_t currentCol = state.character->GetTileCol();
-
-                state.targetRow = nextTile.row;
-                state.targetCol = nextTile.col;
+                Engine::TilePosition current = state.character->GetTilePosition();
+                state.target = nextTile;
 
                 // Update animation for new direction
-                UpdateCharacterAnimation(state.character, currentRow, currentCol, nextTile.row, nextTile.col);
+                UpdateCharacterAnimation(state.character, current.row, current.col, nextTile.row, nextTile.col);
             } else {
                 // Path complete
                 state.isMoving = false;
@@ -262,19 +253,10 @@ namespace World {
             return;
         }
 
-        // Determine direction based on tile delta
         int deltaRow = static_cast<int>(toRow) - static_cast<int>(fromRow);
         int deltaCol = static_cast<int>(toCol) - static_cast<int>(fromCol);
-
-        if (deltaRow < 0) {
-            character->SetAnimation("walk_up");
-        } else if (deltaRow > 0) {
-            character->SetAnimation("walk_down");
-        } else if (deltaCol < 0) {
-            character->SetAnimation("walk_left");
-        } else if (deltaCol > 0) {
-            character->SetAnimation("walk_right");
-        }
+        Engine::Direction dir = Engine::DirectionUtil::FromDelta(deltaRow, deltaCol);
+        character->SetAnimation(Engine::DirectionUtil::ToAnimationName(dir));
     }
 
 } // namespace World

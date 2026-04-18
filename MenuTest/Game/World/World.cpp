@@ -66,6 +66,7 @@ namespace World {
     void World::ClearEntities() {
         m_entities.clear();
         m_entityList.clear();
+        m_occupancy.clear();
         
         if (m_logger) {
             m_logger->Debug("World entities cleared");
@@ -98,15 +99,34 @@ namespace World {
         return characters;
     }
 
+    Entities::Character* World::GetCharacterAtTile(const Engine::TilePosition& pos) {
+        auto it = m_occupancy.find(pos);
+        return (it != m_occupancy.end()) ? it->second : nullptr;
+    }
+
     Entities::Character* World::GetCharacterAtTile(uint16_t row, uint16_t col) {
-        for (auto& entity : m_entities) {
-            if (auto* character = dynamic_cast<Entities::Character*>(entity.get())) {
-                if (character->GetTileRow() == row && character->GetTileCol() == col) {
-                    return character;
-                }
+        return GetCharacterAtTile(Engine::TilePosition(row, col));
+    }
+
+    bool World::IsOccupied(const Engine::TilePosition& pos) const {
+        return m_occupancy.find(pos) != m_occupancy.end();
+    }
+
+    void World::PlaceCharacter(Entities::Character* character, const Engine::TilePosition& pos) {
+        if (!character) return;
+        // Remove from old position
+        for (auto it = m_occupancy.begin(); it != m_occupancy.end(); ++it) {
+            if (it->second == character) {
+                m_occupancy.erase(it);
+                break;
             }
         }
-        return nullptr;
+        m_occupancy[pos] = character;
+        character->SetTilePosition(pos);
+    }
+
+    void World::RemoveOccupant(const Engine::TilePosition& pos) {
+        m_occupancy.erase(pos);
     }
 
     void World::SetTileMap(Engine::TileMap* tileMap) {

@@ -28,18 +28,7 @@ namespace LegalCrime {
             constexpr const char* MOVE_RIGHT = "MoveRight";
         }
 
-        // Axis names
-        namespace Axes {
-            constexpr const char* MOVE_HORIZONTAL = "MoveHorizontal";
-            constexpr const char* MOVE_VERTICAL = "MoveVertical";
-            constexpr const char* CAMERA_PAN_X = "CameraPanX";
-            constexpr const char* CAMERA_PAN_Y = "CameraPanY";
-        }
-
-        /// <summary>
         /// Initialize all game input bindings.
-        /// Call this during game initialization.
-        /// </summary>
         inline void InitializeBindings(Engine::Input::InputManager* inputManager) {
             if (!inputManager) return;
 
@@ -87,34 +76,6 @@ namespace LegalCrime {
             auto* moveRightAction = inputManager->CreateAction(Actions::MOVE_RIGHT);
             moveRightAction->BindKey(SDLK_D);
             moveRightAction->BindKey(SDLK_RIGHT);
-
-            // ===== AXES =====
-
-            // Movement axes (WASD / Arrow keys)
-            auto* moveHorizontalAxis = inputManager->CreateAxis(Axes::MOVE_HORIZONTAL);
-            moveHorizontalAxis->BindKeys(SDLK_A, SDLK_D); // Primary: A/D
-            moveHorizontalAxis->SetSensitivity(1.0f);
-
-            auto* moveVerticalAxis = inputManager->CreateAxis(Axes::MOVE_VERTICAL);
-            moveVerticalAxis->BindKeys(SDLK_W, SDLK_S); // Primary: W/S
-            moveVerticalAxis->SetSensitivity(1.0f);
-
-            // Camera pan axes (for future camera drag)
-            auto* cameraPanXAxis = inputManager->CreateAxis(Axes::CAMERA_PAN_X);
-            cameraPanXAxis->BindMouseAxis(true); // X axis
-            cameraPanXAxis->SetSensitivity(1.0f);
-
-            auto* cameraPanYAxis = inputManager->CreateAxis(Axes::CAMERA_PAN_Y);
-            cameraPanYAxis->BindMouseAxis(false); // Y axis
-            cameraPanYAxis->SetSensitivity(1.0f);
-        }
-
-        /// <summary>
-        /// Update input bindings (for remappable controls in the future).
-        /// </summary>
-        inline void UpdateBindings(Engine::Input::InputManager* inputManager) {
-            // TODO: Load bindings from config file
-            // For now, just use defaults
         }
 
     } // namespace InputBindings

@@ -29,6 +29,7 @@ namespace Input {
         // Update (call once per frame, before game logic)
         void ProcessEvent(const SDL_Event& event);
         void Update(); // Call after all events processed
+        void EndFrame(); // Call after all game logic has read input state
 
         // Action management
         InputAction* CreateAction(const std::string& name);

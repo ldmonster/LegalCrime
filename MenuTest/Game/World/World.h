@@ -5,6 +5,7 @@
 #include "../Entities/Character.h"
 #include <vector>
 #include <memory>
+#include <unordered_map>
 
 namespace Engine {
     class TileMap;
@@ -35,7 +36,13 @@ namespace World {
         // Character queries (convenience methods)
         Entities::Character* GetCharacterById(uint32_t id);
         std::vector<Entities::Character*> GetAllCharacters();
+        Entities::Character* GetCharacterAtTile(const Engine::TilePosition& pos);
         Entities::Character* GetCharacterAtTile(uint16_t row, uint16_t col);
+
+        // Tile occupancy management
+        bool IsOccupied(const Engine::TilePosition& pos) const;
+        void PlaceCharacter(Entities::Character* character, const Engine::TilePosition& pos);
+        void RemoveOccupant(const Engine::TilePosition& pos);
 
         // TileMap access
         void SetTileMap(Engine::TileMap* tileMap);
@@ -57,6 +64,9 @@ namespace World {
 
         // TileMap (not owned by World - owned by scene)
         Engine::TileMap* m_tileMap;
+
+        // Tile occupancy map for O(1) lookups
+        std::unordered_map<Engine::TilePosition, Entities::Character*, Engine::TilePosition::Hash> m_occupancy;
 
         // Internal methods
         void RebuildEntityList();

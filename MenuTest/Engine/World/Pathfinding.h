@@ -7,30 +7,13 @@
 
 namespace Engine {
 
-    // Represents a position in the tile grid
-    struct TilePosition {
-        uint16_t row;
-        uint16_t col;
-
-        TilePosition() : row(0), col(0) {}
-        TilePosition(uint16_t r, uint16_t c) : row(r), col(c) {}
-
-        bool operator==(const TilePosition& other) const {
-            return row == other.row && col == other.col;
-        }
-
-        bool operator!=(const TilePosition& other) const {
-            return !(*this == other);
-        }
-    };
+    // TilePosition is defined in Engine/Core/Types.h
 
     // Path result - list of tile positions from start to goal
     using Path = std::vector<TilePosition>;
 
     // Callback function to check if a tile is walkable
-    // Parameters: row, col
-    // Returns: true if the tile can be walked on, false otherwise
-    using IsWalkableFunc = std::function<bool(uint16_t row, uint16_t col)>;
+    using IsWalkableFunc = std::function<bool(const TilePosition& pos)>;
 
     /// <summary>
     /// A* pathfinding implementation for grid-based maps.

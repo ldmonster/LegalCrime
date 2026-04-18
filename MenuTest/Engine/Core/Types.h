@@ -3,6 +3,8 @@
 #include <memory>
 #include <string>
 #include <cstdint>
+#include <cmath>
+#include <cstddef>
 
 // Common type aliases for the engine
 namespace Engine {
@@ -57,6 +59,79 @@ namespace Engine {
         Rect(int _x, int _y, int _w, int _h) : x(_x), y(_y), w(_w), h(_h) {}
     };
 
+    /// Value object representing a position in the tile grid.
+    struct TilePosition {
+        uint16_t row;
+        uint16_t col;
+
+        TilePosition() : row(0), col(0) {}
+        TilePosition(uint16_t r, uint16_t c) : row(r), col(c) {}
+
+        bool operator==(const TilePosition& o) const { return row == o.row && col == o.col; }
+        bool operator!=(const TilePosition& o) const { return !(*this == o); }
+
+        /// Manhattan distance to another tile.
+        int DistanceTo(const TilePosition& o) const {
+            return std::abs(static_cast<int>(row) - o.row)
+                 + std::abs(static_cast<int>(col) - o.col);
+        }
+
+        /// True if the other tile is directly adjacent (4-directional).
+        bool IsAdjacent(const TilePosition& o) const { return DistanceTo(o) == 1; }
+
+        /// Hash for use in unordered containers.
+        struct Hash {
+            std::size_t operator()(const TilePosition& p) const {
+                return std::hash<uint32_t>()(
+                    (static_cast<uint32_t>(p.row) << 16) | p.col);
+            }
+        };
+    };
+
+    /// Cardinal direction value object with behavior.
+    enum class Direction : uint8_t {
+        Down  = 0,
+        Right = 1,
+        Up    = 2,
+        Left  = 3
+    };
+
+    namespace DirectionUtil {
+        inline const char* ToString(Direction dir) {
+            constexpr const char* names[] = { "down", "right", "up", "left" };
+            auto idx = static_cast<uint8_t>(dir);
+            return idx < 4 ? names[idx] : "down";
+        }
+
+        inline std::string ToAnimationName(Direction dir, const std::string& prefix = "walk") {
+            return prefix + "_" + ToString(dir);
+        }
+
+        inline Direction Opposite(Direction dir) {
+            constexpr Direction opposites[] = {
+                Direction::Up, Direction::Left, Direction::Down, Direction::Right
+            };
+            auto idx = static_cast<uint8_t>(dir);
+            return idx < 4 ? opposites[idx] : Direction::Down;
+        }
+
+        /// Determine direction from a tile delta (row/col difference).
+        inline Direction FromDelta(int deltaRow, int deltaCol) {
+            if (deltaRow < 0) return Direction::Up;
+            if (deltaRow > 0) return Direction::Down;
+            if (deltaCol < 0) return Direction::Left;
+            return Direction::Right;
+        }
+
+        /// Determine direction from one TilePosition to another.
+        inline Direction FromPositions(const TilePosition& from, const TilePosition& to) {
+            return FromDelta(
+                static_cast<int>(to.row) - static_cast<int>(from.row),
+                static_cast<int>(to.col) - static_cast<int>(from.col)
+            );
+        }
+    }
+
     // Result type for operations that can fail
     template<typename T>
     struct Result {
@@ -65,10 +140,13 @@ namespace Engine {
         std::string error;
         
         Result() : success(false), value{}, error("") {}
-        Result(T val) : success(true), value(val), error("") {}
+        Result(T val) : success(true), value(std::move(val)), error("") {}
         Result(const std::string& err) : success(false), value{}, error(err) {}
         
         operator bool() const { return success; }
+
+        static Result Success(T val) { return Result(std::move(val)); }
+        static Result Failure(const std::string& err) { return Result(err); }
     };
     
     // Specialization for void operations

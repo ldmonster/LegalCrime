@@ -1,21 +1,27 @@
 #pragma once
 
 #include "../../Engine/Scene/Scene.h"
+#include "../../Engine/Core/Types.h"
 #include "../../Engine/Core/Logger/ILogger.h"
 #include "../../Engine/Renderer/IRenderer.h"
-#include "../../Engine/Audio/IAudioEngine.h"
+#include "../../Engine/Audio/ISoundPlayer.h"
 #include <SDL3/SDL.h>
 #include <memory>
 
-namespace LegalCrime {
+// Forward declarations
+namespace Engine {
+    class SoundEffect;
+    class Texture;
+    class Sprite;
+    namespace UI { class Button; }
+}
 
-    // Forward declaration for implementation
-    class MainMenuSceneImpl;
+namespace LegalCrime {
 
     // Main menu scene
     class MainMenuScene : public Engine::Scene {
     public:
-        MainMenuScene(Engine::ILogger* logger, Engine::IRenderer* renderer, Engine::IAudioEngine* audio);
+        MainMenuScene(Engine::ILogger* logger, Engine::IRenderer* renderer, Engine::ISoundPlayer* audio);
         ~MainMenuScene() override;
 
         Engine::Result<void> Initialize() override;
@@ -30,6 +36,31 @@ namespace LegalCrime {
         bool ShouldStartGame() const;
 
     private:
-        std::unique_ptr<MainMenuSceneImpl> m_impl;
+        enum MainPageButtons {
+            MultiplayerButton,
+            SingleplayerButton,
+            SettingsButton,
+            CreditsButton,
+            CultureButton,
+            ExitButton,
+            OverallButtons
+        };
+
+        Engine::ISoundPlayer* m_audio;
+
+        std::shared_ptr<Engine::SoundEffect> m_hoverSound;
+        std::shared_ptr<Engine::SoundEffect> m_clickSound;
+
+        std::shared_ptr<Engine::Texture> m_backgroundTexture;
+        std::shared_ptr<Engine::Texture> m_buttonsTexture;
+
+        std::shared_ptr<Engine::Sprite> m_backgroundSprite;
+
+        std::unique_ptr<Engine::UI::Button> m_buttons[OverallButtons];
+
+        Engine::Rect m_backgroundRect;
+
+        bool m_shouldQuit;
+        bool m_shouldStartGame;
     };
 }

@@ -8,6 +8,9 @@
 
 // Forward declarations
 namespace Engine {
+    class TileMap;
+    class TileMapRenderer;
+    class Camera2D;
     namespace Input {
         class InputManager;
     }
@@ -18,8 +21,15 @@ namespace Engine {
 
 namespace LegalCrime {
 
-    // Forward declaration for implementation
-    class GameplaySceneImpl;
+    namespace Entities {
+        class Character;
+        class CharacterFactory;
+    }
+    namespace World {
+        class World;
+        class MovementSystem;
+        class SelectionSystem;
+    }
 
     // Gameplay scene
     class GameplayScene : public Engine::Scene {
@@ -39,6 +49,7 @@ namespace LegalCrime {
         void Render() override;
 
         // Character movement
+        void MoveCharacterToTile(const Engine::TilePosition& target, float duration = 0.3f);
         void MoveCharacterToTile(uint16_t row, uint16_t col, float duration = 0.3f);
 
         // RTS-style commands
@@ -46,7 +57,17 @@ namespace LegalCrime {
         void CommandMoveToPosition(int screenX, int screenY);
 
     private:
-        std::unique_ptr<GameplaySceneImpl> m_impl;
+        std::unique_ptr<Engine::TileMap> m_tileMap;
+        std::unique_ptr<Engine::TileMapRenderer> m_tileMapRenderer;
+        std::unique_ptr<Engine::Camera2D> m_camera;
+        std::unique_ptr<Entities::CharacterFactory> m_characterFactory;
+        std::unique_ptr<World::World> m_world;
+        std::unique_ptr<World::MovementSystem> m_movementSystem;
+        std::unique_ptr<World::SelectionSystem> m_selectionSystem;
+        Engine::Input::InputManager* m_inputManager;
+
+        // Raw pointer to character for convenience (owned by World)
+        Entities::Character* m_character;
 
         // Input handling
         void HandleInputActions();

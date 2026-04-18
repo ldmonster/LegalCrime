@@ -1,7 +1,5 @@
 #include "Button.h"
 #include "../Renderer/IRenderer.h"
-#include "../Audio/IAudioEngine.h"
-#include <SDL3_mixer/SDL_mixer.h>
 
 namespace Engine {
     namespace UI {
@@ -17,12 +15,10 @@ namespace Engine {
             , m_disabledSprite(nullptr)
             , m_onClick(nullptr)
             , m_onHover(nullptr)
-            , m_onPress(nullptr)
-            , m_hoverSound(nullptr)
-            , m_clickSound(nullptr) {
+            , m_onPress(nullptr) {
         }
         
-        void Button::HandleEvent(const SDL_Event& event, IAudioEngine* audio) {
+        void Button::HandleEvent(const SDL_Event& event) {
             if (!m_enabled) {
                 m_state = ButtonState::Disabled;
                 return;

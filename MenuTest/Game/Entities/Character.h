@@ -48,9 +48,11 @@ namespace Entities {
         void StopMovement();
 
         // Tile position (for grid-based movement)
+        void SetTilePosition(const Engine::TilePosition& pos);
         void SetTilePosition(uint16_t row, uint16_t col);
-        uint16_t GetTileRow() const { return m_tileRow; }
-        uint16_t GetTileCol() const { return m_tileCol; }
+        Engine::TilePosition GetTilePosition() const { return m_tilePosition; }
+        uint16_t GetTileRow() const { return m_tilePosition.row; }
+        uint16_t GetTileCol() const { return m_tilePosition.col; }
 
         // Character data
         CharacterType GetCharacterType() const { return m_characterType; }
@@ -68,8 +70,7 @@ namespace Entities {
         Engine::IRenderer* m_cachedRenderer;  // For parameterless Render()
 
         // Tile position
-        uint16_t m_tileRow;
-        uint16_t m_tileCol;
+        Engine::TilePosition m_tilePosition;
 
         void InitializeAnimations(const Engine::CharacterSpriteConfig& config);
         void UpdateDirectionAnimation();

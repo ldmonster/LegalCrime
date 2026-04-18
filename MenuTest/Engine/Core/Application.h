@@ -2,6 +2,7 @@
 
 #include "Types.h"
 #include "Logger/ILogger.h"
+#include "EngineBuilder.h"
 #include "../Platform/IWindow.h"
 #include "../Renderer/IRenderer.h"
 #include "../Audio/IAudioEngine.h"
@@ -31,6 +32,7 @@ namespace Engine {
         virtual ~Application();
         
         Result<void> Initialize(const ApplicationConfig& config);
+        Result<void> Initialize(EngineSubsystems subsystems);
         void Shutdown();
         
         int Run();

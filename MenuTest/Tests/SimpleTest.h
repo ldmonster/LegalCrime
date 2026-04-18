@@ -24,7 +24,7 @@ namespace SimpleTest {
         }
         
         static int RunAll() {
-            std::cout << "\n=== TileMap Test Suite ===\n\n";
+            std::cout << "\n=== Test Suite ===\n\n";
             
             for (const auto& [name, test] : tests) {
                 auto result = test();

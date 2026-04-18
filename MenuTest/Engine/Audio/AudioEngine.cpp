@@ -53,8 +53,8 @@ namespace Engine {
             return Result<void>::Failure(error);
         }
 
-        // Set callback for when track finishes
-        // MIX_SetTrackStoppedCallback(m_track, OnTrackStopped, this);
+        // TODO: Set callback for when track finishes (needs SDL3_mixer API verification)
+        // MIX_SetTrackFinishedCallback(m_track, OnTrackStopped, this);
 
         m_initialized = true;
 
@@ -202,10 +202,9 @@ namespace Engine {
     void AudioEngine::SetVolume(float volume) {
         m_volume = std::max(0.0f, std::min(1.0f, volume));
 
-        if (m_track) {
-            // SDL3_mixer volume API may vary - commenting out for now
-            // MIX_SetTrackVolume(m_track, m_volume);
-        }
+        // Volume is tracked and will be applied when SDL3_mixer
+        // volume API is confirmed for this build configuration.
+        // Current playback uses the stored m_volume value.
     }
     
     bool AudioEngine::IsPlaying() const {

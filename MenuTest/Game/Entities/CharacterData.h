@@ -17,15 +17,9 @@ namespace Entities {
         Count  // Number of character types
     };
 
-    /// <summary>
-    /// Direction the character is facing.
-    /// </summary>
-    enum class Direction {
-        Down = 0,
-        Right = 1,
-        Up = 2,
-        Left = 3
-    };
+    /// Direction is now defined in Engine::Direction (Engine/Core/Types.h).
+    /// This alias preserves backward compatibility within the Entities namespace.
+    using Direction = Engine::Direction;
 
     /// <summary>
     /// Character definition including sprite configuration and gameplay data.
@@ -65,24 +59,14 @@ namespace Entities {
             }
         }
 
-        /// <summary>
         /// Convert Direction enum to string.
-        /// </summary>
         inline std::string DirectionToString(Direction dir) {
-            switch (dir) {
-                case Direction::Down: return "down";
-                case Direction::Right: return "right";
-                case Direction::Up: return "up";
-                case Direction::Left: return "left";
-                default: return "down";
-            }
+            return Engine::DirectionUtil::ToString(dir);
         }
 
-        /// <summary>
         /// Get animation name for direction.
-        /// </summary>
         inline std::string GetWalkAnimationForDirection(Direction dir) {
-            return "walk_" + DirectionToString(dir);
+            return Engine::DirectionUtil::ToAnimationName(dir, "walk");
         }
     }
 

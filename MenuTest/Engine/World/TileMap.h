@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../Core/Types.h"
-#include "../Graphics/Texture.h"
+#include "IsometricMath.h"
 #include <SDL3/SDL.h>
 #include <vector>
 #include <memory>
@@ -41,12 +41,13 @@ namespace Engine {
         bool m_walkable;
     };
     
-    // Modern tilemap class with proper resource management
+    /// TileMap: owns tile data, dimensions, and coordinate conversions.
+    /// Rendering is handled by TileMapRenderer (SRP).
     class TileMap {
     public:
         // Default isometric tile dimensions
         static constexpr uint16_t DEFAULT_TILE_WIDTH = 50;
-        static constexpr uint16_t DEFAULT_TILE_HEIGHT = 25;  // Half of width for isometric
+        static constexpr uint16_t DEFAULT_TILE_HEIGHT = 25;
 
         TileMap(uint16_t width, uint16_t height, ILogger* logger = nullptr);
         ~TileMap();
@@ -55,42 +56,41 @@ namespace Engine {
         Result<void> Initialize(int windowWidth, int windowHeight);
         bool IsInitialized() const { return m_initialized; }
         
-        // Rendering
-        void Render(IRenderer* renderer, Camera2D* camera = nullptr);
-
-        // Event handling (for camera panning if camera provided)
-        void HandleEvent(const SDL_Event& event, Camera2D* camera = nullptr);
-        
         // Tile access
         Tile* GetTile(uint16_t row, uint16_t col);
         const Tile* GetTile(uint16_t row, uint16_t col) const;
+        Tile* GetTile(const TilePosition& pos) { return GetTile(pos.row, pos.col); }
+        const Tile* GetTile(const TilePosition& pos) const { return GetTile(pos.row, pos.col); }
         
         // Map properties
         uint16_t GetWidth() const { return m_mapWidth; }
         uint16_t GetHeight() const { return m_mapHeight; }
         uint16_t GetTileWidth() const { return m_tileWidth; }
         uint16_t GetTileHeight() const { return m_tileHeight; }
+        uint16_t GetMapSizeWidth() const { return m_mapSizeWidth; }
+        uint16_t GetMapSizeHeight() const { return m_mapSizeHeight; }
         
-        // Camera/viewport offset
+        // Camera/viewport offset (legacy, for non-camera rendering)
         void SetOffset(int x, int y);
         Point GetOffset() const { return Point(m_offsetX, m_offsetY); }
 
-        // Bounds (30% additional space beyond map size)
+        // Bounds
         Rect GetBounds() const;
 
-        // Coordinate conversion (with optional camera for world-space conversion)
+        // Coordinate conversion (delegates to IsometricMath)
         Point TileToScreen(uint16_t row, uint16_t col, Camera2D* camera = nullptr) const;
+        Point TileToScreen(const TilePosition& pos, Camera2D* camera = nullptr) const { return TileToScreen(pos.row, pos.col, camera); }
         Point TileToScreenCenter(uint16_t row, uint16_t col, Camera2D* camera = nullptr) const;
+        Point TileToScreenCenter(const TilePosition& pos, Camera2D* camera = nullptr) const { return TileToScreenCenter(pos.row, pos.col, camera); }
         bool ScreenToTile(int screenX, int screenY, uint16_t& outRow, uint16_t& outCol, Camera2D* camera = nullptr) const;
+        bool ScreenToTile(int screenX, int screenY, TilePosition& outPos, Camera2D* camera = nullptr) const;
 
     private:
-        void RenderMapTexture(IRenderer* renderer);
-        void RegenerateMapTexture(IRenderer* renderer);
         void ClampOffsetToBounds();
         
         ILogger* m_logger;
         
-        // Tile grid - modern vector-based storage
+        // Tile grid
         std::vector<std::vector<Tile>> m_tiles;
         
         // Map dimensions
@@ -105,21 +105,15 @@ namespace Engine {
         uint16_t m_mapSizeWidth;
         uint16_t m_mapSizeHeight;
         
-        // Pre-rendered map texture for performance
-        std::shared_ptr<Texture> m_mapTexture;
+        // Map render rect (for coordinate conversion)
         Rect m_mapRenderRect;
         
         // Window center for positioning
         Point m_windowCenter;
         
-        // Camera offset for panning
+        // Camera offset for panning (legacy)
         int m_offsetX;
         int m_offsetY;
-        
-        // Mouse interaction state
-        bool m_isDragging;
-        Point m_dragStart;
-        Point m_initialOffset;
         
         bool m_initialized;
     };

@@ -1,5 +1,6 @@
 #include "Renderer.h"
 #include <SDL3/SDL.h>
+#include <vector>
 
 namespace Engine {
     
@@ -102,5 +103,22 @@ namespace Engine {
         
         m_vSyncEnabled = enabled;
         return true;
+    }
+
+    void Renderer::SetDrawColor(uint8_t r, uint8_t g, uint8_t b, uint8_t a) {
+        if (!m_renderer) return;
+        SDL_SetRenderDrawColor(m_renderer, r, g, b, a);
+    }
+
+    void Renderer::DrawLines(const Point* points, int count) {
+        if (!m_renderer || !points || count < 2) return;
+
+        // Convert Engine::Point to SDL_FPoint
+        std::vector<SDL_FPoint> fpoints(count);
+        for (int i = 0; i < count; ++i) {
+            fpoints[i].x = static_cast<float>(points[i].x);
+            fpoints[i].y = static_cast<float>(points[i].y);
+        }
+        SDL_RenderLines(m_renderer, fpoints.data(), count);
     }
 }

@@ -35,5 +35,9 @@ namespace Engine {
         virtual bool IsVSyncEnabled() const = 0;
         
         virtual bool IsInitialized() const = 0;
+
+        // Drawing primitives — game code should use these instead of GetNativeRenderer()
+        virtual void SetDrawColor(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255) = 0;
+        virtual void DrawLines(const Point* points, int count) = 0;
     };
 }

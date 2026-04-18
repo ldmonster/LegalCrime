@@ -1,5 +1,6 @@
 #include "../../Tests/SimpleTest.h"
 #include "TileMap.h"
+#include "IsometricMath.h"
 #include "../Core/Logger/ILogger.h"
 #include <iostream>
 
@@ -392,235 +393,7 @@ TEST_CASE(TileMap_EdgeCase_TileIdMaxValue) {
     return SimpleTest::TestResult{__FUNCTION__, true, ""};
 }
 
-// ============================================================================
-// Arrow Key Event Tests
-// ============================================================================
-
-TEST_CASE(TileMap_ArrowKey_UpKeyIncreasesOffsetY) {
-    TestLogger logger;
-    TileMap tilemap(10, 10, &logger);
-    tilemap.Initialize(1024, 768);
-
-    Point initialOffset = tilemap.GetOffset();
-
-    SDL_Event event{};
-    event.type = SDL_EVENT_KEY_DOWN;
-    event.key.key = SDLK_UP;
-
-    tilemap.HandleEvent(event);
-
-    Point newOffset = tilemap.GetOffset();
-    ASSERT_EQUAL(newOffset.x, initialOffset.x);
-    ASSERT_EQUAL(newOffset.y, initialOffset.y + 20);
-    return SimpleTest::TestResult{__FUNCTION__, true, ""};
-}
-
-TEST_CASE(TileMap_ArrowKey_DownKeyDecreasesOffsetY) {
-    TestLogger logger;
-    TileMap tilemap(10, 10, &logger);
-    tilemap.Initialize(1024, 768);
-
-    Point initialOffset = tilemap.GetOffset();
-
-    SDL_Event event{};
-    event.type = SDL_EVENT_KEY_DOWN;
-    event.key.key = SDLK_DOWN;
-
-    tilemap.HandleEvent(event);
-
-    Point newOffset = tilemap.GetOffset();
-    ASSERT_EQUAL(newOffset.x, initialOffset.x);
-    ASSERT_EQUAL(newOffset.y, initialOffset.y - 20);
-    return SimpleTest::TestResult{__FUNCTION__, true, ""};
-}
-
-TEST_CASE(TileMap_ArrowKey_LeftKeyIncreasesOffsetX) {
-    TestLogger logger;
-    TileMap tilemap(10, 10, &logger);
-    tilemap.Initialize(1024, 768);
-
-    Point initialOffset = tilemap.GetOffset();
-
-    SDL_Event event{};
-    event.type = SDL_EVENT_KEY_DOWN;
-    event.key.key = SDLK_LEFT;
-
-    tilemap.HandleEvent(event);
-
-    Point newOffset = tilemap.GetOffset();
-    ASSERT_EQUAL(newOffset.x, initialOffset.x + 20);
-    ASSERT_EQUAL(newOffset.y, initialOffset.y);
-    return SimpleTest::TestResult{__FUNCTION__, true, ""};
-}
-
-TEST_CASE(TileMap_ArrowKey_RightKeyDecreasesOffsetX) {
-    TestLogger logger;
-    TileMap tilemap(10, 10, &logger);
-    tilemap.Initialize(1024, 768);
-
-    Point initialOffset = tilemap.GetOffset();
-
-    SDL_Event event{};
-    event.type = SDL_EVENT_KEY_DOWN;
-    event.key.key = SDLK_RIGHT;
-
-    tilemap.HandleEvent(event);
-
-    Point newOffset = tilemap.GetOffset();
-    ASSERT_EQUAL(newOffset.x, initialOffset.x - 20);
-    ASSERT_EQUAL(newOffset.y, initialOffset.y);
-    return SimpleTest::TestResult{__FUNCTION__, true, ""};
-}
-
-TEST_CASE(TileMap_ArrowKey_MultipleUpPresses) {
-    TestLogger logger;
-    TileMap tilemap(10, 10, &logger);
-    tilemap.Initialize(1024, 768);
-
-    SDL_Event event{};
-    event.type = SDL_EVENT_KEY_DOWN;
-    event.key.key = SDLK_UP;
-
-    tilemap.HandleEvent(event);
-    tilemap.HandleEvent(event);
-    tilemap.HandleEvent(event);
-
-    Point offset = tilemap.GetOffset();
-    ASSERT_EQUAL(offset.y, 60); // 3 * 20
-    return SimpleTest::TestResult{__FUNCTION__, true, ""};
-}
-
-TEST_CASE(TileMap_ArrowKey_AlternatingDirections) {
-    TestLogger logger;
-    TileMap tilemap(10, 10, &logger);
-    tilemap.Initialize(1024, 768);
-
-    SDL_Event upEvent{};
-    upEvent.type = SDL_EVENT_KEY_DOWN;
-    upEvent.key.key = SDLK_UP;
-
-    SDL_Event downEvent{};
-    downEvent.type = SDL_EVENT_KEY_DOWN;
-    downEvent.key.key = SDLK_DOWN;
-
-    tilemap.HandleEvent(upEvent);    // +20
-    tilemap.HandleEvent(downEvent);  // -20
-
-    Point offset = tilemap.GetOffset();
-    ASSERT_EQUAL(offset.y, 0);
-    return SimpleTest::TestResult{__FUNCTION__, true, ""};
-}
-
-TEST_CASE(TileMap_ArrowKey_CombinedHorizontalVertical) {
-    TestLogger logger;
-    TileMap tilemap(10, 10, &logger);
-    tilemap.Initialize(1024, 768);
-
-    SDL_Event upEvent{};
-    upEvent.type = SDL_EVENT_KEY_DOWN;
-    upEvent.key.key = SDLK_UP;
-
-    SDL_Event leftEvent{};
-    leftEvent.type = SDL_EVENT_KEY_DOWN;
-    leftEvent.key.key = SDLK_LEFT;
-
-    tilemap.HandleEvent(upEvent);
-    tilemap.HandleEvent(leftEvent);
-
-    Point offset = tilemap.GetOffset();
-    ASSERT_EQUAL(offset.x, 20);
-    ASSERT_EQUAL(offset.y, 20);
-    return SimpleTest::TestResult{__FUNCTION__, true, ""};
-}
-
-TEST_CASE(TileMap_ArrowKey_WithExistingOffset) {
-    TestLogger logger;
-    TileMap tilemap(10, 10, &logger);
-    tilemap.Initialize(1024, 768);
-
-    tilemap.SetOffset(100, 50);
-
-    SDL_Event event{};
-    event.type = SDL_EVENT_KEY_DOWN;
-    event.key.key = SDLK_UP;
-
-    tilemap.HandleEvent(event);
-
-    Point offset = tilemap.GetOffset();
-    ASSERT_EQUAL(offset.x, 100);
-    ASSERT_EQUAL(offset.y, 70); // 50 + 20
-    return SimpleTest::TestResult{__FUNCTION__, true, ""};
-}
-
-TEST_CASE(TileMap_ArrowKey_WorksWithNegativeOffset) {
-    TestLogger logger;
-    TileMap tilemap(10, 10, &logger);
-    tilemap.Initialize(1024, 768);
-
-    tilemap.SetOffset(-100, -100);
-
-    SDL_Event event{};
-    event.type = SDL_EVENT_KEY_DOWN;
-    event.key.key = SDLK_RIGHT;
-
-    tilemap.HandleEvent(event);
-
-    Point offset = tilemap.GetOffset();
-    ASSERT_EQUAL(offset.x, -120); // -100 - 20
-    ASSERT_EQUAL(offset.y, -100);
-    return SimpleTest::TestResult{__FUNCTION__, true, ""};
-}
-
-TEST_CASE(TileMap_ArrowKey_IgnoredWhenNotInitialized) {
-    TestLogger logger;
-    TileMap tilemap(10, 10, &logger);
-    // Note: NOT calling Initialize
-
-    SDL_Event event{};
-    event.type = SDL_EVENT_KEY_DOWN;
-    event.key.key = SDLK_UP;
-
-    tilemap.HandleEvent(event);
-
-    Point offset = tilemap.GetOffset();
-    ASSERT_EQUAL(offset.x, 0);
-    ASSERT_EQUAL(offset.y, 0);
-    return SimpleTest::TestResult{__FUNCTION__, true, ""};
-}
-
-TEST_CASE(TileMap_ArrowKey_KeyUpEventDoesNotChangePan) {
-    TestLogger logger;
-    TileMap tilemap(10, 10, &logger);
-    tilemap.Initialize(1024, 768);
-
-    SDL_Event event{};
-    event.type = SDL_EVENT_KEY_UP;
-    event.key.key = SDLK_UP;
-
-    tilemap.HandleEvent(event);
-
-    Point offset = tilemap.GetOffset();
-    ASSERT_EQUAL(offset.x, 0);
-    ASSERT_EQUAL(offset.y, 0);
-    return SimpleTest::TestResult{__FUNCTION__, true, ""};
-}
-
-TEST_CASE(TileMap_ArrowKey_NonArrowKeyDoesNotAffectOffset) {
-    TestLogger logger;
-    TileMap tilemap(10, 10, &logger);
-    tilemap.Initialize(1024, 768);
-
-    SDL_Event event{};
-    event.type = SDL_EVENT_KEY_DOWN;
-    event.key.key = SDLK_SPACE;
-
-    tilemap.HandleEvent(event);
-
-    Point offset = tilemap.GetOffset();
-    ASSERT_EQUAL(offset.x, 0);
-    ASSERT_EQUAL(offset.y, 0);
-    return SimpleTest::TestResult{__FUNCTION__, true, ""};
-}
+// Arrow Key Event Tests removed — HandleEvent was extracted from TileMap (SRP)
 
 // ============================================================================
 // Bounds Tests
@@ -715,44 +488,6 @@ TEST_CASE(TileMap_Bounds_SetOffsetWithinBoundsNotClamped) {
     Point offset = tilemap.GetOffset();
     ASSERT_EQUAL(offset.x, 50);
     ASSERT_EQUAL(offset.y, 30);
-    return SimpleTest::TestResult{__FUNCTION__, true, ""};
-}
-
-TEST_CASE(TileMap_Bounds_ArrowKeyClampsAtBoundary) {
-    TestLogger logger;
-    TileMap tilemap(10, 10, &logger);
-    tilemap.Initialize(1024, 768);
-
-    // Set to near max boundary
-    tilemap.SetOffset(260, 0);
-
-    SDL_Event event{};
-    event.type = SDL_EVENT_KEY_DOWN;
-    event.key.key = SDLK_LEFT; // Would add 20
-
-    tilemap.HandleEvent(event);
-
-    Point offset = tilemap.GetOffset();
-    ASSERT_EQUAL(offset.x, 270); // Clamped to max (260 + 20 = 280, but max is 270)
-    return SimpleTest::TestResult{__FUNCTION__, true, ""};
-}
-
-TEST_CASE(TileMap_Bounds_MultiplePressesStopAtBoundary) {
-    TestLogger logger;
-    TileMap tilemap(10, 10, &logger);
-    tilemap.Initialize(1024, 768);
-
-    SDL_Event event{};
-    event.type = SDL_EVENT_KEY_DOWN;
-    event.key.key = SDLK_UP;
-
-    // Press up 10 times (would be 200 without bounds)
-    for (int i = 0; i < 10; i++) {
-        tilemap.HandleEvent(event);
-    }
-
-    Point offset = tilemap.GetOffset();
-    ASSERT_EQUAL(offset.y, 135); // Clamped to max Y
     return SimpleTest::TestResult{__FUNCTION__, true, ""};
 }
 
@@ -957,7 +692,104 @@ TEST_CASE(TileMap_Bounds_TallMap_GetBounds) {
     return SimpleTest::TestResult{__FUNCTION__, true, ""};
 }
 
-int main() {
-    return SimpleTest::TestRunner::RunAll();
+// ============================================================================
+// IsometricMath Tests
+// ============================================================================
+
+TEST_CASE(IsometricMath_TileToLocal_OriginTile) {
+    Point p = IsometricMath::TileToLocal(0, 0, 0, 150, 30, 15);
+    ASSERT_EQUAL(p.x, 0);
+    ASSERT_EQUAL(p.y, 150);
+    return SimpleTest::TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(IsometricMath_TileToLocal_Row1Col0) {
+    // row=1,col=0: x = (0+1)*30 = 30, y = 150 - (0-1)*15 = 165
+    Point p = IsometricMath::TileToLocal(1, 0, 0, 150, 30, 15);
+    ASSERT_EQUAL(p.x, 30);
+    ASSERT_EQUAL(p.y, 165);
+    return SimpleTest::TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(IsometricMath_TileToLocal_Row0Col1) {
+    // row=0,col=1: x = (1+0)*30 = 30, y = 150 - (1-0)*15 = 135
+    Point p = IsometricMath::TileToLocal(0, 1, 0, 150, 30, 15);
+    ASSERT_EQUAL(p.x, 30);
+    ASSERT_EQUAL(p.y, 135);
+    return SimpleTest::TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(IsometricMath_TileToLocal_DiagonalTile) {
+    // row=5,col=5: x = (5+5)*30=300, y = 150-(5-5)*15=150
+    Point p = IsometricMath::TileToLocal(5, 5, 0, 150, 30, 15);
+    ASSERT_EQUAL(p.x, 300);
+    ASSERT_EQUAL(p.y, 150);
+    return SimpleTest::TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(IsometricMath_TileToLocalCenter_AddsHalfTileWidth) {
+    Point topLeft = IsometricMath::TileToLocal(0, 0, 0, 150, 30, 15);
+    Point center = IsometricMath::TileToLocalCenter(0, 0, 0, 150, 30, 15);
+    ASSERT_EQUAL(center.x, topLeft.x + 30);
+    ASSERT_EQUAL(center.y, topLeft.y);
+    return SimpleTest::TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(IsometricMath_LocalToTile_OriginMapsToZeroZero) {
+    uint16_t row, col;
+    // The origin point (0, 150) with tileWidth adjustment should map to (0,0)
+    bool result = IsometricMath::LocalToTile(30, 150, 0, 150, 30, 15, 10, 10, row, col);
+    ASSERT_TRUE(result);
+    ASSERT_EQUAL(row, 0);
+    ASSERT_EQUAL(col, 0);
+    return SimpleTest::TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(IsometricMath_LocalToTile_OutOfBoundsReturnsFalse) {
+    uint16_t row, col;
+    bool result = IsometricMath::LocalToTile(-1000, -1000, 0, 150, 30, 15, 10, 10, row, col);
+    ASSERT_FALSE(result);
+    return SimpleTest::TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(IsometricMath_CalculateMapSize_10x10) {
+    uint16_t w, h;
+    IsometricMath::CalculateMapSize(10, 10, 30, 15, w, h);
+    ASSERT_EQUAL(w, 600);  // (10+10)*30
+    ASSERT_EQUAL(h, 300);  // (10+10)*15
+    return SimpleTest::TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(IsometricMath_CalculateMapSize_Asymmetric) {
+    uint16_t w, h;
+    IsometricMath::CalculateMapSize(20, 5, 30, 15, w, h);
+    ASSERT_EQUAL(w, 750);  // (20+5)*30
+    ASSERT_EQUAL(h, 375);  // (20+5)*15
+    return SimpleTest::TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(IsometricMath_ClampToDiamondBounds_WithinBoundsUnchanged) {
+    int x = 50, y = 30;
+    IsometricMath::ClampToDiamondBounds(x, y, 10, 10, 30, 15);
+    ASSERT_EQUAL(x, 50);
+    ASSERT_EQUAL(y, 30);
+    return SimpleTest::TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(IsometricMath_ClampToDiamondBounds_ExceedingBoundsScaled) {
+    int x = 500, y = 500;
+    IsometricMath::ClampToDiamondBounds(x, y, 10, 10, 30, 15);
+    // Should be scaled down, original values exceed bounds
+    ASSERT_TRUE(x < 500);
+    ASSERT_TRUE(y < 500);
+    return SimpleTest::TestResult{__FUNCTION__, true, ""};
+}
+
+TEST_CASE(IsometricMath_ClampToDiamondBounds_ZeroUnchanged) {
+    int x = 0, y = 0;
+    IsometricMath::ClampToDiamondBounds(x, y, 10, 10, 30, 15);
+    ASSERT_EQUAL(x, 0);
+    ASSERT_EQUAL(y, 0);
+    return SimpleTest::TestResult{__FUNCTION__, true, ""};
 }
 

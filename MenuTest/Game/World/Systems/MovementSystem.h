@@ -3,6 +3,7 @@
 #include "../../../Engine/Core/Types.h"
 #include "../../../Engine/World/Pathfinding.h"
 #include <memory>
+#include <unordered_map>
 
 namespace Engine {
     class ILogger;
@@ -34,6 +35,13 @@ namespace World {
         // Request character movement to a tile
         bool MoveCharacterToTile(
             Entities::Character* character,
+            const Engine::TilePosition& target,
+            float duration = 0.3f
+        );
+
+        // Convenience overload with raw row/col
+        bool MoveCharacterToTile(
+            Entities::Character* character,
             uint16_t targetRow,
             uint16_t targetCol,
             float duration = 0.3f
@@ -58,8 +66,7 @@ namespace World {
     private:
         struct MovementState {
             Entities::Character* character;
-            uint16_t targetRow;
-            uint16_t targetCol;
+            Engine::TilePosition target;
             Engine::Path currentPath;
             size_t currentPathIndex;
             float moveTime;
@@ -68,8 +75,6 @@ namespace World {
 
             MovementState()
                 : character(nullptr)
-                , targetRow(0)
-                , targetCol(0)
                 , currentPathIndex(0)
                 , moveTime(0.0f)
                 , moveDuration(0.3f)
@@ -79,7 +84,7 @@ namespace World {
         Engine::ILogger* m_logger;
         Engine::TileMap* m_tileMap;
         std::unique_ptr<Engine::Pathfinding> m_pathfinder;
-        std::vector<MovementState> m_movingCharacters;
+        std::unordered_map<uint32_t, MovementState> m_movingCharacters;  // keyed by entity ID
 
         // Internal methods
         MovementState* GetOrCreateMovementState(Entities::Character* character);

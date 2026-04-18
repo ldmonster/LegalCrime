@@ -1,8 +1,5 @@
 #include "Application.h"
-#include "Logger/Logger.h"
-#include "../Platform/Window.h"
-#include "../Renderer/Renderer.h"
-#include "../Audio/AudioEngine.h"
+#include "EngineBuilder.h"
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
 #define SDL_IMAGE_USE_SDL3 1
@@ -26,73 +23,39 @@ namespace Engine {
             return Result<void>::Failure("Application already initialized");
         }
         
-        // Initialize SDL
-        if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_EVENTS)) {
-            return Result<void>::Failure(std::string("SDL initialization failed: ") + SDL_GetError());
+        EngineBuilder builder;
+        auto result = builder.Build(config);
+        if (!result) {
+            return Result<void>::Failure(result.error);
         }
 
-        // Initialize SDL_ttf
-        if (!TTF_Init()) {
-            SDL_Quit();
-            return Result<void>::Failure(std::string("SDL_ttf initialization failed: ") + SDL_GetError());
-        }
-        
-        // Create logger FIRST - it will be destroyed LAST
-        m_logger = new Logger();
-        m_logger->SetLogLevel(config.logLevel);
-        m_logger->Info("=== Initializing " + config.appName + " ===");
+        return Initialize(std::move(result.value));
+    }
 
-        // Create window
-        m_window = std::make_unique<Window>(m_logger);
-        auto windowResult = m_window->Initialize(config.windowConfig);
-        if (!windowResult) {
-            m_logger->Error("Window initialization failed: " + windowResult.error);
-            TTF_Quit();
-            SDL_Quit();
-            return windowResult;
-        }
-        
-        // Create renderer
-        m_renderer = std::make_unique<Renderer>(m_logger);
-        auto rendererResult = m_renderer->Initialize(m_window.get(), config.rendererConfig);
-        if (!rendererResult) {
-            m_logger->Error("Renderer initialization failed: " + rendererResult.error);
-            m_window->Shutdown();
-            TTF_Quit();
-            SDL_Quit();
-            return rendererResult;
-        }
-        
-        // Create audio engine
-        m_audioEngine = std::make_unique<AudioEngine>(m_logger);
-        auto audioResult = m_audioEngine->Initialize();
-        if (!audioResult) {
-            m_logger->Warning("Audio engine initialization failed: " + audioResult.error);
-            // Continue without audio
+    Result<void> Application::Initialize(EngineSubsystems subsystems) {
+        if (m_initialized) {
+            return Result<void>::Failure("Application already initialized");
         }
 
-        // Create input manager
-        m_inputManager = std::make_unique<Input::InputManager>(m_logger);
-        m_inputManager->Initialize();
-
-        // Create resource manager
-        m_resourceManager = std::make_unique<Resources::ResourceManager>(
-            m_renderer.get(),
-            m_audioEngine.get(),
-            m_logger
-        );
-        m_resourceManager->Initialize();
-
-        // Create scene manager
-        m_sceneManager = std::make_unique<SceneManager>(m_logger);
+        m_logger = subsystems.logger;
+        m_window = std::move(subsystems.window);
+        m_renderer = std::move(subsystems.renderer);
+        m_audioEngine = std::move(subsystems.audioEngine);
+        m_inputManager = std::move(subsystems.inputManager);
+        m_resourceManager = std::move(subsystems.resourceManager);
+        m_sceneManager = std::move(subsystems.sceneManager);
         
         m_initialized = true;
-        m_logger->Info("Engine initialized successfully");
+        if (m_logger) {
+            m_logger->Info("Engine initialized successfully");
+        }
         
         // Call derived class initialization
         auto gameResult = OnInitialize();
         if (!gameResult) {
-            m_logger->Error("Game initialization failed: " + gameResult.error);
+            if (m_logger) {
+                m_logger->Error("Game initialization failed: " + gameResult.error);
+            }
             Shutdown();
             return gameResult;
         }
@@ -187,6 +150,11 @@ namespace Engine {
 
         m_sceneManager->Update(deltaTime);
         OnUpdate(deltaTime);
+
+        // Reset input frame states after all consumers have read them
+        if (m_inputManager) {
+            m_inputManager->EndFrame();
+        }
     }
     
     void Application::Render() {

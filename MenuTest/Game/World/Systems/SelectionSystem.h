@@ -2,6 +2,7 @@
 
 #include "../../../Engine/Core/Types.h"
 #include <memory>
+#include <optional>
 
 namespace Engine {
     class ILogger;
@@ -47,6 +48,7 @@ namespace World {
 
         // Get the currently hovered tile (for UI feedback)
         bool GetHoveredTile(uint16_t& outRow, uint16_t& outCol) const;
+        std::optional<Engine::TilePosition> GetHoveredTilePosition() const;
 
         // Utility - get character at screen position
         Entities::Character* GetCharacterAtScreenPosition(
@@ -63,8 +65,7 @@ namespace World {
 
         // Hover state (for UI feedback)
         bool m_hasHoveredTile;
-        uint16_t m_hoveredRow;
-        uint16_t m_hoveredCol;
+        Engine::TilePosition m_hoveredTile;
     };
 
 } // namespace World

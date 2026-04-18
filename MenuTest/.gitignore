@@ -5,3 +5,4 @@ Output/
 *.ilk
 *.exe
 *.dll
+build/

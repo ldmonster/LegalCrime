@@ -22,13 +22,7 @@ namespace Engine {
             return Result<void>::Failure("Window already initialized");
         }
         
-        // Initialize SDL Video subsystem
-        if (!SDL_InitSubSystem(SDL_INIT_VIDEO)) {
-            std::string error = "SDL Video could not initialize! SDL Error: ";
-            error += SDL_GetError();
-            if (m_logger) m_logger->Error(error);
-            return Result<void>::Failure(error);
-        }
+        // SDL Video subsystem must be initialized by Application before creating Window
         
         m_title = config.title;
         m_resolution = config.resolution;

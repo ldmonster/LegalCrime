@@ -60,13 +60,8 @@ namespace Input {
 
     void InputManager::Update() {
         if (!m_enabled) {
-            ResetFrameState();
             return;
         }
-
-        // Reset previous frame's "just pressed/released" states at the START of the new frame
-        // This ensures PRESSED and JUST_RELEASED states persist for the entire frame
-        ResetFrameState();
 
         // Update keyboard state
         m_keyboardState = SDL_GetKeyboardState(nullptr);
@@ -100,6 +95,14 @@ namespace Input {
         // Update all actions and axes
         UpdateActions();
         UpdateAxes();
+
+        // NOTE: Do NOT reset frame state here. Game logic needs to read
+        // Pressed/JustReleased/mouseWheelDelta after this returns.
+        // Application::Update() calls EndFrame() after all game logic.
+    }
+
+    void InputManager::EndFrame() {
+        ResetFrameState();
     }
 
     InputAction* InputManager::CreateAction(const std::string& name) {
