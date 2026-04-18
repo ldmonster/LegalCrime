@@ -34,7 +34,7 @@ namespace Engine {
                 , diagonalCost(1.414f) {}
         };
 
-        Pathfinding();
+        Pathfinding(size_t poolCapacity = DEFAULT_POOL_CAPACITY);
         ~Pathfinding();
 
         /// <summary>
@@ -80,8 +80,9 @@ namespace Engine {
             int nodesExplored;
             int pathLength;
             float searchTime; // in milliseconds
+            bool poolExhausted; // true if node pool ran out during search
 
-            Stats() : nodesExplored(0), pathLength(0), searchTime(0.0f) {}
+            Stats() : nodesExplored(0), pathLength(0), searchTime(0.0f), poolExhausted(false) {}
         };
 
         const Stats& GetLastStats() const { return m_lastStats; }

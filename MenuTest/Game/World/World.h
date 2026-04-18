@@ -34,9 +34,9 @@ namespace World {
         Engine::Entity* GetEntityById(uint32_t id);
         const std::vector<Engine::Entity*>& GetAllEntities() const { return m_entityList; }
         
-        // Character queries (convenience methods)
+        // Character queries (O(1) lookups via dedicated maps)
         Entities::Character* GetCharacterById(uint32_t id);
-        std::vector<Entities::Character*> GetAllCharacters();
+        const std::vector<Entities::Character*>& GetAllCharacters() const { return m_characters; }
         Entities::Character* GetCharacterAtTile(const Engine::TilePosition& pos);
         Entities::Character* GetCharacterAtTile(uint16_t row, uint16_t col);
 
@@ -63,9 +63,16 @@ namespace World {
     private:
         Engine::ILogger* m_logger;
 
-        // Entity storage
+        // Entity storage — O(1) lookup via hash map, O(n) iteration via dense list
         std::vector<std::unique_ptr<Engine::Entity>> m_entities;
         std::vector<Engine::Entity*> m_entityList;  // Fast iteration (raw pointers)
+        std::unordered_map<uint32_t, Engine::Entity*> m_entityMap;  // O(1) by ID
+
+        // Character-specific list — avoids dynamic_cast scans
+        std::vector<Entities::Character*> m_characters;
+
+        // Reverse lookup: entity ID → tile position (O(1) PlaceCharacter old-pos removal)
+        std::unordered_map<uint32_t, Engine::TilePosition> m_entityPositions;
 
         // TileMap (not owned by World - owned by scene)
         Engine::TileMap* m_tileMap;
@@ -75,9 +82,6 @@ namespace World {
 
         // Tile occupancy map for O(1) lookups
         std::unordered_map<Engine::TilePosition, Entities::Character*, Engine::TilePosition::Hash> m_occupancy;
-
-        // Internal methods
-        void RebuildEntityList();
     };
 
 } // namespace World

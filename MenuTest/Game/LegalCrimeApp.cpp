@@ -85,33 +85,34 @@ namespace LegalCrime {
 
         // Check if we're in the main menu
         if (m_gameState == GameState::MainMenu) {
-            auto* menuScene = dynamic_cast<MainMenuScene*>(currentScene);
-            if (menuScene) {
-                // Check if user clicked quit
-                if (menuScene->ShouldQuit()) {
-                    GetLogger()->Info("User requested quit from main menu");
-                    GetSceneManager()->ClearScenes(); // This will exit the game loop
-                    return;
-                }
+            if (currentScene->GetSceneId() != Engine::SceneId::MainMenu) {
+                return;
+            }
+            auto* menuScene = static_cast<MainMenuScene*>(currentScene);
+            // Check if user clicked quit
+            if (menuScene->ShouldQuit()) {
+                GetLogger()->Info("User requested quit from main menu");
+                GetSceneManager()->ClearScenes(); // This will exit the game loop
+                return;
+            }
 
-                // Check if user clicked single player
-                if (menuScene->ShouldStartGame()) {
-                    GetLogger()->Info("Transitioning from main menu to gameplay");
-                    m_gameState = GameState::Playing;
+            // Check if user clicked single player
+            if (menuScene->ShouldStartGame()) {
+                GetLogger()->Info("Transitioning from main menu to gameplay");
+                m_gameState = GameState::Playing;
 
-                    // Create gameplay scene
-                    // Note: ReplaceScene will call Initialize() automatically
-                    auto gameplayScene = std::make_unique<GameplayScene>(
-                        GetLogger(),
-                        GetRenderer(),
-                        GetInputManager(),
-                        GetResourceManager()
-                    );
+                // Create gameplay scene
+                // Note: ReplaceScene will call Initialize() automatically
+                auto gameplayScene = std::make_unique<GameplayScene>(
+                    GetLogger(),
+                    GetRenderer(),
+                    GetInputManager(),
+                    GetResourceManager()
+                );
 
-                    // Replace menu scene with gameplay scene
-                    GetSceneManager()->ReplaceScene(std::move(gameplayScene));
-                    GetLogger()->Info("Transitioned to gameplay scene");
-                }
+                // Replace menu scene with gameplay scene
+                GetSceneManager()->ReplaceScene(std::move(gameplayScene));
+                GetLogger()->Info("Transitioned to gameplay scene");
             }
         }
     }

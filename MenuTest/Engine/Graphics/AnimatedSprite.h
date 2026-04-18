@@ -5,6 +5,7 @@
 #include <memory>
 #include <vector>
 #include <string>
+#include <unordered_map>
 
 namespace Engine {
     
@@ -112,6 +113,7 @@ namespace Engine {
         
         // Animations
         std::vector<Animation> m_animations;
+        std::unordered_map<std::string, int> m_animationIndex; // O(1) name→index lookup
         int m_currentAnimation;
         int m_currentFrame;
         float m_frameTime;

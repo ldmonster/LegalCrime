@@ -18,7 +18,9 @@ namespace Engine {
     }
     
     void AnimatedSprite::AddAnimation(const Animation& animation) {
+        int index = static_cast<int>(m_animations.size());
         m_animations.push_back(animation);
+        m_animationIndex[animation.name] = index;
         
         // If this is the first animation, set it as current
         if (m_currentAnimation == -1 && !m_animations.empty()) {
@@ -34,26 +36,25 @@ namespace Engine {
     }
     
     void AnimatedSprite::SetAnimation(const std::string& name) {
-        for (size_t i = 0; i < m_animations.size(); i++) {
-            if (m_animations[i].name == name) {
-                if (m_currentAnimation != static_cast<int>(i)) {
-                    m_currentAnimation = static_cast<int>(i);
-                    m_currentFrame = 0;
-                    m_frameTime = 0.0f;
-                    
-                    if (m_logger) {
-                        m_logger->Debug("Set animation to '" + name + "'");
-                    }
+        auto it = m_animationIndex.find(name);
+        if (it != m_animationIndex.end()) {
+            int i = it->second;
+            if (m_currentAnimation != i) {
+                m_currentAnimation = i;
+                m_currentFrame = 0;
+                m_frameTime = 0.0f;
+                
+                if (m_logger) {
+                    m_logger->Debug("Set animation to '" + name + "'");
                 }
-                return;
             }
+            return;
         }
         
         if (m_logger) {
             m_logger->Warning("Animation '" + name + "' not found");
         }
     }
-    
     void AnimatedSprite::Update(float deltaTime) {
         if (m_currentAnimation < 0 || m_currentAnimation >= static_cast<int>(m_animations.size())) {
             return;

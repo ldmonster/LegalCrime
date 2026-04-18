@@ -8,6 +8,14 @@ namespace Engine {
     
     class IRenderer;
     class ILogger;
+
+    /// Scene identity tag — avoids dynamic_cast in hot loops.
+    enum class SceneId : uint8_t {
+        Unknown = 0,
+        MainMenu,
+        Gameplay,
+        // Extend as needed
+    };
     
     // Abstract scene interface
     class IScene {
@@ -23,5 +31,8 @@ namespace Engine {
         
         virtual const std::string& GetName() const = 0;
         virtual bool IsInitialized() const = 0;
+
+        /// Return a compile-time scene identifier (avoids RTTI).
+        virtual SceneId GetSceneId() const { return SceneId::Unknown; }
     };
 }

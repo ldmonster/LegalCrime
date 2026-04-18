@@ -130,3 +130,39 @@ TEST_CASE(Pathfinding_SmoothPath_WithWall_KeepsCorner) {
     }
     PASS;
 }
+
+// ========== Pool Capacity Tests (Phase 0.5) ==========
+
+TEST_CASE(Pathfinding_CustomPoolCapacity) {
+    // Construct with a small custom capacity
+    Engine::Pathfinding pf(128);
+    Engine::Path path = pf.FindPath({0, 0}, {3, 3}, 10, 10, AllWalkable);
+    ASSERT_FALSE(path.empty());
+    PASS;
+}
+
+TEST_CASE(Pathfinding_PoolExhausted_ReportedInStats) {
+    // Tiny pool: only 4 nodes — not enough for any real search
+    Engine::Pathfinding pf(4);
+    Engine::Pathfinding::Options opts;
+    opts.allowDiagonal = false;
+
+    // Long path on a big grid should exhaust 4-node pool
+    Engine::Path path = pf.FindPath({0, 0}, {19, 19}, 20, 20, AllWalkable, opts);
+
+    const auto& stats = pf.GetLastStats();
+    // Either it found a path (unlikely with 4 nodes) or pool was exhausted
+    if (path.empty()) {
+        ASSERT_TRUE(stats.poolExhausted);
+    }
+    PASS;
+}
+
+TEST_CASE(Pathfinding_DefaultPool_NotExhausted) {
+    // Default capacity (4096) should be plenty for a small search
+    Engine::Pathfinding pf;
+    Engine::Path path = pf.FindPath({0, 0}, {5, 5}, 10, 10, AllWalkable);
+    ASSERT_FALSE(path.empty());
+    ASSERT_FALSE(pf.GetLastStats().poolExhausted);
+    PASS;
+}

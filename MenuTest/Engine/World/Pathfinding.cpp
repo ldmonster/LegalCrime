@@ -8,8 +8,8 @@
 
 namespace Engine {
 
-    Pathfinding::Pathfinding()
-        : m_nodePool(DEFAULT_POOL_CAPACITY) {
+    Pathfinding::Pathfinding(size_t poolCapacity)
+        : m_nodePool(poolCapacity) {
     }
 
     Pathfinding::~Pathfinding() {
@@ -137,7 +137,10 @@ namespace Engine {
                     neighborNode = it->second;
                 } else {
                     neighborNode = m_nodePool.Acquire();
-                    if (!neighborNode) break; // pool exhausted
+                    if (!neighborNode) {
+                        m_lastStats.poolExhausted = true;
+                        break; // pool exhausted
+                    }
                     neighborNode->position = neighborPos;
                     neighborNode->hCost = CalculateHeuristic(neighborPos, goal, options.allowDiagonal);
                     allNodes[neighborPos] = neighborNode;

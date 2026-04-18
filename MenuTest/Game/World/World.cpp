@@ -35,9 +35,16 @@ namespace World {
         }
         
         Engine::Entity* raw = entity.get();
+        uint32_t id = raw->GetId();
         m_entities.push_back(std::move(entity));
-        RebuildEntityList();
+        m_entityList.push_back(raw);
+        m_entityMap[id] = raw;
         m_spatialGrid.Insert(raw);
+
+        // Track characters separately to avoid dynamic_cast during iteration
+        if (auto* character = dynamic_cast<Entities::Character*>(raw)) {
+            m_characters.push_back(character);
+        }
         
         if (m_logger) {
             m_logger->Debug("Entity added to world. Total entities: " + 
@@ -50,7 +57,20 @@ namespace World {
             return;
         }
         
+        uint32_t id = entity->GetId();
         m_spatialGrid.Remove(entity);
+        m_entityMap.erase(id);
+        m_entityPositions.erase(id);
+
+        // Remove from character list
+        if (auto* character = dynamic_cast<Entities::Character*>(entity)) {
+            auto cit = std::find(m_characters.begin(), m_characters.end(), character);
+            if (cit != m_characters.end()) {
+                // Swap-and-pop for O(1) removal
+                *cit = m_characters.back();
+                m_characters.pop_back();
+            }
+        }
 
         auto it = std::find_if(m_entities.begin(), m_entities.end(),
             [entity](const std::unique_ptr<Engine::Entity>& e) {
@@ -58,8 +78,16 @@ namespace World {
             });
         
         if (it != m_entities.end()) {
-            m_entities.erase(it);
-            RebuildEntityList();
+            // Swap-and-pop for O(1) removal from entity list
+            auto lit = std::find(m_entityList.begin(), m_entityList.end(), entity);
+            if (lit != m_entityList.end()) {
+                *lit = m_entityList.back();
+                m_entityList.pop_back();
+            }
+
+            // Swap-and-pop from ownership vector
+            *it = std::move(m_entities.back());
+            m_entities.pop_back();
             
             if (m_logger) {
                 m_logger->Debug("Entity removed from world. Remaining entities: " + 
@@ -72,6 +100,9 @@ namespace World {
         m_spatialGrid.Clear();
         m_entities.clear();
         m_entityList.clear();
+        m_entityMap.clear();
+        m_characters.clear();
+        m_entityPositions.clear();
         m_occupancy.clear();
         
         if (m_logger) {
@@ -80,29 +111,13 @@ namespace World {
     }
 
     Engine::Entity* World::GetEntityById(uint32_t id) {
-        for (auto& entity : m_entities) {
-            if (entity->GetId() == id) {
-                return entity.get();
-            }
-        }
-        return nullptr;
+        auto it = m_entityMap.find(id);
+        return (it != m_entityMap.end()) ? it->second : nullptr;
     }
 
     Entities::Character* World::GetCharacterById(uint32_t id) {
         Engine::Entity* entity = GetEntityById(id);
         return entity ? dynamic_cast<Entities::Character*>(entity) : nullptr;
-    }
-
-    std::vector<Entities::Character*> World::GetAllCharacters() {
-        std::vector<Entities::Character*> characters;
-        
-        for (auto& entity : m_entities) {
-            if (auto* character = dynamic_cast<Entities::Character*>(entity.get())) {
-                characters.push_back(character);
-            }
-        }
-        
-        return characters;
     }
 
     Entities::Character* World::GetCharacterAtTile(const Engine::TilePosition& pos) {
@@ -120,14 +135,14 @@ namespace World {
 
     void World::PlaceCharacter(Entities::Character* character, const Engine::TilePosition& pos) {
         if (!character) return;
-        // Remove from old position
-        for (auto it = m_occupancy.begin(); it != m_occupancy.end(); ++it) {
-            if (it->second == character) {
-                m_occupancy.erase(it);
-                break;
-            }
+        // O(1) removal from old position via reverse lookup
+        uint32_t id = character->GetId();
+        auto posIt = m_entityPositions.find(id);
+        if (posIt != m_entityPositions.end()) {
+            m_occupancy.erase(posIt->second);
         }
         m_occupancy[pos] = character;
+        m_entityPositions[id] = pos;
         character->SetTilePosition(pos);
     }
 
@@ -154,13 +169,7 @@ namespace World {
         return m_spatialGrid.QueryRect(rect);
     }
 
-    void World::RebuildEntityList() {
-        m_entityList.clear();
-        m_entityList.reserve(m_entities.size());
-        
-        for (auto& entity : m_entities) {
-            m_entityList.push_back(entity.get());
-        }
+
     }
 
 } // namespace World

@@ -124,6 +124,9 @@ set(TEST_SOURCES
     Game/World/Systems/CommandSystemTests.cpp
     Game/World/Systems/MovementSystemTests.cpp
     Engine/World/PathfindingBenchmark.cpp
+    Game/World/WorldTests.cpp
+    Engine/Graphics/AnimatedSpriteTests.cpp
+    Engine/Scene/SceneTests.cpp
 )
 
 add_executable(LegalCrimeTests ${TEST_SOURCES})

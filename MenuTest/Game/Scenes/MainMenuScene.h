@@ -32,6 +32,8 @@ namespace LegalCrime {
         void Update(float deltaTime) override;
         void Render() override;
 
+        Engine::SceneId GetSceneId() const override { return Engine::SceneId::MainMenu; }
+
         // Check if user wants to quit or transition to gameplay
         bool ShouldQuit() const;
         bool ShouldStartGame() const;

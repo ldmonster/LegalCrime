@@ -7,8 +7,8 @@
 
 TEST_CASE(EntityManager_CreateEntity_ReturnsNonZeroId) {
     Engine::ECS::EntityManager mgr;
-    auto id = mgr.CreateEntity();
-    ASSERT_TRUE(id != Engine::ECS::INVALID_ENTITY);
+    auto handle = mgr.CreateEntity();
+    ASSERT_TRUE(handle.id != Engine::ECS::INVALID_ENTITY);
     return {"EntityManager_CreateEntity_ReturnsNonZeroId", true, ""};
 }
 
@@ -25,19 +25,19 @@ TEST_CASE(EntityManager_CreateEntity_UniqueIds) {
 
 TEST_CASE(EntityManager_IsAlive) {
     Engine::ECS::EntityManager mgr;
-    auto id = mgr.CreateEntity();
-    ASSERT_TRUE(mgr.IsAlive(id));
-    ASSERT_FALSE(mgr.IsAlive(Engine::ECS::INVALID_ENTITY));
-    ASSERT_FALSE(mgr.IsAlive(999));
+    auto handle = mgr.CreateEntity();
+    ASSERT_TRUE(mgr.IsAlive(handle));
+    ASSERT_FALSE(mgr.IsAlive(Engine::ECS::INVALID_HANDLE));
+    ASSERT_FALSE(mgr.IsAlive(Engine::ECS::EntityHandle(999, 0)));
     return {"EntityManager_IsAlive", true, ""};
 }
 
 TEST_CASE(EntityManager_DestroyEntity) {
     Engine::ECS::EntityManager mgr;
-    auto id = mgr.CreateEntity();
-    ASSERT_TRUE(mgr.IsAlive(id));
-    mgr.DestroyEntity(id);
-    ASSERT_FALSE(mgr.IsAlive(id));
+    auto handle = mgr.CreateEntity();
+    ASSERT_TRUE(mgr.IsAlive(handle));
+    mgr.DestroyEntity(handle);
+    ASSERT_FALSE(mgr.IsAlive(handle));
     return {"EntityManager_DestroyEntity", true, ""};
 }
 
@@ -59,9 +59,12 @@ TEST_CASE(EntityManager_RecyclesIds) {
     auto a = mgr.CreateEntity();
     mgr.DestroyEntity(a);
     auto b = mgr.CreateEntity();
-    // Recycled ID should equal the destroyed one
-    ASSERT_EQUAL(b, a);
+    // Recycled ID should equal the destroyed one's id, but version incremented
+    ASSERT_EQUAL(b.id, a.id);
+    ASSERT_TRUE(b.version > a.version);
     ASSERT_TRUE(mgr.IsAlive(b));
+    // Old handle should be stale
+    ASSERT_FALSE(mgr.IsAlive(a));
     return {"EntityManager_RecyclesIds", true, ""};
 }
 
@@ -78,8 +81,8 @@ TEST_CASE(EntityManager_ForEach) {
     // Should contain a and c (b was destroyed)
     bool foundA = false, foundC = false;
     for (auto id : visited) {
-        if (id == a) foundA = true;
-        if (id == c) foundC = true;
+        if (id == a.id) foundA = true;
+        if (id == c.id) foundC = true;
     }
     ASSERT_TRUE(foundA);
     ASSERT_TRUE(foundC);

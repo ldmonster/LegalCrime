@@ -50,6 +50,8 @@ namespace LegalCrime {
         void Update(float deltaTime) override;
         void Render() override;
 
+        Engine::SceneId GetSceneId() const override { return Engine::SceneId::Gameplay; }
+
         // Character movement
         void MoveCharacterToTile(const Engine::TilePosition& target, float duration = Constants::Movement::DEFAULT_MOVE_DURATION);
         void MoveCharacterToTile(uint16_t row, uint16_t col, float duration = Constants::Movement::DEFAULT_MOVE_DURATION);
