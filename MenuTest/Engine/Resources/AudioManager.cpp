@@ -40,7 +40,7 @@ namespace Resources {
             m_logger->Info("Loading sound: " + name + " from " + path);
         }
 
-        auto sound = m_audioEngine->LoadSoundEffect(path);
+        auto sound = m_audioEngine->GetSoundPlayer().LoadSoundEffect(path);
         if (!sound) {
             if (m_logger) {
                 m_logger->Error("Failed to load sound: " + path);
@@ -139,8 +139,9 @@ namespace Resources {
             size_t lastSlash = path.find_last_of("/\\");
             std::string directory = (lastSlash != std::string::npos) ? path.substr(0, lastSlash) : ".";
 
-            m_audioEngine->LoadMusicFromDirectory(directory);
-            m_audioEngine->PlayMusic();
+            auto& musicPlayer = m_audioEngine->GetMusicPlayer();
+            musicPlayer.LoadMusicFromDirectory(directory);
+            musicPlayer.PlayMusic();
         }
     }
 

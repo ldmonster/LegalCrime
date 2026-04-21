@@ -1,16 +1,12 @@
 #include "GameplayScene.h"
+#include "GameplayInputHandler.h"
+#include "GameplayRenderer.h"
+#include "../Simulation/GameSimulation.h"
 #include "../../Engine/World/TileMap.h"
 #include "../../Engine/World/TileMapRenderer.h"
 #include "../../Engine/Camera/Camera2D.h"
-#include "../Entities/Character.h"
-#include "../Entities/CharacterFactory.h"
-#include "../World/World.h"
-#include "../World/Systems/MovementSystem.h"
 #include "../World/Systems/SelectionSystem.h"
-#include "../World/Systems/CommandSystem.h"
-#include "../World/Commands/MoveCommand.h"
-#include "../Input/GameInputBindings.h"
-#include <cmath>
+#include "../../Engine/Core/Constants.h"
 
 namespace LegalCrime {
 
@@ -20,13 +16,10 @@ namespace LegalCrime {
         Engine::Input::InputManager* inputManager,
         Engine::Resources::ResourceManager* resourceManager)
         : Scene("Gameplay", logger, renderer)
-        , m_inputManager(inputManager)
-        , m_character(nullptr) {
-        // Create character factory
-        m_characterFactory = std::make_unique<Entities::CharacterFactory>(
-            resourceManager,
-            logger
-        );
+        , m_inputManager(inputManager) {
+        m_simulation = std::make_unique<Simulation::GameSimulation>(logger, resourceManager);
+        m_inputHandler = std::make_unique<GameplayInputHandler>(logger, inputManager);
+        m_gameplayRenderer = std::make_unique<GameplayRenderer>(logger, renderer);
     }
 
     GameplayScene::~GameplayScene() {
@@ -49,10 +42,18 @@ namespace LegalCrime {
         // Create and initialize new TileMap system (20x20 tiles)
         m_tileMap = std::make_unique<Engine::TileMap>(20, 20, m_logger);
 
-        // Initialize with default window size (800x600)
-        // TODO: Get actual window dimensions from window manager/config
-        const int windowWidth = 800;
-        const int windowHeight = 600;
+        int windowWidth = Engine::Constants::Window::DEFAULT_WIDTH;
+        int windowHeight = Engine::Constants::Window::DEFAULT_HEIGHT;
+        if (m_renderer && m_renderer->GetNativeRenderer()) {
+            int w = 0;
+            int h = 0;
+            if (SDL_GetCurrentRenderOutputSize(m_renderer->GetNativeRenderer(), &w, &h)) {
+                if (w > 0 && h > 0) {
+                    windowWidth = w;
+                    windowHeight = h;
+                }
+            }
+        }
 
         auto initResult = m_tileMap->Initialize(windowWidth, windowHeight);
         if (!initResult) {
@@ -92,62 +93,9 @@ namespace LegalCrime {
             gapTile->SetId(1);
         }
 
-        // Create World and Systems
-        uint16_t worldPixelW = m_tileMap->GetMapSizeWidth();
-        uint16_t worldPixelH = m_tileMap->GetMapSizeHeight();
-        m_world = std::make_unique<World::World>(worldPixelW, worldPixelH, 64, m_logger);
-        m_world->SetTileMap(m_tileMap.get());
-
-        m_movementSystem = std::make_unique<World::MovementSystem>(m_logger);
-        m_movementSystem->Initialize(m_tileMap.get());
-
-        m_selectionSystem = std::make_unique<World::SelectionSystem>(m_logger);
-        m_commandSystem = std::make_unique<World::CommandSystem>(m_logger);
-
-        // Create a thug character using the factory
-        auto characterUnique = m_characterFactory->CreateCharacter(Entities::CharacterType::Thug);
-
-        if (characterUnique) {
-            // Place character at center of map
-            uint16_t startRow = m_tileMap->GetHeight() / 2;
-            uint16_t startCol = m_tileMap->GetWidth() / 2;
-            Engine::TilePosition startPos(startRow, startCol);
-
-            // Keep raw pointer for convenience
-            m_character = characterUnique.get();
-
-            // Transfer ownership to World
-            m_world->AddEntity(std::move(characterUnique));
-
-            // Place character via World occupancy management
-            m_world->PlaceCharacter(m_character, startPos);
-
-            // Convert tile position to screen coordinates
-            Engine::Point screenPos = m_tileMap->TileToScreenCenter(startPos);
-
-            // Offset character position to appear centered on tile
-            // Subtract half the sprite size to center it
-            int spriteWidth = static_cast<int>(50 * m_character->GetScale());
-            int spriteHeight = static_cast<int>(50 * m_character->GetScale());
-            screenPos.x -= spriteWidth / 2;
-            screenPos.y -= spriteHeight / 2;
-
-            // Offset character higher on the tile
-            int tileHeightOffset = m_tileMap->GetTileHeight();
-            screenPos.y -= tileHeightOffset;
-
-            m_character->SetPosition(screenPos.x, screenPos.y);
-
-            if (m_logger) {
-                m_logger->Info("Character entity created successfully");
-                m_logger->Info("Character placed at tile (" + std::to_string(startPos.row) + 
-                             ", " + std::to_string(startPos.col) + ") -> screen (" + 
-                             std::to_string(screenPos.x) + ", " + std::to_string(screenPos.y) + ")");
-            }
-        } else {
-            if (m_logger) {
-                m_logger->Warning("Failed to create character entity");
-            }
+        auto simInit = m_simulation->Initialize(m_tileMap.get());
+        if (!simInit) {
+            return Engine::Result<void>::Failure("Failed to initialize simulation: " + simInit.error);
         }
 
         m_initialized = true;
@@ -168,12 +116,9 @@ namespace LegalCrime {
             m_logger->Info("Shutting down Gameplay Scene");
         }
 
-        m_character = nullptr;
-        m_commandSystem.reset();
-        m_selectionSystem.reset();
-        m_movementSystem.reset();
-        m_world.reset();
-        m_characterFactory.reset();
+        if (m_simulation) {
+            m_simulation->Shutdown();
+        }
         m_tileMapRenderer.reset();
         m_tileMap.reset();
         m_camera.reset();
@@ -189,76 +134,6 @@ namespace LegalCrime {
         // Selection is handled by SelectionSystem::Update()
     }
 
-    void GameplayScene::HandleInputActions() {
-        using namespace InputBindings;
-
-        // Camera Pan (middle mouse button)
-        if (m_inputManager->WasActionJustPressed(Actions::CAMERA_PAN)) {
-            if (m_logger) {
-                m_logger->Debug("Camera Pan PRESSED - starting pan");
-            }
-            Engine::Input::MousePosition mousePos = m_inputManager->GetMousePosition();
-            m_camera->StartPan(mousePos.x, mousePos.y);
-        } else if (m_inputManager->IsActionHeld(Actions::CAMERA_PAN)) {
-            if (m_camera->IsPanning()) {
-                Engine::Input::MousePosition mousePos = m_inputManager->GetMousePosition();
-                m_camera->UpdatePan(mousePos.x, mousePos.y);
-            }
-        } else if (m_inputManager->WasActionJustReleased(Actions::CAMERA_PAN)) {
-            if (m_logger) {
-                m_logger->Debug("Camera Pan RELEASED - ending pan");
-            }
-            m_camera->EndPan();
-        }
-
-        // Selection system handles SELECT action internally
-        // Command (right mouse button) - move selected character
-        if (m_inputManager->WasActionJustPressed(Actions::COMMAND)) {
-            if (m_selectionSystem->HasSelection()) {
-                Engine::Input::MousePosition mousePos = m_inputManager->GetMousePosition();
-                CommandMoveToPosition(mousePos.x, mousePos.y);
-            }
-        }
-
-        // Handle keyboard movement (only when character exists, not moving, and not selected)
-        if (m_character && 
-            !m_movementSystem->IsCharacterMoving(m_character) &&
-            !m_selectionSystem->HasSelection()) {
-
-            uint16_t currentRow = m_character->GetTileRow();
-            uint16_t currentCol = m_character->GetTileCol();
-            uint16_t newRow = currentRow;
-            uint16_t newCol = currentCol;
-            bool moved = false;
-
-            if (m_inputManager->WasActionJustPressed(Actions::MOVE_UP)) {
-                if (currentRow > 0) {
-                    newRow--;
-                    moved = true;
-                }
-            } else if (m_inputManager->WasActionJustPressed(Actions::MOVE_DOWN)) {
-                if (currentRow < m_tileMap->GetHeight() - 1) {
-                    newRow++;
-                    moved = true;
-                }
-            } else if (m_inputManager->WasActionJustPressed(Actions::MOVE_LEFT)) {
-                if (currentCol > 0) {
-                    newCol--;
-                    moved = true;
-                }
-            } else if (m_inputManager->WasActionJustPressed(Actions::MOVE_RIGHT)) {
-                if (currentCol < m_tileMap->GetWidth() - 1) {
-                    newCol++;
-                    moved = true;
-                }
-            }
-
-            if (moved) {
-                MoveCharacterToTile(newRow, newCol, 0.3f);
-            }
-        }
-    }
-
     void GameplayScene::Update(float deltaTime) {
         if (!m_initialized || !m_tileMap || !m_inputManager) {
             return;
@@ -269,53 +144,16 @@ namespace LegalCrime {
             m_camera->Update(deltaTime);
         }
 
-        // Update world (updates all entities)
-        if (m_world) {
-            m_world->Update(deltaTime);
+        if (m_simulation) {
+            m_simulation->Update(deltaTime);
         }
 
-        // Update systems
-        if (m_movementSystem) {
-            m_movementSystem->Update(m_world.get(), deltaTime);
+        if (m_inputHandler) {
+            m_inputHandler->HandleInputActions(m_simulation.get(), m_tileMap.get(), m_camera.get());
         }
 
-        if (m_commandSystem) {
-            m_commandSystem->Update(m_world.get(), m_movementSystem.get(), deltaTime);
-        }
-
-        if (m_selectionSystem) {
-            m_selectionSystem->Update(
-                m_world.get(),
-                m_inputManager,
-                m_tileMap.get(),
-                m_camera.get()
-            );
-        }
-
-        // Handle input actions
-        HandleInputActions();
-
-        // Update character visual position to match tile position (from camera panning)
-        if (m_character) {
-            Engine::TilePosition charPos = m_character->GetTilePosition();
-
-            Engine::Point screenPos = m_tileMap->TileToScreenCenter(
-                charPos.row,
-                charPos.col,
-                m_camera.get()
-            );
-
-            // Center sprite on tile
-            int spriteWidth = static_cast<int>(50 * m_character->GetScale());
-            int spriteHeight = static_cast<int>(50 * m_character->GetScale());
-            screenPos.x -= spriteWidth / 2;
-            screenPos.y -= spriteHeight / 2;
-
-            // Offset character higher on the tile
-            int tileHeightOffset = m_tileMap->GetTileHeight();
-            screenPos.y -= tileHeightOffset;
-
-            m_character->SetPosition(screenPos.x, screenPos.y);
+        if (m_gameplayRenderer) {
+            m_gameplayRenderer->SyncEntityScreenPositions(m_simulation.get(), m_tileMap.get(), m_camera.get());
         }
     }
 
@@ -324,82 +162,16 @@ namespace LegalCrime {
             return;
         }
 
-        // Render the TileMap using the renderer
-        m_tileMapRenderer->Render(m_renderer, *m_tileMap, m_camera.get());
-
-        // Render all entities in the world
-        if (m_world) {
-            for (Engine::Entity* entity : m_world->GetAllEntities()) {
-                if (entity) {
-                    // Cast to Character to call Render(IRenderer*)
-                    Entities::Character* character = dynamic_cast<Entities::Character*>(entity);
-                    if (character) {
-                        character->Render(m_renderer);
-                    }
-                }
-            }
-        }
-
-        // Render selection indicator for all selected characters
-        if (m_selectionSystem && m_selectionSystem->HasSelection()) {
-            for (auto* selectedChar : m_selectionSystem->GetSelectedCharacters()) {
-                if (!selectedChar) continue;
-
-                // Get character center position on screen
-                Engine::Point tileCenter = m_tileMap->TileToScreenCenter(
-                    selectedChar->GetTilePosition().row,
-                    selectedChar->GetTilePosition().col,
-                    m_camera.get()
-                );
-
-                // Draw selection circle around character
-                m_renderer->SetDrawColor(0, 255, 0, 255);
-
-                const int radius = 40;
-                const int segments = 32;
-                Engine::Point points[segments + 1];
-
-                for (int i = 0; i <= segments; ++i) {
-                    float angle = (i * 2.0f * 3.14159f) / segments;
-                    points[i].x = static_cast<int>(tileCenter.x + radius * cos(angle));
-                    points[i].y = static_cast<int>(tileCenter.y + radius * sin(angle));
-                }
-
-                m_renderer->DrawLines(points, segments + 1);
-            }
-
-            // Draw box selection rectangle
-            if (m_selectionSystem->IsBoxSelecting()) {
-                Engine::Rect box = m_selectionSystem->GetBoxSelectRect();
-                m_renderer->SetDrawColor(0, 255, 0, 128);
-                Engine::Point boxPoints[5] = {
-                    {box.x, box.y},
-                    {box.x + box.w, box.y},
-                    {box.x + box.w, box.y + box.h},
-                    {box.x, box.y + box.h},
-                    {box.x, box.y}
-                };
-                m_renderer->DrawLines(boxPoints, 5);
-            }
+        if (m_gameplayRenderer) {
+            m_gameplayRenderer->Render(m_simulation.get(), m_tileMap.get(), m_tileMapRenderer.get(), m_camera.get());
         }
     }
 
     void GameplayScene::MoveCharacterToTile(const Engine::TilePosition& target, float duration) {
-        if (!m_initialized || !m_character || !m_tileMap || !m_movementSystem) {
+        if (!m_initialized || !m_simulation) {
             return;
         }
-
-        // Validate tile coordinates
-        if (target.row >= m_tileMap->GetHeight() || target.col >= m_tileMap->GetWidth()) {
-            if (m_logger) {
-                m_logger->Warning("Invalid tile coordinates: (" + std::to_string(target.row) + 
-                                ", " + std::to_string(target.col) + ")");
-            }
-            return;
-        }
-
-        // Use MovementSystem to handle the movement
-        m_movementSystem->MoveCharacterToTile(m_character, target, duration);
+        m_simulation->MoveCharacterToTile(target, duration);
     }
 
     void GameplayScene::MoveCharacterToTile(uint16_t row, uint16_t col, float duration) {
@@ -407,65 +179,16 @@ namespace LegalCrime {
     }
 
     void GameplayScene::SelectCharacterAt(int screenX, int screenY) {
-        if (!m_initialized || !m_selectionSystem || !m_world) {
+        if (!m_initialized || !m_inputHandler) {
             return;
         }
-
-        // SelectionSystem handles the logic
-        Entities::Character* character = m_selectionSystem->GetCharacterAtScreenPosition(
-            m_world.get(),
-            screenX,
-            screenY,
-            m_tileMap.get(),
-            m_camera.get()
-        );
-
-        if (character) {
-            m_selectionSystem->SelectCharacter(character);
-        } else {
-            m_selectionSystem->ClearSelection();
-        }
+        m_inputHandler->SelectCharacterAt(m_simulation.get(), screenX, screenY, m_tileMap.get(), m_camera.get());
     }
 
     void GameplayScene::CommandMoveToPosition(int screenX, int screenY) {
-        if (!m_initialized || !m_tileMap || !m_commandSystem || !m_selectionSystem) {
+        if (!m_initialized || !m_inputHandler) {
             return;
         }
-
-        if (!m_selectionSystem->HasSelection()) return;
-
-        // Convert screen coordinates to tile
-        uint16_t targetRow, targetCol;
-        if (!m_tileMap->ScreenToTile(screenX, screenY, targetRow, targetCol, m_camera.get())) {
-            if (m_logger) {
-                m_logger->Warning("Right-click outside map bounds");
-            }
-            return;
-        }
-
-        // Check if target tile is walkable
-        const Engine::Tile* targetTile = m_tileMap->GetTile(targetRow, targetCol);
-        if (!targetTile || !targetTile->IsWalkable()) {
-            if (m_logger) {
-                m_logger->Warning("Cannot move to obstacle tile (" + std::to_string(targetRow) + 
-                                ", " + std::to_string(targetCol) + ")");
-            }
-            return;
-        }
-
-        Engine::TilePosition targetPos(targetRow, targetCol);
-
-        // Issue move command to all selected characters
-        for (auto* character : m_selectionSystem->GetSelectedCharacters()) {
-            if (!character) continue;
-            if (targetPos == character->GetTilePosition()) continue;
-
-            World::MoveCommand cmd(targetPos);
-            if (m_inputManager && m_inputManager->IsShiftHeld()) {
-                m_commandSystem->QueueCommand(character->GetId(), cmd);
-            } else {
-                m_commandSystem->IssueCommand(character->GetId(), cmd);
-            }
-        }
+        m_inputHandler->CommandMoveToPosition(m_simulation.get(), screenX, screenY, m_tileMap.get(), m_camera.get());
     }
 }

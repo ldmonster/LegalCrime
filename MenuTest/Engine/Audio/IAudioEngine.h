@@ -11,10 +11,12 @@ namespace Engine {
 
     class ILogger;
     class SoundEffect;
+    class IMusicPlayer;
+    class ISoundPlayer;
 
-    /// Combined audio interface — extends IMusicPlayer + ISoundPlayer.
-    /// Consumers should prefer the focused interface they actually need.
-    class IAudioEngine : public IMusicPlayer, public ISoundPlayer {
+    /// Aggregated audio lifecycle interface.
+    /// Focused playback capabilities are exposed via GetMusicPlayer()/GetSoundPlayer().
+    class IAudioEngine {
     public:
         virtual ~IAudioEngine() = default;
 
@@ -26,5 +28,8 @@ namespace Engine {
         virtual float GetVolume() const = 0;
 
         virtual bool IsInitialized() const = 0;
+
+        virtual IMusicPlayer& GetMusicPlayer() = 0;
+        virtual ISoundPlayer& GetSoundPlayer() = 0;
     };
 }

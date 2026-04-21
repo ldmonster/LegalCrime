@@ -31,50 +31,59 @@ namespace Resources {
 
         // Textures
         std::shared_ptr<Texture> LoadTexture(const std::string& name, const std::string& path) {
+            if (!m_textureManager) return nullptr;
             return m_textureManager->LoadTexture(name, path);
         }
 
         std::shared_ptr<Texture> GetTexture(const std::string& name) {
+            if (!m_textureManager) return nullptr;
             return m_textureManager->GetTexture(name);
         }
 
         // Sounds
         std::shared_ptr<SoundEffect> LoadSound(const std::string& name, const std::string& path) {
+            if (!m_audioManager) return nullptr;
             return m_audioManager->LoadSound(name, path);
         }
 
         std::shared_ptr<SoundEffect> GetSound(const std::string& name) {
+            if (!m_audioManager) return nullptr;
             return m_audioManager->GetSound(name);
         }
 
         void PlaySound(const std::string& name, int loops = 0) {
+            if (!m_audioManager) return;
             m_audioManager->PlaySound(name, loops);
         }
 
         // Music
         Result<void> RegisterMusic(const std::string& name, const std::string& path) {
+            if (!m_audioManager) return Result<void>::Failure("Audio manager not initialized");
             return m_audioManager->RegisterMusic(name, path);
         }
 
         void PlayMusic(const std::string& name, int loops = -1) {
+            if (!m_audioManager) return;
             m_audioManager->PlayMusic(name, loops);
         }
 
         // Batch loading
         void PreloadTextures(const std::vector<std::pair<std::string, std::string>>& textures) {
+            if (!m_textureManager) return;
             m_textureManager->PreloadTextures(textures);
         }
 
         // Statistics
         void LogResourceStats();
         size_t GetTotalTextureMemory() const {
+            if (!m_textureManager) return 0;
             return m_textureManager->GetTotalMemoryUsage();
         }
 
         // Cleanup
         void UnloadAll();
-        void UnloadTextures() { m_textureManager->UnloadAll(); }
-        void UnloadAudio() { m_audioManager->UnloadAll(); }
+        void UnloadTextures() { if (m_textureManager) m_textureManager->UnloadAll(); }
+        void UnloadAudio() { if (m_audioManager) m_audioManager->UnloadAll(); }
 
     private:
         ILogger* m_logger;

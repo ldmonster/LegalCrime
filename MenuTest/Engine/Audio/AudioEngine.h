@@ -1,6 +1,7 @@
 #pragma once
 
 #include "IAudioEngine.h"
+#include "ISoundPlayer.h"
 #include "MusicPlayer.h"
 #include "SoundEffect.h"
 #include "../Core/Logger/ILogger.h"
@@ -14,7 +15,7 @@ namespace Engine {
     /// AudioEngine — owns SDL_mixer lifecycle and delegates to focused subsystems.
     /// Music playback → MusicPlayer (SRP).
     /// Sound effects → played directly via SoundEffect::Play().
-    class AudioEngine : public IAudioEngine {
+    class AudioEngine : public IAudioEngine, public ISoundPlayer {
     public:
         explicit AudioEngine(ILogger* logger);
         ~AudioEngine() override;
@@ -22,18 +23,7 @@ namespace Engine {
         Result<void> Initialize() override;
         void Shutdown() override;
 
-        // Music playback (delegates to MusicPlayer)
-        Result<void> LoadMusicFromDirectory(const std::string& directory) override;
-        Result<void> PlayMusic() override;
-        Result<void> StopMusic() override;
-        Result<void> PauseMusic() override;
-        Result<void> ResumeMusic() override;
-
-        void NextTrack() override;
-        void PreviousTrack() override;
-        void RandomTrack() override;
-
-        // Sound effects
+        // Sound effects (ISoundPlayer)
         std::shared_ptr<SoundEffect> LoadSoundEffect(const std::string& path) override;
         Result<void> PlaySoundEffect(const std::shared_ptr<SoundEffect>& sound, int loops = 0) override;
 
@@ -41,11 +31,22 @@ namespace Engine {
         void SetVolume(float volume) override;
         float GetVolume() const override { return m_volume; }
 
-        bool IsPlaying() const override;
         bool IsInitialized() const override { return m_initialized; }
 
-        // Access focused subsystems
-        MusicPlayer* GetMusicPlayer() { return m_musicPlayer.get(); }
+        // Focused interface access (IAudioEngine)
+        IMusicPlayer& GetMusicPlayer() override { return *m_musicPlayer; }
+        ISoundPlayer& GetSoundPlayer() override { return *this; }
+
+        // Backward-compatible music helpers on concrete type.
+        Result<void> LoadMusicFromDirectory(const std::string& directory);
+        Result<void> PlayMusic();
+        Result<void> StopMusic();
+        Result<void> PauseMusic();
+        Result<void> ResumeMusic();
+        void NextTrack();
+        void PreviousTrack();
+        void RandomTrack();
+        bool IsPlaying() const;
 
     private:
         ILogger* m_logger;

@@ -16,6 +16,10 @@ namespace Engine {
             if (m_logger) m_logger->Warning("Cannot push null scene");
             return;
         }
+
+        if (!m_sceneStack.empty()) {
+            m_sceneStack.back()->OnPause();
+        }
         
         auto result = scene->Initialize();
         if (!result) {
@@ -26,6 +30,7 @@ namespace Engine {
         }
         
         m_sceneStack.push_back(std::move(scene));
+        m_sceneStack.back()->OnEnter();
         
         if (m_logger) {
             m_logger->Debug("Pushed scene: " + m_sceneStack.back()->GetName());
@@ -42,9 +47,15 @@ namespace Engine {
         if (m_logger) {
             m_logger->Debug("Popping scene: " + scene->GetName());
         }
+
+        scene->OnExit();
         
         scene->Shutdown();
         m_sceneStack.pop_back();
+
+        if (!m_sceneStack.empty()) {
+            m_sceneStack.back()->OnResume();
+        }
     }
     
     void SceneManager::ReplaceScene(std::unique_ptr<IScene> scene) {

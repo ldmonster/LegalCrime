@@ -1,4 +1,5 @@
 #include "World.h"
+#include "../Events.h"
 #include "../../Engine/World/TileMap.h"
 #include "../../Engine/Core/Logger/ILogger.h"
 #include "../Entities/Character.h"
@@ -60,7 +61,13 @@ namespace World {
         uint32_t id = entity->GetId();
         m_spatialGrid.Remove(entity);
         m_entityMap.erase(id);
-        m_entityPositions.erase(id);
+
+        // Remove tile occupancy if this entity was tracked on a tile.
+        auto posIt = m_entityPositions.find(id);
+        if (posIt != m_entityPositions.end()) {
+            m_occupancy.erase(posIt->second);
+            m_entityPositions.erase(posIt);
+        }
 
         // Remove from character list
         if (auto* character = dynamic_cast<Entities::Character*>(entity)) {
@@ -93,7 +100,42 @@ namespace World {
                 m_logger->Debug("Entity removed from world. Remaining entities: " + 
                               std::to_string(m_entities.size()));
             }
+
+            DomainEventBus().Publish(EntityDestroyedEvent{id});
         }
+    }
+
+    bool World::DestroyEntityById(uint32_t id) {
+        Engine::Entity* entity = GetEntityById(id);
+        if (!entity) {
+            return false;
+        }
+        RemoveEntity(entity);
+        return true;
+    }
+
+    Entities::Character* World::SpawnCharacter(
+        std::unique_ptr<Entities::Character> character,
+        const Engine::TilePosition& pos) {
+
+        if (!character) {
+            return nullptr;
+        }
+
+        Entities::Character* raw = character.get();
+        AddEntity(std::move(character));
+        PlaceCharacter(raw, pos);
+        DomainEventBus().Publish(EntitySpawnedEvent{raw->GetId(), pos});
+        return raw;
+    }
+
+    bool World::DestroyCharacter(Entities::Character* character) {
+        if (!character) {
+            return false;
+        }
+
+        RemoveEntity(character);
+        return true;
     }
 
     void World::ClearEntities() {
@@ -137,17 +179,40 @@ namespace World {
         if (!character) return;
         // O(1) removal from old position via reverse lookup
         uint32_t id = character->GetId();
+        Engine::TilePosition oldPos = character->GetTilePosition();
+        bool hadOldPosition = false;
         auto posIt = m_entityPositions.find(id);
         if (posIt != m_entityPositions.end()) {
             m_occupancy.erase(posIt->second);
+            oldPos = posIt->second;
+            hadOldPosition = true;
         }
         m_occupancy[pos] = character;
         m_entityPositions[id] = pos;
         character->SetTilePosition(pos);
+
+        if (hadOldPosition && oldPos != pos) {
+            DomainEventBus().Publish(EntityMovedEvent{id, oldPos, pos});
+        }
     }
 
     void World::RemoveOccupant(const Engine::TilePosition& pos) {
-        m_occupancy.erase(pos);
+        auto occIt = m_occupancy.find(pos);
+        if (occIt == m_occupancy.end()) {
+            return;
+        }
+
+        Entities::Character* character = occIt->second;
+        m_occupancy.erase(occIt);
+
+        if (!character) {
+            return;
+        }
+
+        auto posIt = m_entityPositions.find(character->GetId());
+        if (posIt != m_entityPositions.end() && posIt->second == pos) {
+            m_entityPositions.erase(posIt);
+        }
     }
 
     void World::SetTileMap(Engine::TileMap* tileMap) {

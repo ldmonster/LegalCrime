@@ -8,7 +8,7 @@
 namespace LegalCrime {
 
     LegalCrimeApp::LegalCrimeApp()
-        : m_gameState(GameState::MainMenu) {
+        : m_stateMachine(GameState::MainMenu) {
     }
 
     LegalCrimeApp::~LegalCrimeApp() {
@@ -35,11 +35,12 @@ namespace LegalCrime {
 
         // Load music
         if (GetAudioEngine()->IsInitialized()) {
-            auto loadResult = GetAudioEngine()->LoadMusicFromDirectory(Engine::FileSystem::ResolveAssetPath("Music/"));
+            auto& musicPlayer = GetAudioEngine()->GetMusicPlayer();
+            auto loadResult = musicPlayer.LoadMusicFromDirectory(Engine::FileSystem::ResolveAssetPath("Music/"));
             if (!loadResult) {
                 GetLogger()->Warning("Failed to load music directory: " + loadResult.error);
             } else {
-                auto playResult = GetAudioEngine()->PlayMusic();
+                auto playResult = musicPlayer.PlayMusic();
                 if (playResult) {
                     GetLogger()->Info("Background music started");
                 }
@@ -70,7 +71,7 @@ namespace LegalCrime {
         auto mainMenuScene = std::make_unique<MainMenuScene>(
             GetLogger(),
             GetRenderer(),
-            GetAudioEngine()
+            &GetAudioEngine()->GetSoundPlayer()
         );
 
         GetSceneManager()->PushScene(std::move(mainMenuScene));
@@ -84,7 +85,7 @@ namespace LegalCrime {
         }
 
         // Check if we're in the main menu
-        if (m_gameState == GameState::MainMenu) {
+        if (m_stateMachine.GetState() == GameState::MainMenu) {
             if (currentScene->GetSceneId() != Engine::SceneId::MainMenu) {
                 return;
             }
@@ -92,6 +93,7 @@ namespace LegalCrime {
             // Check if user clicked quit
             if (menuScene->ShouldQuit()) {
                 GetLogger()->Info("User requested quit from main menu");
+                m_stateMachine.Transition(GameEvent::QuitRequested);
                 GetSceneManager()->ClearScenes(); // This will exit the game loop
                 return;
             }
@@ -99,7 +101,7 @@ namespace LegalCrime {
             // Check if user clicked single player
             if (menuScene->ShouldStartGame()) {
                 GetLogger()->Info("Transitioning from main menu to gameplay");
-                m_gameState = GameState::Playing;
+                m_stateMachine.Transition(GameEvent::StartGame);
 
                 // Create gameplay scene
                 // Note: ReplaceScene will call Initialize() automatically

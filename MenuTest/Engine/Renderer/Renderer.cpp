@@ -1,6 +1,7 @@
 #include "Renderer.h"
 #include <SDL3/SDL.h>
 #include <vector>
+#include <cmath>
 
 namespace Engine {
     
@@ -120,5 +121,24 @@ namespace Engine {
             fpoints[i].y = static_cast<float>(points[i].y);
         }
         SDL_RenderLines(m_renderer, fpoints.data(), count);
+    }
+
+    void Renderer::DrawCircle(const Point& center, int radius, int segments) {
+        if (!m_renderer || radius <= 0) {
+            return;
+        }
+
+        if (segments < 8) {
+            segments = 8;
+        }
+
+        std::vector<Point> points(static_cast<size_t>(segments) + 1);
+        for (int i = 0; i <= segments; ++i) {
+            float angle = (static_cast<float>(i) * 2.0f * 3.14159f) / static_cast<float>(segments);
+            points[static_cast<size_t>(i)].x = static_cast<int>(center.x + radius * std::cos(angle));
+            points[static_cast<size_t>(i)].y = static_cast<int>(center.y + radius * std::sin(angle));
+        }
+
+        DrawLines(points.data(), segments + 1);
     }
 }

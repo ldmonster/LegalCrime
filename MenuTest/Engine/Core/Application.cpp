@@ -11,7 +11,9 @@ namespace Engine {
         : m_logger(nullptr)
         , m_initialized(false)
         , m_running(false)
-        , m_lastFrameTime(0) {
+        , m_lastFrameTime(0)
+        , m_fixedAccumulator(0.0f)
+        , m_interpolationAlpha(0.0f) {
     }
     
     Application::~Application() {
@@ -101,6 +103,8 @@ namespace Engine {
         
         m_running = true;
         m_lastFrameTime = SDL_GetTicks();
+        m_fixedAccumulator = 0.0f;
+        m_interpolationAlpha = 0.0f;
         
         if (m_logger) {
             m_logger->Info("Application started");
@@ -108,9 +112,21 @@ namespace Engine {
         
         while (m_running && m_sceneManager->HasScenes()) {
             ProcessEvents();
-            
-            float deltaTime = CalculateDeltaTime();
-            Update(deltaTime);
+
+            float frameTime = CalculateDeltaTime();
+            int updateCount = ComputeFixedUpdateCount(
+                frameTime,
+                FIXED_DT,
+                MAX_FRAME_TIME,
+                MAX_UPDATES_PER_FRAME,
+                m_fixedAccumulator
+            );
+
+            for (int i = 0; i < updateCount; ++i) {
+                Update(FIXED_DT);
+            }
+
+            m_interpolationAlpha = (FIXED_DT > 0.0f) ? (m_fixedAccumulator / FIXED_DT) : 0.0f;
             Render();
         }
         
@@ -167,12 +183,37 @@ namespace Engine {
         uint64 currentTime = SDL_GetTicks();
         float deltaTime = (currentTime - m_lastFrameTime) / 1000.0f;
         m_lastFrameTime = currentTime;
-        
-        // Cap delta time to prevent spiral of death
-        if (deltaTime > 0.1f) {
-            deltaTime = 0.1f;
-        }
-        
+
         return deltaTime;
+    }
+
+    int Application::ComputeFixedUpdateCount(
+        float frameTime,
+        float fixedDt,
+        float maxFrameTime,
+        int maxUpdatesPerFrame,
+        float& accumulator) {
+
+        if (fixedDt <= 0.0f || maxUpdatesPerFrame <= 0) {
+            return 0;
+        }
+
+        if (frameTime < 0.0f) {
+            frameTime = 0.0f;
+        }
+
+        if (frameTime > maxFrameTime) {
+            frameTime = maxFrameTime;
+        }
+
+        accumulator += frameTime;
+
+        int updates = 0;
+        while (accumulator >= fixedDt && updates < maxUpdatesPerFrame) {
+            accumulator -= fixedDt;
+            ++updates;
+        }
+
+        return updates;
     }
 }

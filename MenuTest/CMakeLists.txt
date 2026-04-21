@@ -20,13 +20,13 @@ set(ENGINE_SOURCES
     Engine/Audio/SoundEffect.cpp
     Engine/Camera/Camera2D.cpp
     Engine/Core/Application.cpp
+    Engine/Core/ConfigLoader.cpp
     Engine/Core/EngineBuilder.cpp
     Engine/Core/FileSystem.cpp
     Engine/Core/Logger/Logger.cpp
     Engine/Entity/Entity.cpp
     Engine/Graphics/AnimatedSprite.cpp
     Engine/Graphics/CharacterSprite.cpp
-    Engine/Graphics/CharacterSpriteLoader.cpp
     Engine/Graphics/Sprite.cpp
     Engine/Graphics/Texture.cpp
     Engine/Input/InputAction.cpp
@@ -69,10 +69,14 @@ target_link_libraries(Engine PUBLIC
 set(GAME_SOURCES
     Game/Entities/Character.cpp
     Game/Entities/CharacterFactory.cpp
+    Game/GameStateMachine.cpp
     Game/LegalCrimeApp.cpp
     Game/Resources/GameResourceLoader.cpp
     Game/Resources/GameResources.cpp
+    Game/Simulation/GameSimulation.cpp
     Game/Scenes/GameplayScene.cpp
+    Game/Scenes/GameplayRenderer.cpp
+    Game/Scenes/GameplayInputHandler.cpp
     Game/Scenes/MainMenuScene.cpp
     Game/World/Systems/CommandSystem.cpp
     Game/World/Systems/MovementSystem.cpp
@@ -97,6 +101,17 @@ target_link_libraries(Game PUBLIC Engine)
 add_executable(LegalCrime main.cpp)
 target_link_libraries(LegalCrime PRIVATE Game)
 
+# Release build optimizations
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    if(MSVC)
+        target_compile_options(Engine PRIVATE /O2 /GL /DNDEBUG)
+        target_link_options(LegalCrime PRIVATE /LTCG)
+    else()
+        target_compile_options(Engine PRIVATE -O2 -flto -DNDEBUG)
+        target_link_options(LegalCrime PRIVATE -flto)
+    endif()
+endif()
+
 # ============================================================================
 # Tests
 # ============================================================================
@@ -106,8 +121,12 @@ set(TEST_SOURCES
     Engine/UI/ButtonTests.cpp
     Engine/Core/TilePositionTests.cpp
     Engine/Core/EventBusTests.cpp
+    Engine/Core/ApplicationFixedStepTests.cpp
+    Engine/Core/ConfigLoaderTests.cpp
     Engine/World/PathfindingTests.cpp
     Engine/Graphics/SmoothMovementTests.cpp
+    Engine/Renderer/IRendererTests.cpp
+    Engine/Renderer/ShapeCacheTests.cpp
     Engine/Entity/EntityTests.cpp
     Game/Entities/CharacterDataTests.cpp
     Engine/Core/ObjectPoolTests.cpp
@@ -120,13 +139,22 @@ set(TEST_SOURCES
     Engine/Platform/WindowConfigTests.cpp
     Engine/Input/GamepadTests.cpp
     Engine/Audio/AudioResultTests.cpp
+    Engine/Audio/IAudioEngineTests.cpp
+    Engine/Resources/ResourceManagerTests.cpp
     Game/GameConstantsTests.cpp
     Game/World/Systems/CommandSystemTests.cpp
     Game/World/Systems/MovementSystemTests.cpp
     Engine/World/PathfindingBenchmark.cpp
+    Game/World/WorldBenchmark.cpp
+    Game/World/Systems/SelectionBenchmark.cpp
     Game/World/WorldTests.cpp
     Engine/Graphics/AnimatedSpriteTests.cpp
     Engine/Scene/SceneTests.cpp
+    Engine/Scene/SceneManagerTests.cpp
+    Game/Simulation/GameSimulationTests.cpp
+    Game/Scenes/GameplaySceneRefactorTests.cpp
+    Game/Scenes/MainMenuLayoutTests.cpp
+    Game/GameStateMachineTests.cpp
 )
 
 add_executable(LegalCrimeTests ${TEST_SOURCES})
@@ -141,3 +169,13 @@ target_link_libraries(LegalCrimeTests PRIVATE Game Engine)
 
 # Add a test runner entry point for the test executable
 target_sources(LegalCrimeTests PRIVATE Tests/test_main.cpp)
+
+enable_testing()
+add_test(NAME UnitTests COMMAND LegalCrimeTests)
+
+# Install + packaging support
+install(TARGETS LegalCrime RUNTIME DESTINATION bin)
+install(FILES config.ini DESTINATION bin)
+
+include(CPack)
+set(CPACK_GENERATOR "ZIP;TGZ")

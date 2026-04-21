@@ -28,10 +28,10 @@ namespace World {
         void Update(World* world, MovementSystem* movement, float deltaTime);
 
         /// Issue a command to a unit (replaces current queue).
-        void IssueCommand(uint32_t entityId, const Command& cmd);
+        void IssueCommand(uint32_t entityId, const GameCommand& cmd);
 
         /// Queue a command (shift-click style, appends to back).
-        void QueueCommand(uint32_t entityId, const Command& cmd);
+        void QueueCommand(uint32_t entityId, const GameCommand& cmd);
 
         /// Cancel all commands for a unit.
         void CancelCommands(uint32_t entityId);
@@ -43,7 +43,7 @@ namespace World {
         bool HasCommands(uint32_t entityId) const;
 
     private:
-        void ProcessMoveCommand(Entities::Character* character, const Command& cmd,
+        void ProcessMoveCommand(Entities::Character* character, const MoveCommand& cmd,
                                 MovementSystem* movement);
 
         Engine::ILogger* m_logger;

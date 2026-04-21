@@ -3,13 +3,9 @@
 #include "../../Entities/Character.h"
 #include "../../../Engine/World/TileMap.h"
 #include "../../../Engine/Camera/Camera2D.h"
-#include "../../../Engine/Input/InputManager.h"
 #include "../../../Engine/Core/Logger/ILogger.h"
-#include "../../Input/GameInputBindings.h"
 #include <algorithm>
 #include <cmath>
-
-using namespace LegalCrime::InputBindings;
 
 namespace LegalCrime {
 namespace World {
@@ -23,116 +19,121 @@ namespace World {
 
     SelectionSystem::~SelectionSystem() = default;
 
-    void SelectionSystem::Update(
-        World* world,
-        Engine::Input::InputManager* inputManager,
-        Engine::TileMap* tileMap,
-        Engine::Camera2D* camera) {
+    void SelectionSystem::UpdateHoveredTile(int screenX, int screenY, Engine::TileMap* tileMap, Engine::Camera2D* camera) {
+        if (!tileMap) {
+            m_hasHoveredTile = false;
+            return;
+        }
 
-        if (!world || !inputManager || !tileMap) return;
-
-        // Update hovered tile
-        Engine::Input::MousePosition mousePos = inputManager->GetMousePosition();
-        uint16_t hoveredRow, hoveredCol;
-        m_hasHoveredTile = tileMap->ScreenToTile(mousePos.x, mousePos.y, hoveredRow, hoveredCol, camera);
+        uint16_t hoveredRow = 0;
+        uint16_t hoveredCol = 0;
+        m_hasHoveredTile = tileMap->ScreenToTile(screenX, screenY, hoveredRow, hoveredCol, camera);
         if (m_hasHoveredTile) {
             m_hoveredTile = Engine::TilePosition(hoveredRow, hoveredCol);
         }
+    }
 
-        // Handle box selection (left mouse drag)
-        HandleBoxSelect(world, inputManager, tileMap, camera);
+    void SelectionSystem::StartBoxSelection(const Engine::Point& startScreenPos) {
+        m_boxSelecting = true;
+        m_boxStart = startScreenPos;
+        m_boxEnd = startScreenPos;
+    }
 
-        // Handle control groups (ctrl+0..9)
-        HandleControlGroups(inputManager);
+    void SelectionSystem::UpdateBoxSelection(const Engine::Point& currentScreenPos) {
+        if (!m_boxSelecting) {
+            return;
+        }
+        m_boxEnd = currentScreenPos;
+    }
 
-        // Handle single click selection (left mouse button, not dragging)
-        if (!m_boxSelecting && inputManager->WasActionJustPressed(Actions::SELECT)) {
-            uint16_t clickedRow, clickedCol;
-            if (tileMap->ScreenToTile(mousePos.x, mousePos.y, clickedRow, clickedCol, camera)) {
-                Entities::Character* character = world->GetCharacterAtTile(clickedRow, clickedCol);
-                if (character) {
-                    if (inputManager->IsShiftHeld()) {
-                        // Shift+click: toggle in/out of selection
-                        if (IsSelected(character)) {
-                            RemoveFromSelection(character);
-                        } else {
-                            AddToSelection(character);
-                        }
-                    } else {
-                        // Plain click: select only this character
-                        SelectCharacter(character);
-                    }
-                } else if (!inputManager->IsShiftHeld()) {
-                    ClearSelection();
+    void SelectionSystem::EndBoxSelection(
+        World* world,
+        Engine::TileMap* tileMap,
+        Engine::Camera2D* camera,
+        bool appendToExisting) {
+
+        if (!m_boxSelecting) {
+            return;
+        }
+
+        m_boxSelecting = false;
+
+        if (!world || !tileMap) {
+            return;
+        }
+
+        int dx = std::abs(m_boxEnd.x - m_boxStart.x);
+        int dy = std::abs(m_boxEnd.y - m_boxStart.y);
+        if (dx <= 5 && dy <= 5) {
+            return;
+        }
+
+        Engine::Rect boxRect = GetBoxSelectRect();
+        std::vector<Entities::Character*> found;
+
+        // Spatial grid narrows candidate set for large worlds.
+        std::vector<Engine::Entity*> candidates = world->GetEntitiesInRect(boxRect);
+        for (auto* entity : candidates) {
+            auto* character = dynamic_cast<Entities::Character*>(entity);
+            if (!character) {
+                continue;
+            }
+
+            Engine::Point charScreenPos = tileMap->TileToScreenCenter(character->GetTilePosition(), camera);
+            if (charScreenPos.x >= boxRect.x && charScreenPos.x <= boxRect.x + boxRect.w &&
+                charScreenPos.y >= boxRect.y && charScreenPos.y <= boxRect.y + boxRect.h) {
+                found.push_back(character);
+                if (found.size() >= MAX_SELECTION) {
+                    break;
                 }
             }
         }
-    }
 
-    void SelectionSystem::HandleBoxSelect(World* world, Engine::Input::InputManager* input,
-                                           Engine::TileMap* tileMap, Engine::Camera2D* camera) {
-        Engine::Input::MousePosition mousePos = input->GetMousePosition();
-
-        if (input->IsMouseButtonPressed(Engine::Input::MouseButton::Left)) {
-            if (!m_boxSelecting) {
-                // Start box selection
-                m_boxSelecting = true;
-                m_boxStart = Engine::Point(mousePos.x, mousePos.y);
-                m_boxEnd = m_boxStart;
+        if (!found.empty()) {
+            if (appendToExisting) {
+                for (auto* c : found) {
+                    AddToSelection(c);
+                }
             } else {
-                m_boxEnd = Engine::Point(mousePos.x, mousePos.y);
+                SetSelection(found);
             }
-        } else if (m_boxSelecting) {
-            // Mouse released — finish box selection
-            m_boxSelecting = false;
-
-            int dx = std::abs(m_boxEnd.x - m_boxStart.x);
-            int dy = std::abs(m_boxEnd.y - m_boxStart.y);
-
-            // Only treat as box select if dragged more than a few pixels
-            if (dx > 5 || dy > 5) {
-                Engine::Rect boxRect = GetBoxSelectRect();
-                std::vector<Entities::Character*> found;
-
-                // Check every character to see if they're within the box
-                for (auto* character : world->GetAllCharacters()) {
-                    Engine::Point charScreenPos = tileMap->TileToScreenCenter(
-                        character->GetTilePosition(), camera);
-
-                    if (charScreenPos.x >= boxRect.x && charScreenPos.x <= boxRect.x + boxRect.w &&
-                        charScreenPos.y >= boxRect.y && charScreenPos.y <= boxRect.y + boxRect.h) {
-                        found.push_back(character);
-                        if (found.size() >= MAX_SELECTION) break;
-                    }
-                }
-
-                if (!found.empty()) {
-                    if (input->IsShiftHeld()) {
-                        // Shift+box: add to existing selection
-                        for (auto* c : found) {
-                            AddToSelection(c);
-                        }
-                    } else {
-                        SetSelection(found);
-                    }
-                } else if (!input->IsShiftHeld()) {
-                    ClearSelection();
-                }
-            }
+        } else if (!appendToExisting) {
+            ClearSelection();
         }
     }
 
-    void SelectionSystem::HandleControlGroups(Engine::Input::InputManager* input) {
-        // Check ctrl+0..9 for save, plain 0..9 for recall
-        for (int i = 0; i < NUM_GROUPS; ++i) {
-            SDL_Keycode key = SDLK_0 + i;
-            if (input->IsKeyPressed(key)) {
-                if (input->IsCtrlHeld()) {
-                    SaveGroup(i);
+    void SelectionSystem::SelectAtScreenPosition(
+        World* world,
+        int screenX,
+        int screenY,
+        Engine::TileMap* tileMap,
+        Engine::Camera2D* camera,
+        bool toggleWithShift,
+        bool clearIfNoCharacter) {
+
+        if (!world || !tileMap) {
+            return;
+        }
+
+        uint16_t clickedRow = 0;
+        uint16_t clickedCol = 0;
+        if (!tileMap->ScreenToTile(screenX, screenY, clickedRow, clickedCol, camera)) {
+            return;
+        }
+
+        Entities::Character* character = world->GetCharacterAtTile(clickedRow, clickedCol);
+        if (character) {
+            if (toggleWithShift) {
+                if (IsSelected(character)) {
+                    RemoveFromSelection(character);
                 } else {
-                    RecallGroup(i);
+                    AddToSelection(character);
                 }
+            } else {
+                SelectCharacter(character);
             }
+        } else if (clearIfNoCharacter) {
+            ClearSelection();
         }
     }
 
@@ -172,6 +173,34 @@ namespace World {
 
     void SelectionSystem::ClearSelection() {
         m_selected.clear();
+    }
+
+    void SelectionSystem::PruneSelectionToWorld(const World* world) {
+        if (!world) {
+            m_selected.clear();
+            for (auto& group : m_groups) {
+                group.clear();
+            }
+            return;
+        }
+
+        const auto& aliveCharacters = world->GetAllCharacters();
+        auto isAliveCharacter = [&](Entities::Character* character) {
+            return character &&
+                std::find(aliveCharacters.begin(), aliveCharacters.end(), character) != aliveCharacters.end();
+        };
+
+        m_selected.erase(
+            std::remove_if(m_selected.begin(), m_selected.end(),
+                [&](Entities::Character* character) { return !isAliveCharacter(character); }),
+            m_selected.end());
+
+        for (auto& group : m_groups) {
+            group.erase(
+                std::remove_if(group.begin(), group.end(),
+                    [&](Entities::Character* character) { return !isAliveCharacter(character); }),
+                group.end());
+        }
     }
 
     Engine::Rect SelectionSystem::GetBoxSelectRect() const {

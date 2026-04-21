@@ -1,7 +1,9 @@
 #include "World.h"
+#include "../Events.h"
 #include "../../Tests/SimpleTest.h"
 #include "../../Engine/Entity/Entity.h"
 #include "../Entities/Character.h"
+#include "../../Engine/Graphics/CharacterSpriteConfig.h"
 
 // ======================== World Entity Lookup Tests ========================
 
@@ -130,4 +132,152 @@ TEST_CASE(World_AddRemove_ManyEntities) {
     }
 
     return {"World_AddRemove_ManyEntities", true, ""};
+}
+
+// ======================== World Aggregate Root Tests ========================
+
+TEST_CASE(World_SpawnCharacter_OwnsAndPlacesCharacter) {
+    LegalCrime::World::World world(1000, 1000, 64, nullptr);
+    Engine::CharacterSpriteConfig config;
+    auto character = std::make_unique<LegalCrime::Entities::Character>(
+        LegalCrime::Entities::CharacterType::Thug,
+        nullptr,
+        config,
+        nullptr
+    );
+
+    Engine::TilePosition spawnPos(2, 3);
+    LegalCrime::Entities::Character* spawned = world.SpawnCharacter(std::move(character), spawnPos);
+
+    ASSERT_NOT_NULL(spawned);
+    ASSERT_TRUE(world.GetCharacterAtTile(spawnPos) == spawned);
+    ASSERT_TRUE(world.IsOccupied(spawnPos));
+    ASSERT_NOT_NULL(world.GetCharacterById(spawned->GetId()));
+    return {"World_SpawnCharacter_OwnsAndPlacesCharacter", true, ""};
+}
+
+TEST_CASE(World_DestroyCharacter_RemovesFromEntityAndOccupancyMaps) {
+    LegalCrime::World::World world(1000, 1000, 64, nullptr);
+    Engine::CharacterSpriteConfig config;
+    auto character = std::make_unique<LegalCrime::Entities::Character>(
+        LegalCrime::Entities::CharacterType::Thug,
+        nullptr,
+        config,
+        nullptr
+    );
+
+    Engine::TilePosition spawnPos(4, 6);
+    LegalCrime::Entities::Character* spawned = world.SpawnCharacter(std::move(character), spawnPos);
+    ASSERT_NOT_NULL(spawned);
+    uint32_t id = spawned->GetId();
+
+    ASSERT_TRUE(world.DestroyCharacter(spawned));
+    ASSERT_NULL(world.GetEntityById(id));
+    ASSERT_NULL(world.GetCharacterById(id));
+    ASSERT_FALSE(world.IsOccupied(spawnPos));
+    ASSERT_NULL(world.GetCharacterAtTile(spawnPos));
+    return {"World_DestroyCharacter_RemovesFromEntityAndOccupancyMaps", true, ""};
+}
+
+TEST_CASE(World_DestroyEntityById_ReturnsFalseForMissing) {
+    LegalCrime::World::World world(1000, 1000, 64, nullptr);
+    ASSERT_FALSE(world.DestroyEntityById(777777));
+    return {"World_DestroyEntityById_ReturnsFalseForMissing", true, ""};
+}
+
+// ======================== World Domain Event Tests ========================
+
+TEST_CASE(World_SpawnCharacter_PublishesEntitySpawnedEvent) {
+    LegalCrime::DomainEventBus().Clear();
+    uint32_t receivedId = 0;
+    Engine::TilePosition receivedPos;
+
+    auto sub = LegalCrime::DomainEventBus().Subscribe<LegalCrime::EntitySpawnedEvent>(
+        [&](const LegalCrime::EntitySpawnedEvent& e) {
+            receivedId = e.entityId;
+            receivedPos = e.position;
+        }
+    );
+
+    LegalCrime::World::World world(1000, 1000, 64, nullptr);
+    Engine::CharacterSpriteConfig config;
+    auto character = std::make_unique<LegalCrime::Entities::Character>(
+        LegalCrime::Entities::CharacterType::Thug,
+        nullptr,
+        config,
+        nullptr
+    );
+
+    Engine::TilePosition spawnPos(1, 2);
+    auto* spawned = world.SpawnCharacter(std::move(character), spawnPos);
+    ASSERT_NOT_NULL(spawned);
+    ASSERT_EQUAL(receivedId, spawned->GetId());
+    ASSERT_TRUE(receivedPos == spawnPos);
+
+    LegalCrime::DomainEventBus().Unsubscribe<LegalCrime::EntitySpawnedEvent>(sub);
+    return {"World_SpawnCharacter_PublishesEntitySpawnedEvent", true, ""};
+}
+
+TEST_CASE(World_PlaceCharacter_PublishesEntityMovedEvent) {
+    LegalCrime::DomainEventBus().Clear();
+    uint32_t movedId = 0;
+    Engine::TilePosition from;
+    Engine::TilePosition to;
+
+    auto sub = LegalCrime::DomainEventBus().Subscribe<LegalCrime::EntityMovedEvent>(
+        [&](const LegalCrime::EntityMovedEvent& e) {
+            movedId = e.entityId;
+            from = e.from;
+            to = e.to;
+        }
+    );
+
+    LegalCrime::World::World world(1000, 1000, 64, nullptr);
+    Engine::CharacterSpriteConfig config;
+    auto character = std::make_unique<LegalCrime::Entities::Character>(
+        LegalCrime::Entities::CharacterType::Thug,
+        nullptr,
+        config,
+        nullptr
+    );
+
+    auto* spawned = world.SpawnCharacter(std::move(character), Engine::TilePosition(2, 2));
+    ASSERT_NOT_NULL(spawned);
+    world.PlaceCharacter(spawned, Engine::TilePosition(3, 4));
+
+    ASSERT_EQUAL(movedId, spawned->GetId());
+    ASSERT_TRUE(from == Engine::TilePosition(2, 2));
+    ASSERT_TRUE(to == Engine::TilePosition(3, 4));
+
+    LegalCrime::DomainEventBus().Unsubscribe<LegalCrime::EntityMovedEvent>(sub);
+    return {"World_PlaceCharacter_PublishesEntityMovedEvent", true, ""};
+}
+
+TEST_CASE(World_DestroyCharacter_PublishesEntityDestroyedEvent) {
+    LegalCrime::DomainEventBus().Clear();
+    uint32_t destroyedId = 0;
+
+    auto sub = LegalCrime::DomainEventBus().Subscribe<LegalCrime::EntityDestroyedEvent>(
+        [&](const LegalCrime::EntityDestroyedEvent& e) {
+            destroyedId = e.entityId;
+        }
+    );
+
+    LegalCrime::World::World world(1000, 1000, 64, nullptr);
+    Engine::CharacterSpriteConfig config;
+    auto character = std::make_unique<LegalCrime::Entities::Character>(
+        LegalCrime::Entities::CharacterType::Thug,
+        nullptr,
+        config,
+        nullptr
+    );
+
+    auto* spawned = world.SpawnCharacter(std::move(character), Engine::TilePosition(4, 4));
+    ASSERT_NOT_NULL(spawned);
+    uint32_t id = spawned->GetId();
+    ASSERT_TRUE(world.DestroyCharacter(spawned));
+    ASSERT_EQUAL(destroyedId, id);
+
+    LegalCrime::DomainEventBus().Unsubscribe<LegalCrime::EntityDestroyedEvent>(sub);
+    return {"World_DestroyCharacter_PublishesEntityDestroyedEvent", true, ""};
 }

@@ -3,8 +3,10 @@
 #include "../../Engine/Graphics/Sprite.h"
 #include "../../Engine/UI/Button.h"
 #include "../../Engine/Audio/SoundEffect.h"
+#include "../../Engine/Core/FileSystem.h"
 #include "../GameConstants.h"
 #include "../../Engine/Core/Constants.h"
+#include <cmath>
 
 namespace LegalCrime {
 
@@ -36,7 +38,7 @@ namespace LegalCrime {
         // NEW: Load textures using Engine::Texture
         m_backgroundTexture = Engine::Texture::LoadFromFile(
             m_renderer,
-            "./Pics/main_menu.png",
+            Engine::FileSystem::ResolveAssetPath("Pics/main_menu.png"),
             m_logger
         );
 
@@ -46,7 +48,7 @@ namespace LegalCrime {
 
         m_buttonsTexture = Engine::Texture::LoadFromFile(
             m_renderer,
-            "./Pics/main_menu_buttons.png",
+            Engine::FileSystem::ResolveAssetPath("Pics/main_menu_buttons.png"),
             m_logger
         );
 
@@ -57,10 +59,24 @@ namespace LegalCrime {
         // NEW: Create background sprite
         m_backgroundSprite = std::make_shared<Engine::Sprite>(m_backgroundTexture);
 
+        int viewWidth = Engine::Constants::Window::DEFAULT_WIDTH;
+        int viewHeight = Engine::Constants::Window::DEFAULT_HEIGHT;
+        if (m_renderer && m_renderer->GetNativeRenderer()) {
+            int w = 0;
+            int h = 0;
+            if (SDL_GetCurrentRenderOutputSize(m_renderer->GetNativeRenderer(), &w, &h)) {
+                if (w > 0 && h > 0) {
+                    viewWidth = w;
+                    viewHeight = h;
+                }
+            }
+        }
+        m_backgroundRect = Engine::Rect(0, 0, viewWidth, viewHeight);
+
         // NEW: Load sound effects using Engine::AudioEngine
         if (m_audio) {
-            m_hoverSound = m_audio->LoadSoundEffect("Sound/OverButton.wav");
-            m_clickSound = m_audio->LoadSoundEffect("Sound/ButtonClick.wav");
+            m_hoverSound = m_audio->LoadSoundEffect(Engine::FileSystem::ResolveAssetPath("Sound/OverButton.wav"));
+            m_clickSound = m_audio->LoadSoundEffect(Engine::FileSystem::ResolveAssetPath("Sound/ButtonClick.wav"));
 
             if (!m_hoverSound) {
                 m_logger->Warning("Failed to load hover sound effect");
@@ -77,12 +93,6 @@ namespace LegalCrime {
         int widthButton = MC::BUTTON_WIDTH;
         int heightButton = MC::BUTTON_HEIGHT;
         int yHitOffset = MC::BUTTON_HIT_Y_OFFSET;
-
-        int xRenderButton = MC::BUTTON_RENDER_X;
-        int yRenderButton = MC::BUTTON_RENDER_Y;
-        int widthRenderButton = MC::BUTTON_RENDER_WIDTH;
-        int heightRenderButton = MC::BUTTON_RENDER_HEIGHT;
-        int offsetRenderButton = MC::BUTTON_RENDER_Y_OFFSET;
 
         // NEW: Create buttons using Engine::UI::Button
         for (int i = 0; i < MainMenuScene::OverallButtons; i++) {
@@ -102,12 +112,9 @@ namespace LegalCrime {
                 sourceRectPressed
             );
 
-            if (i == MainMenuScene::ExitButton) {
-                yRenderButton -= MC::EXIT_BUTTON_Y_ADJUST;
-            }
-
             // Set button bounds
-            Engine::Rect bounds(xRenderButton, yRenderButton, widthRenderButton, heightRenderButton);
+            ButtonLayout layout = ComputeButtonLayout(viewWidth, viewHeight, i);
+            Engine::Rect bounds(layout.x, layout.y, layout.w, layout.h);
             button->SetBounds(bounds);
 
             // Set button sprites
@@ -154,7 +161,6 @@ namespace LegalCrime {
             m_buttons[i] = std::move(button);
 
             yButton += heightButton;
-            yRenderButton += heightRenderButton + offsetRenderButton;
         }
 
         m_initialized = true;
@@ -242,5 +248,28 @@ namespace LegalCrime {
 
     bool MainMenuScene::ShouldStartGame() const {
         return m_shouldStartGame;
+    }
+
+    MainMenuScene::ButtonLayout MainMenuScene::ComputeButtonLayout(int viewWidth, int viewHeight, int buttonIndex) {
+        using MC = LegalCrime::Constants::MainMenu;
+
+        const float baseWidth = static_cast<float>(Engine::Constants::Window::DEFAULT_WIDTH);
+        const float baseHeight = static_cast<float>(Engine::Constants::Window::DEFAULT_HEIGHT);
+        float scaleX = (baseWidth > 0.0f) ? static_cast<float>(viewWidth) / baseWidth : 1.0f;
+        float scaleY = (baseHeight > 0.0f) ? static_cast<float>(viewHeight) / baseHeight : 1.0f;
+
+        int x = static_cast<int>(std::round(MC::BUTTON_RENDER_X * scaleX));
+        int y = static_cast<int>(std::round((MC::BUTTON_RENDER_Y + buttonIndex * (MC::BUTTON_RENDER_HEIGHT + MC::BUTTON_RENDER_Y_OFFSET)) * scaleY));
+        int w = static_cast<int>(std::round(MC::BUTTON_RENDER_WIDTH * scaleX));
+        int h = static_cast<int>(std::round(MC::BUTTON_RENDER_HEIGHT * scaleY));
+
+        if (buttonIndex == ExitButton) {
+            y -= static_cast<int>(std::round(MC::EXIT_BUTTON_Y_ADJUST * scaleY));
+        }
+
+        if (w < 1) w = 1;
+        if (h < 1) h = 1;
+
+        return ButtonLayout{x, y, w, h};
     }
 }

@@ -28,7 +28,12 @@ namespace World {
         // Entity management
         void AddEntity(std::unique_ptr<Engine::Entity> entity);
         void RemoveEntity(Engine::Entity* entity);
+        bool DestroyEntityById(uint32_t id);
         void ClearEntities();
+
+        // Aggregate root character lifecycle
+        Entities::Character* SpawnCharacter(std::unique_ptr<Entities::Character> character, const Engine::TilePosition& pos);
+        bool DestroyCharacter(Entities::Character* character);
         
         // Entity queries
         Engine::Entity* GetEntityById(uint32_t id);

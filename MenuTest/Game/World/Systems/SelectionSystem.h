@@ -9,9 +9,6 @@ namespace Engine {
     class ILogger;
     class TileMap;
     class Camera2D;
-    namespace Input {
-        class InputManager;
-    }
 }
 
 namespace LegalCrime {
@@ -31,12 +28,21 @@ namespace World {
         SelectionSystem(Engine::ILogger* logger = nullptr);
         ~SelectionSystem();
 
-        // Update selection (process input)
-        void Update(
+        // Hover and box selection primitives (input-agnostic).
+        void UpdateHoveredTile(int screenX, int screenY, Engine::TileMap* tileMap, Engine::Camera2D* camera);
+        void StartBoxSelection(const Engine::Point& startScreenPos);
+        void UpdateBoxSelection(const Engine::Point& currentScreenPos);
+        void EndBoxSelection(World* world, Engine::TileMap* tileMap, Engine::Camera2D* camera, bool appendToExisting);
+
+        // Click selection primitive (input-agnostic).
+        void SelectAtScreenPosition(
             World* world,
-            Engine::Input::InputManager* inputManager,
+            int screenX,
+            int screenY,
             Engine::TileMap* tileMap,
-            Engine::Camera2D* camera
+            Engine::Camera2D* camera,
+            bool toggleWithShift,
+            bool clearIfNoCharacter
         );
 
         // --- Multi-selection queries ---
@@ -54,6 +60,7 @@ namespace World {
         void RemoveFromSelection(Entities::Character* character);
         void SetSelection(const std::vector<Entities::Character*>& characters);
         void ClearSelection();
+        void PruneSelectionToWorld(const World* world);
 
         // --- Box selection ---
         bool IsBoxSelecting() const { return m_boxSelecting; }
@@ -77,9 +84,6 @@ namespace World {
         );
 
     private:
-        void HandleBoxSelect(World* world, Engine::Input::InputManager* input,
-                             Engine::TileMap* tileMap, Engine::Camera2D* camera);
-        void HandleControlGroups(Engine::Input::InputManager* input);
         bool IsSelected(Entities::Character* character) const;
 
         Engine::ILogger* m_logger;

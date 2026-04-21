@@ -46,6 +46,8 @@ namespace World {
             return;
         }
 
+        ProcessPathfindingBudget();
+
         // Update all moving characters
         std::vector<uint32_t> completed;
         for (auto& [id, state] : m_movingCharacters) {
@@ -75,33 +77,8 @@ namespace World {
             return false;
         }
 
-        Engine::TilePosition current = character->GetTilePosition();
-
-        // Create walkability callback that queries the tilemap
-        auto isWalkable = [this](const Engine::TilePosition& pos) -> bool {
-            const Engine::Tile* tile = m_tileMap->GetTile(pos.row, pos.col);
-            return tile && tile->IsWalkable();
-        };
-
-        // Find path using correct API
-        Engine::Path path = m_pathfinder->FindPath(
-            current,
-            target,
-            m_tileMap->GetWidth(),
-            m_tileMap->GetHeight(),
-            isWalkable
-        );
-
-        if (path.empty()) {
-            if (m_logger) {
-                m_logger->Warning("MovementSystem::MoveCharacterToTile - No path found from (" +
-                                std::to_string(current.row) + "," + std::to_string(current.col) + ") to (" +
-                                std::to_string(target.row) + "," + std::to_string(target.col) + ")");
-            }
-            return false;
-        }
-
-        return MoveCharacterAlongPath(character, path, duration);
+        m_pendingPathRequests.push_back(PathRequest{character, target, duration});
+        return true;
     }
 
     bool MovementSystem::MoveCharacterToTile(
@@ -140,7 +117,7 @@ namespace World {
 
             // Update animation based on direction
             Engine::TilePosition from = character->GetTilePosition();
-            UpdateCharacterAnimation(character, from.row, from.col, firstTile.row, firstTile.col);
+            UpdateCharacterAnimation(*state, from.row, from.col, firstTile.row, firstTile.col);
         }
 
         if (m_logger) {
@@ -206,6 +183,44 @@ namespace World {
         return (it != m_movingCharacters.end()) ? &it->second : nullptr;
     }
 
+    void MovementSystem::ProcessPathfindingBudget() {
+        if (!m_pathfinder || !m_tileMap) {
+            return;
+        }
+
+        size_t processed = 0;
+        while (processed < MAX_PATHS_PER_FRAME && !m_pendingPathRequests.empty()) {
+            PathRequest request = m_pendingPathRequests.front();
+            m_pendingPathRequests.pop_front();
+
+            if (!request.character) {
+                continue;
+            }
+
+            Engine::TilePosition current = request.character->GetTilePosition();
+            auto isWalkable = [this](const Engine::TilePosition& pos) -> bool {
+                const Engine::Tile* tile = m_tileMap->GetTile(pos.row, pos.col);
+                return tile && tile->IsWalkable();
+            };
+
+            Engine::Path path = m_pathfinder->FindPath(
+                current,
+                request.target,
+                m_tileMap->GetWidth(),
+                m_tileMap->GetHeight(),
+                isWalkable
+            );
+
+            if (!path.empty()) {
+                MoveCharacterAlongPath(request.character, path, request.moveDuration);
+            } else if (m_logger) {
+                m_logger->Warning("MovementSystem: path request failed");
+            }
+
+            ++processed;
+        }
+    }
+
     void MovementSystem::UpdateCharacterMovement(MovementState& state, float deltaTime) {
         if (!state.character || !state.isMoving) {
             return;
@@ -228,11 +243,12 @@ namespace World {
                 state.target = nextTile;
 
                 // Update animation for new direction
-                UpdateCharacterAnimation(state.character, current.row, current.col, nextTile.row, nextTile.col);
+                UpdateCharacterAnimation(state, current.row, current.col, nextTile.row, nextTile.col);
             } else {
                 // Path complete
                 state.isMoving = false;
                 state.currentPath.clear();
+                state.hasLastDirection = false;
                 state.character->SetAnimation("idle_down");  // Set to idle
 
                 if (m_logger) {
@@ -243,20 +259,27 @@ namespace World {
     }
 
     void MovementSystem::UpdateCharacterAnimation(
-        Entities::Character* character,
+        MovementState& state,
         uint16_t fromRow,
         uint16_t fromCol,
         uint16_t toRow,
         uint16_t toCol) {
         
-        if (!character) {
+        if (!state.character) {
             return;
         }
 
         int deltaRow = static_cast<int>(toRow) - static_cast<int>(fromRow);
         int deltaCol = static_cast<int>(toCol) - static_cast<int>(fromCol);
         Engine::Direction dir = Engine::DirectionUtil::FromDelta(deltaRow, deltaCol);
-        character->SetAnimation(Engine::DirectionUtil::ToAnimationName(dir));
+
+        if (state.hasLastDirection && dir == state.lastDirection) {
+            return;
+        }
+
+        state.lastDirection = dir;
+        state.hasLastDirection = true;
+        state.character->SetAnimation(Engine::DirectionUtil::ToAnimationName(dir));
     }
 
 } // namespace World

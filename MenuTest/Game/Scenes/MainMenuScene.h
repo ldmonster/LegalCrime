@@ -22,6 +22,13 @@ namespace LegalCrime {
     // Main menu scene
     class MainMenuScene : public Engine::Scene {
     public:
+        struct ButtonLayout {
+            int x;
+            int y;
+            int w;
+            int h;
+        };
+
         MainMenuScene(Engine::ILogger* logger, Engine::IRenderer* renderer, Engine::ISoundPlayer* audio);
         ~MainMenuScene() override;
 
@@ -37,6 +44,9 @@ namespace LegalCrime {
         // Check if user wants to quit or transition to gameplay
         bool ShouldQuit() const;
         bool ShouldStartGame() const;
+
+        // Helper used by tests and initialization to compute responsive button bounds.
+        static ButtonLayout ComputeButtonLayout(int viewWidth, int viewHeight, int buttonIndex);
 
     private:
         enum MainPageButtons {

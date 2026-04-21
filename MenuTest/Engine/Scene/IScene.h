@@ -34,5 +34,11 @@ namespace Engine {
 
         /// Return a compile-time scene identifier (avoids RTTI).
         virtual SceneId GetSceneId() const { return SceneId::Unknown; }
+
+        // Lifecycle hooks managed by SceneManager.
+        virtual void OnEnter() {}
+        virtual void OnExit() {}
+        virtual void OnPause() {}
+        virtual void OnResume() {}
     };
 }

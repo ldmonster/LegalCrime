@@ -22,15 +22,15 @@ namespace Engine {
 
 namespace LegalCrime {
 
+    class GameplayInputHandler;
+    class GameplayRenderer;
+
+    namespace Simulation {
+        class GameSimulation;
+    }
+
     namespace Entities {
         class Character;
-        class CharacterFactory;
-    }
-    namespace World {
-        class World;
-        class MovementSystem;
-        class SelectionSystem;
-        class CommandSystem;
     }
 
     // Gameplay scene
@@ -64,17 +64,9 @@ namespace LegalCrime {
         std::unique_ptr<Engine::TileMap> m_tileMap;
         std::unique_ptr<Engine::TileMapRenderer> m_tileMapRenderer;
         std::unique_ptr<Engine::Camera2D> m_camera;
-        std::unique_ptr<Entities::CharacterFactory> m_characterFactory;
-        std::unique_ptr<World::World> m_world;
-        std::unique_ptr<World::MovementSystem> m_movementSystem;
-        std::unique_ptr<World::SelectionSystem> m_selectionSystem;
-        std::unique_ptr<World::CommandSystem> m_commandSystem;
+        std::unique_ptr<Simulation::GameSimulation> m_simulation;
+        std::unique_ptr<GameplayInputHandler> m_inputHandler;
+        std::unique_ptr<GameplayRenderer> m_gameplayRenderer;
         Engine::Input::InputManager* m_inputManager;
-
-        // Raw pointer to character for convenience (owned by World)
-        Entities::Character* m_character;
-
-        // Input handling
-        void HandleInputActions();
     };
 }

@@ -46,12 +46,23 @@ namespace Engine {
         SceneManager* GetSceneManager() const { return m_sceneManager.get(); }
         Input::InputManager* GetInputManager() const { return m_inputManager.get(); }
         Resources::ResourceManager* GetResourceManager() const { return m_resourceManager.get(); }
+
+        // Testable fixed-timestep helper.
+        static int ComputeFixedUpdateCount(
+            float frameTime,
+            float fixedDt,
+            float maxFrameTime,
+            int maxUpdatesPerFrame,
+            float& accumulator
+        );
         
     protected:
         // Override these in derived game class
         virtual Result<void> OnInitialize() { return Result<void>::Success(); }
         virtual void OnShutdown() {}
         virtual void OnUpdate(float deltaTime) {}
+
+        float GetInterpolationAlpha() const { return m_interpolationAlpha; }
         
     private:
         ILogger* m_logger;  // Raw pointer - managed manually to ensure it outlives all subsystems
@@ -66,6 +77,12 @@ namespace Engine {
         bool m_running;
         
         uint64 m_lastFrameTime;
+        float m_fixedAccumulator;
+        float m_interpolationAlpha;
+
+        static constexpr float FIXED_DT = 1.0f / 60.0f;
+        static constexpr float MAX_FRAME_TIME = 0.1f;
+        static constexpr int MAX_UPDATES_PER_FRAME = 5;
         
         void ProcessEvents();
         void Update(float deltaTime);

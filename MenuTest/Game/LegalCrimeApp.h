@@ -2,6 +2,7 @@
 
 #include "../Engine/Core/Application.h"
 #include "../Engine/Core/Types.h"
+#include "GameStateMachine.h"
 #include <memory>
 
 // Forward declarations for scenes
@@ -12,13 +13,6 @@ namespace LegalCrime {
 
 namespace LegalCrime {
 
-    enum class GameState {
-        Opening,
-        MainMenu,
-        Playing,
-        Shutdown
-    };
-
     // LegalCrime game application
     class LegalCrimeApp : public Engine::Application {
     public:
@@ -26,8 +20,8 @@ namespace LegalCrime {
         ~LegalCrimeApp() override;
 
         // Get current game state
-        GameState GetGameState() const { return m_gameState; }
-        void SetGameState(GameState state) { m_gameState = state; }
+        GameState GetGameState() const { return m_stateMachine.GetState(); }
+        void SetGameState(GameState state) { m_stateMachine.SetState(state); }
 
     protected:
         Engine::Result<void> OnInitialize() override;
@@ -35,7 +29,7 @@ namespace LegalCrime {
         void OnUpdate(float deltaTime) override;
 
     private:
-        GameState m_gameState;
+        GameStateMachine m_stateMachine;
 
         void LoadGameScenes();
         void HandleSceneTransitions();

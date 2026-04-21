@@ -30,31 +30,29 @@ namespace World {
                 continue;
             }
 
-            const Command* cmd = queue.GetCurrentCommand();
+            const GameCommand* cmd = queue.GetCurrentCommand();
             if (!cmd) continue;
 
-            switch (cmd->type) {
-                case CommandType::Move: {
-                    // If not already moving, start movement
+            bool consumed = false;
+            std::visit([&](const auto& concreteCmd) {
+                using T = std::decay_t<decltype(concreteCmd)>;
+
+                if constexpr (std::is_same_v<T, MoveCommand>) {
                     if (!movement->IsCharacterMoving(character)) {
-                        ProcessMoveCommand(character, *cmd, movement);
-                        queue.PopCommand();
+                        ProcessMoveCommand(character, concreteCmd, movement);
+                        consumed = true;
                     }
-                    break;
-                }
-                case CommandType::Stop: {
+                } else if constexpr (std::is_same_v<T, StopCommand>) {
                     movement->StopCharacterMovement(character);
-                    queue.PopCommand();
-                    break;
+                    consumed = true;
+                } else {
+                    // Not implemented yet.
+                    consumed = true;
                 }
-                case CommandType::Attack:
-                case CommandType::Patrol:
-                case CommandType::Hold:
-                case CommandType::Gather:
-                case CommandType::Build:
-                    // Not yet implemented — pop to avoid infinite loop
-                    queue.PopCommand();
-                    break;
+            }, *cmd);
+
+            if (consumed) {
+                queue.PopCommand();
             }
         }
 
@@ -64,11 +62,11 @@ namespace World {
         }
     }
 
-    void CommandSystem::IssueCommand(uint32_t entityId, const Command& cmd) {
+    void CommandSystem::IssueCommand(uint32_t entityId, const GameCommand& cmd) {
         m_queues[entityId].SetCommand(cmd);
     }
 
-    void CommandSystem::QueueCommand(uint32_t entityId, const Command& cmd) {
+    void CommandSystem::QueueCommand(uint32_t entityId, const GameCommand& cmd) {
         m_queues[entityId].QueueCommand(cmd);
     }
 
@@ -89,16 +87,16 @@ namespace World {
         return it != m_queues.end() && !it->second.IsEmpty();
     }
 
-    void CommandSystem::ProcessMoveCommand(Entities::Character* character, const Command& cmd,
+    void CommandSystem::ProcessMoveCommand(Entities::Character* character, const MoveCommand& cmd,
                                             MovementSystem* movement) {
         if (!character || !movement) return;
 
-        movement->MoveCharacterToTile(character, cmd.targetPosition);
+        movement->MoveCharacterToTile(character, cmd.target, cmd.moveDuration);
 
         if (m_logger) {
             m_logger->Debug("CommandSystem: Move command issued to (" +
-                          std::to_string(cmd.targetPosition.row) + "," +
-                          std::to_string(cmd.targetPosition.col) + ")");
+                          std::to_string(cmd.target.row) + "," +
+                          std::to_string(cmd.target.col) + ")");
         }
     }
 

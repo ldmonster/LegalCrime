@@ -68,6 +68,35 @@ TEST_CASE(EntityManager_RecyclesIds) {
     return {"EntityManager_RecyclesIds", true, ""};
 }
 
+TEST_CASE(EntityManager_DestroyWithStaleHandle_DoesNotKillReusedEntity) {
+    Engine::ECS::EntityManager mgr;
+    auto oldHandle = mgr.CreateEntity();
+    mgr.DestroyEntity(oldHandle);
+
+    auto reusedHandle = mgr.CreateEntity();
+    ASSERT_EQUAL(reusedHandle.id, oldHandle.id);
+    ASSERT_TRUE(reusedHandle.version > oldHandle.version);
+    ASSERT_TRUE(mgr.IsAlive(reusedHandle));
+
+    // Stale destroy must be ignored and must not kill the recycled live entity.
+    mgr.DestroyEntity(oldHandle);
+    ASSERT_TRUE(mgr.IsAlive(reusedHandle));
+    ASSERT_EQUAL(mgr.GetEntityCount(), (size_t)1);
+    return {"EntityManager_DestroyWithStaleHandle_DoesNotKillReusedEntity", true, ""};
+}
+
+TEST_CASE(EntityManager_DestroyInvalidRawId_NoOp) {
+    Engine::ECS::EntityManager mgr;
+    auto handle = mgr.CreateEntity();
+
+    mgr.DestroyEntity((Engine::ECS::EntityId)999999);
+    mgr.DestroyEntity(Engine::ECS::INVALID_ENTITY);
+
+    ASSERT_TRUE(mgr.IsAlive(handle));
+    ASSERT_EQUAL(mgr.GetEntityCount(), (size_t)1);
+    return {"EntityManager_DestroyInvalidRawId_NoOp", true, ""};
+}
+
 TEST_CASE(EntityManager_ForEach) {
     Engine::ECS::EntityManager mgr;
     auto a = mgr.CreateEntity();

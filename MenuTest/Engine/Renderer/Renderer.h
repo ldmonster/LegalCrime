@@ -26,6 +26,7 @@ namespace Engine {
 
         void SetDrawColor(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255) override;
         void DrawLines(const Point* points, int count) override;
+        void DrawCircle(const Point& center, int radius, int segments = 32) override;
         
     private:
         ILogger* m_logger;

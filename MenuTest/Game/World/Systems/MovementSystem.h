@@ -2,6 +2,7 @@
 
 #include "../../../Engine/Core/Types.h"
 #include "../../../Engine/World/Pathfinding.h"
+#include <deque>
 #include <memory>
 #include <unordered_map>
 
@@ -63,6 +64,11 @@ namespace World {
         // Get pathfinder (for external path queries)
         Engine::Pathfinding* GetPathfinder() { return m_pathfinder.get(); }
 
+        // Visible for tests/debugging.
+        size_t GetPendingPathRequestCount() const { return m_pendingPathRequests.size(); }
+
+        static constexpr size_t MAX_PATHS_PER_FRAME = 5;
+
     private:
         struct MovementState {
             Entities::Character* character;
@@ -72,26 +78,38 @@ namespace World {
             float moveTime;
             float moveDuration;
             bool isMoving;
+            Engine::Direction lastDirection;
+            bool hasLastDirection;
 
             MovementState()
                 : character(nullptr)
                 , currentPathIndex(0)
                 , moveTime(0.0f)
                 , moveDuration(0.3f)
-                , isMoving(false) {}
+                , isMoving(false)
+                , lastDirection(Engine::Direction::Down)
+                , hasLastDirection(false) {}
+        };
+
+        struct PathRequest {
+            Entities::Character* character;
+            Engine::TilePosition target;
+            float moveDuration;
         };
 
         Engine::ILogger* m_logger;
         Engine::TileMap* m_tileMap;
         std::unique_ptr<Engine::Pathfinding> m_pathfinder;
+        std::deque<PathRequest> m_pendingPathRequests;
         std::unordered_map<uint32_t, MovementState> m_movingCharacters;  // keyed by entity ID
 
         // Internal methods
+        void ProcessPathfindingBudget();
         MovementState* GetOrCreateMovementState(Entities::Character* character);
         MovementState* GetMovementState(const Entities::Character* character);
         const MovementState* GetMovementState(const Entities::Character* character) const;
         void UpdateCharacterMovement(MovementState& state, float deltaTime);
-        void UpdateCharacterAnimation(Entities::Character* character, uint16_t fromRow, uint16_t fromCol, uint16_t toRow, uint16_t toCol);
+        void UpdateCharacterAnimation(MovementState& state, uint16_t fromRow, uint16_t fromCol, uint16_t toRow, uint16_t toCol);
     };
 
 } // namespace World

@@ -39,5 +39,6 @@ namespace Engine {
         // Drawing primitives — game code should use these instead of GetNativeRenderer()
         virtual void SetDrawColor(uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255) = 0;
         virtual void DrawLines(const Point* points, int count) = 0;
+        virtual void DrawCircle(const Point& center, int radius, int segments = 32) = 0;
     };
 }
